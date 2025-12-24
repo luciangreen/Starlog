@@ -1,192 +1,256 @@
-# Starlog Converter Documentation
+# Starlog-in-Prolog Documentation
 
-**Date**: 2025-07-02 16:23:54 UTC  
+**Date**: 2025-12-24  
 **Author**: luciangreenPlease
 
 ## Overview
 
-The Starlog Converter is a bidirectional translation tool that converts between standard Prolog syntax and Starlog syntax. Starlog is a variant of Prolog that uses a more functional notation, particularly for built-in predicates where the output parameter is represented using an "is" operator rather than as the last argument of a predicate.
+Starlog-in-Prolog is a library that allows developers to write Starlog syntax directly inside normal `.pl` files and run it immediately, without converting files. Starlog is a variant of Prolog that uses a more functional notation, particularly for built-in predicates where the output parameter is represented using an "is" operator rather than as the last argument of a predicate.
 
 ## What is Starlog?
 
 Starlog is a Prolog variant that uses the notation `Result is function(Args)` instead of Prolog's `function(Args, Result)`. This makes code more readable when working with transformations and operations that produce a result, as the output variable appears first in the expression rather than at the end of a parameter list.
 
-## Key Conversion Pattern
+With Starlog-in-Prolog, you can write Starlog syntax directly in your Prolog source files, and the library will automatically expand it into equivalent Prolog goals at load-time using goal_expansion and term_expansion hooks.
 
-The primary conversion pattern:
+## Quick Start
 
-**Prolog**: `predicate(input1, input2, ..., output)`  
-**Starlog**: `output is predicate(input1, input2, ...)`
+### Basic Usage in a File
+
+```prolog
+:- use_module(starlog_in_prolog).
+
+% Write Starlog syntax directly in your code
+test(Result) :- 
+    Result is "Hello" : " " : "World".
+
+% It automatically expands to:
+% test(Result) :- 
+%     string_concat("Hello", " ", _G1),
+%     string_concat(_G1, "World", Result).
+```
+
+### Interactive Use in REPL
+
+For direct typing in the REPL, use `starlog_call/1`:
+
+```prolog
+?- use_module(starlog_in_prolog).
+?- starlog_call(A is "x":"y").
+A = "xy".
+
+?- starlog_call(L is [1] & [2]).
+L = [1, 2].
+```
+
+## Starlog Syntax
+
+The library supports the following Starlog patterns:
+
+### Special Operators
 
 Special operators are used for common operations:
-- String concatenation: `C is (A : B)` instead of `string_concat(A, B, C)`
-- List append: `C is (A & B)` instead of `append(A, B, C)`
-- Atom concatenation: `C is (A • B)` instead of `atom_concat(A, B, C)`
+- **String concatenation**: `C is (A : B)` - expands to `string_concat(A, B, C)`
+- **List append**: `C is (A & B)` - expands to `append(A, B, C)`
+- **Atom concatenation**: `C is (A • B)` - expands to `atom_concat(A, B, C)`
 
-## Complete Built-in Predicate Conversion Lists
+### Value-Returning Builtins
 
-### Prolog to Starlog Conversion
+Many Prolog predicates can be written in Starlog syntax:
+- `Length is string_length("hello")` → `string_length("hello", Length)`
+- `Rev is reverse([1,2,3])` → `reverse([1,2,3], Rev)`
+- `Upper is string_upper("hello")` → `string_upper("hello", Upper)`
 
-The following built-in Prolog predicates are converted to Starlog format:
+### Nested Expressions
 
-#### String and Atom Operations
-| Prolog | Starlog |
-|--------|---------|
-| `string_concat(A, B, C)` | `C is (A : B)` |
-| `atom_concat(A, B, C)` | `C is (A • B)` |
-| `string_length(A, B)` | `B is string_length(A)` |
-| `number_string(A, B)` | `B is number_string(A)` |
-| `atom_length(A, B)` | `B is atom_length(A)` |
-| `sub_string(A, B, C, D, E)` | `E is sub_string(A, B, C, D)` |
-| `string_chars(A, B)` | `B is string_chars(A)` |
-| `atom_chars(A, B)` | `B is atom_chars(A)` |
-| `atom_string(A, B)` | `B is atom_string(A)` |
-| `atom_number(A, B)` | `B is atom_number(A)` |
-| `char_code(A, B)` | `B is char_code(A)` |
-| `string_upper(A, B)` | `B is string_upper(A)` |
-| `string_lower(A, B)` | `B is string_lower(A)` |
-| `atom_codes(A, B)` | `B is atom_codes(A)` |
-| `string_codes(A, B)` | `B is string_codes(A)` |
-| `term_string(A, B)` | `B is term_string(A)` |
-| `term_to_atom(A, B)` | `B is term_to_atom(A)` |
-| `downcase_atom(A, B)` | `B is downcase_atom(A)` |
-| `upcase_atom(A, B)` | `B is upcase_atom(A)` |
+Nested expressions are automatically decomposed into sequential goals:
 
-#### List Operations
-| Prolog | Starlog |
-|--------|---------|
-| `append(A, B, C)` | `C is (A & B)` |
-| `length(A, B)` | `B is length_1(A)` |
-| `member(A, B)` | `B is member_1(A)` |
-| `reverse(A, B)` | `B is reverse(A)` |
-| `head(A, B)` | `B is head(A)` |
-| `tail(A, B)` | `B is tail(A)` |
-| `delete(A, B, C)` | `C is delete(A, B)` |
-| `wrap(A, B)` | `B is wrap(A)` |
-| `unwrap(A, B)` | `B is unwrap(A)` |
-| `maplist(A, B, C)` | `C is maplist(A, B)` |
-| `sort(A, B)` | `B is sort(A)` |
-| `msort(A, B)` | `B is msort(A)` |
-| `keysort(A, B)` | `B is keysort(A)` |
-| `intersection(A, B, C)` | `C is intersection(A, B)` |
-| `union(A, B, C)` | `C is union(A, B)` |
-| `flatten(A, B)` | `B is flatten(A)` |
-| `nth0(A, B, C)` | `C is nth0(A, B)` |
-| `nth1(A, B, C)` | `C is nth1(A, B)` |
-| `last(A, B)` | `B is last(A)` |
-| `min_list(A, B)` | `B is min_list(A)` |
-| `max_list(A, B)` | `B is max_list(A)` |
-| `sum_list(A, B)` | `B is sum_list(A)` |
-| `subtract(A, B, C)` | `C is subtract(A, B)` |
-| `select(A, B, C)` | `C is select(A, B)` |
-| `permutation(A, B)` | `B is permutation(A)` |
+```prolog
+% Starlog:
+E is (A:(B:(D • F))) • C
 
-#### Math Operations
-| Prolog | Starlog |
-|--------|---------|
-| `is(A, B)` | `A is B` |
-| `=(A, B)` | `A = B` |
-| `string_to_number(A, B)` | `B is string_to_number(A)` |
-| `random(A, B)` | `B is random(A)` |
-| `ceiling(A, B)` | `B is ceiling(A)` |
-| `sqrt(A, B)` | `B is sqrt(A)` |
-| `round(A, B)` | `B is round(A)` |
-| `floor(A, B)` | `B is floor(A)` |
-| `truncate(A, B)` | `B is truncate(A)` |
-| `abs(A, B)` | `B is abs(A)` |
-| `sign(A, B)` | `B is sign(A)` |
-| `sin(A, B)` | `B is sin(A)` |
-| `cos(A, B)` | `B is cos(A)` |
-| `tan(A, B)` | `B is tan(A)` |
-| `asin(A, B)` | `B is asin(A)` |
-| `acos(A, B)` | `B is acos(A)` |
-| `atan(A, B)` | `B is atan(A)` |
-| `log(A, B)` | `B is log(A)` |
-| `log10(A, B)` | `B is log10(A)` |
-| `exp(A, B)` | `B is exp(A)` |
+% Expands to:
+atom_concat(D, F, _G1),
+string_concat(B, _G1, _G2),
+string_concat(A, _G2, _G3),
+atom_concat(_G3, C, E).
+```
 
-#### Other Operations
-| Prolog | Starlog |
-|--------|---------|
-| `date(A)` | `A is date` |
-| `findall(A, B, C)` | `C is findall(A, B)` |
-| `string_from_file(A, B)` | `B is string_from_file(A)` |
-| `read_string(A, B, C, D, E)` | `E is read_string(A, B, C, D)` |
-| `term_variables(A, B)` | `B is term_variables(A)` |
-| `current_output(A, B)` | `B is current_output(A)` |
-| `current_input(A, B)` | `B is current_input(A)` |
-| `file_base_name(A, B)` | `B is file_base_name(A)` |
-| `file_name_extension(A, B, C)` | `C is file_name_extension(A, B)` |
-| `directory_files(A, B)` | `B is directory_files(A)` |
-| `working_directory(A, B)` | `B is working_directory(A)` |
-| `atomic_list_concat(A, B)` | `B is atomic_list_concat(A)` |
-| `atomic_list_concat(A, B, C)` | `C is atomic_list_concat(A, B)` |
-| `sub_atom(A, B, C, D, E)` | `E is sub_atom(A, B, C, D)` |
-| `format_time(A, B, C, D)` | `D is format_time(A, B, C)` |
-| `split_string(A, B, C, D)` | `D is split_string(A, B, C)` |
-| `get_time(A)` | `A is get_time` |
-| `term_hash(A, B)` | `B is term_hash(A)` |
+### Arithmetic is Preserved
 
-### Starlog to Prolog Conversion
+Standard arithmetic expressions are left unchanged:
 
-The reverse conversion transforms Starlog code back to standard Prolog:
+```prolog
+X is 1+2      % Treated as arithmetic, not Starlog
+X is Y * 5    % Also arithmetic
+```
 
-#### String and Atom Operations
-| Starlog | Prolog |
-|---------|--------|
-| `C is (A : B)` | `string_concat(A, B, C)` |
-| `C is (A • B)` | `atom_concat(A, B, C)` |
-| `B is string_length(A)` | `string_length(A, B)` |
-| `B is number_string(A)` | `number_string(A, B)` |
-| `B is atom_length(A)` | `atom_length(A, B)` |
-| `E is sub_string(A, B, C, D)` | `sub_string(A, B, C, D, E)` |
-| `B is string_chars(A)` | `string_chars(A, B)` |
-| `B is atom_chars(A)` | `atom_chars(A, B)` |
-| `B is atom_string(A)` | `atom_string(A, B)` |
-| `B is atom_number(A)` | `atom_number(A, B)` |
-| `B is char_code(A)` | `char_code(A, B)` |
-| `B is string_upper(A)` | `string_upper(A, B)` |
-| `B is string_lower(A)` | `string_lower(A, B)` |
-| `B is atom_codes(A)` | `atom_codes(A, B)` |
-| `B is string_codes(A)` | `string_codes(A, B)` |
-| `B is term_string(A)` | `term_string(A, B)` |
-| `B is term_to_atom(A)` | `term_to_atom(A, B)` |
-| `B is downcase_atom(A)` | `downcase_atom(A, B)` |
-| `B is upcase_atom(A)` | `upcase_atom(A, B)` |
+## When is/2 is Treated as Starlog vs Arithmetic
 
-#### List Operations
-| Starlog | Prolog |
-|---------|--------|
-| `C is (A & B)` | `append(A, B, C)` |
-| `B is length_1(A)` | `length(A, B)` |
-| `B is member_1(A)` | `member(A, B)` |
-| `B is reverse(A)` | `reverse(A, B)` |
-| `B is head(A)` | `head(A, B)` |
-| `B is tail(A)` | `tail(A, B)` |
-| `C is delete(A, B)` | `delete(A, B, C)` |
-| `B is wrap(A)` | `wrap(A, B)` |
+The library distinguishes between Starlog and arithmetic based on the right-hand side:
+
+- **Starlog**: `Out is (A : B)`, `Out is func(Args)`, `Out is (A & B)`, `Out is (A • B)`
+- **Arithmetic**: `Out is 1+2`, `Out is X*Y`, `Out is sqrt(N)` (when sqrt/1 is arithmetic)
+
+## Supported Built-in Predicates
+
+The library supports automatic expansion for many built-in predicates. Here are the main categories:
+
+### String and Atom Operations
+- `string_length/1`, `atom_length/1`
+- `string_chars/1`, `atom_chars/1`
+- `string_upper/1`, `string_lower/1`
+- `atom_codes/1`, `string_codes/1`
+- `term_string/1`, `term_to_atom/1`
+- `sub_string/4`, `sub_atom/4`
+- And more...
+
+### List Operations
+- `reverse/1`, `sort/1`, `flatten/1`
+- `length/1`, `member/1`
+- `intersection/2`, `union/2`, `subtract/2`
+- `nth0/2`, `nth1/2`, `last/1`
+- `min_list/1`, `max_list/1`, `sum_list/1`
+- And more...
+
+### Math Operations  
+- `ceiling/1`, `floor/1`, `round/1`, `truncate/1`
+- `abs/1`, `sign/1`, `sqrt/1`
+- `sin/1`, `cos/1`, `tan/1`
+- `log/1`, `exp/1`
+- And more...
+
+### Other Operations
+- `findall/2`
+- `term_variables/1`
+- `split_string/3`
+- `date/0`, `get_time/0` (nullary operations)
+- And more...
+
+For a complete list, see `starlog_registry.pl`.
+
+## Extending Starlog
+
+You can register your own value-returning builtins:
+
+```prolog
+% Register foo/2 as a value builtin
+% Now: Out is foo(A,B) expands to foo(A,B,Out)
+?- starlog_register_value_builtin(foo, 2, foo).
+
+% Register with a different Prolog predicate name
+?- starlog_register_value_builtin(bar, 1, my_bar).
+% Now: Out is bar(X) expands to my_bar(X,Out)
+```
+
+## Debugging
+
+Enable debug output to see expansions:
+
+```prolog
+?- starlog_set_debug(true).
+?- starlog_call(A is "x":"y").
+Expanding goal: A is "x":"y"
+Expanded to: string_concat("x","y",A)
+A = "xy".
+```
+
+## Examples
+
+### Example 1: String Processing
+
+```prolog
+:- use_module(starlog_in_prolog).
+
+process_name(First, Last, Full) :-
+    Full is First : " " : Last.
+
+?- process_name("John", "Doe", Name).
+Name = "John Doe".
+```
+
+### Example 2: List Manipulation
+
+```prolog
+:- use_module(starlog_in_prolog).
+
+combine_and_reverse(A, B, Result) :-
+    Combined is A & B,
+    Result is reverse(Combined).
+
+?- combine_and_reverse([1,2], [3,4], R).
+R = [4, 3, 2, 1].
+```
+
+### Example 3: Nested Expressions
+
+```prolog
+:- use_module(starlog_in_prolog).
+
+complex_concat(A, B, C, Result) :-
+    Result is (A:B) : C.
+
+?- complex_concat("Hello", " ", "World", R).
+R = "Hello World".
+```
+
+## Installation
+
+1. Clone this repository
+2. Load the library in your Prolog code:
+
+```prolog
+:- use_module('/path/to/starlog_in_prolog').
+```
+
+Or add it to your SWI-Prolog library path.
+
+## Testing
+
+Run the test suite:
+
+```bash
+cd tests
+swipl -s test_basic.pl
+swipl -s test_nested.pl  
+swipl -s test_arithmetic_is.pl
+swipl -s test_mixed_prolog_starlog.pl
+```
 
 ## Requirements
 
-* [List Prolog Interpreter](https://github.com/luciangreen/listprologinterpreter)
+* SWI-Prolog 8.x or higher
 
-## Usage
+## Repository Structure
 
-### Converting Starlog to Prolog
-
-```bash
-cd starlog_files
-swipl -q -g main -s ../starlog_to_prolog_cli.pl 
+```
+starlog_in_prolog/
+  README.md                        # This file
+  LICENSE                          # BSD-3 license
+  Requirements.txt                 # Original specification
+  Requirements.md                  # Additional requirements
+  starlog_in_prolog.pl            # Main library module
+  starlog_expand.pl               # Expander: compile Starlog -> Prolog goals
+  starlog_registry.pl             # Builtin mapping registry + extension hooks
+  tests/
+    test_basic.pl                 # Basic functionality tests
+    test_nested.pl                # Nested expression tests
+    test_arithmetic_is.pl         # Arithmetic preservation tests
+    test_mixed_prolog_starlog.pl  # Mixed Prolog/Starlog tests
 ```
 
-### Converting Prolog to Starlog
+## License
 
-```bash
-cd starlog_files
-swipl -q -g main -s ../prolog_to_starlog_cli.pl
-```
+BSD-3-Clause License
 
-# Articles and Videos
+## Articles and Videos
+
+
+## Articles and Videos
 
 * [Example Prolog-Starlog conversions](https://lucianacademy.hashnode.dev/prolog-starlog-converter)
 * [Youtube video](https://youtu.be/kdtI8VsE--4)
+
+## Acknowledgments
+
+Original Starlog-Prolog converter concept by luciangreenPlease. This library implements a new approach using SWI-Prolog's goal and term expansion mechanisms to allow direct entry of Starlog syntax in Prolog files.

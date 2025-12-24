@@ -1,0 +1,188 @@
+% starlog_expand.pl
+% Expansion mechanisms for Starlog-in-Prolog
+% Provides goal_expansion and term_expansion to compile Starlog syntax
+% into equivalent Prolog goals at load-time or goal-call-time.
+
+:- module(starlog_expand, [
+    expand_starlog_goal/2,
+    expand_starlog_term/2,
+    set_starlog_debug/1,
+    compile_starlog_expr/3  % Export for debugging
+]).
+
+:- use_module(starlog_registry).
+
+% Define operators locally for pattern matching
+:- op(700, xfx, is).
+:- op(600, yfx, ':').
+:- op(600, yfx, '&').
+:- op(600, yfx, '•').
+
+% Debug flag
+:- dynamic starlog_debug/1.
+starlog_debug(false).
+
+% Enable/disable debug output
+set_starlog_debug(Flag) :-
+    retractall(starlog_debug(_)),
+    assertz(starlog_debug(Flag)).
+
+% expand_starlog_goal(+Goal, -ExpandedGoal)
+% Main entry point for expanding a single Starlog goal into Prolog goals.
+expand_starlog_goal(Goal, Expanded) :-
+    starlog_debug(Debug),
+    (Debug = true -> format('Expanding goal: ~w~n', [Goal]) ; true),
+    expand_goal_internal(Goal, Expanded),
+    (Debug = true -> format('Expanded to: ~w~n', [Expanded]) ; true).
+
+% expand_starlog_term(+Term, -ExpandedTerm)
+% Entry point for term expansion (whole clauses).
+expand_starlog_term((Head :- Body), (Head :- ExpandedBody)) :-
+    !,
+    expand_goal_internal(Body, ExpandedBody).
+expand_starlog_term(Term, Term).
+
+% expand_goal_internal(+Goal, -Expanded)
+% Internal goal expansion logic.
+
+% Handle conjunctions
+expand_goal_internal((A, B), (EA, EB)) :-
+    !,
+    expand_goal_internal(A, EA),
+    expand_goal_internal(B, EB).
+
+% Handle disjunctions
+expand_goal_internal((A ; B), (EA ; EB)) :-
+    !,
+    expand_goal_internal(A, EA),
+    expand_goal_internal(B, EB).
+
+% Handle if-then-else
+expand_goal_internal((A -> B ; C), (EA -> EB ; EC)) :-
+    !,
+    expand_goal_internal(A, EA),
+    expand_goal_internal(B, EB),
+    expand_goal_internal(C, EC).
+
+% Handle if-then
+expand_goal_internal((A -> B), (EA -> EB)) :-
+    !,
+    expand_goal_internal(A, EA),
+    expand_goal_internal(B, EB).
+
+% Handle negation
+expand_goal_internal(\+ A, \+ EA) :-
+    !,
+    expand_goal_internal(A, EA).
+
+% Starlog is-expression: Out is Expr
+expand_goal_internal((Out is Expr), Expanded) :-
+    is_starlog_expr(Expr),
+    !,
+    compile_starlog_expr(Expr, Out, Goals),
+    list_to_conjunction(Goals, Expanded).
+
+% Non-Starlog goal - pass through
+expand_goal_internal(Goal, Goal).
+
+% list_to_conjunction(+Goals, -Conjunction)
+% Convert a list of goals to a conjunction.
+list_to_conjunction([Goal], Goal) :- !.
+list_to_conjunction([Goal|Goals], (Goal, Rest)) :-
+    list_to_conjunction(Goals, Rest).
+list_to_conjunction([], true).
+
+% is_starlog_expr(+Expr)
+% Check if an expression is a Starlog expression (not arithmetic).
+is_starlog_expr(_ : _) :- !.
+is_starlog_expr(_ & _) :- !.
+is_starlog_expr(_ • _) :- !.
+is_starlog_expr(Expr) :-
+    \+ is_arithmetic(Expr),  % Exclude arithmetic first
+    compound(Expr),
+    functor(Expr, Name, Arity),
+    is_value_builtin(Name, Arity, _),
+    !.
+is_starlog_expr(_) :- fail.
+
+% is_arithmetic(+Expr)
+% Check if expression is arithmetic (should use Prolog is/2).
+is_arithmetic(Expr) :-
+    compound(Expr),
+    functor(Expr, Op, 2),
+    memberchk(Op, [+, -, *, /, //, mod, **, ^]).
+is_arithmetic(Expr) :-
+    compound(Expr),
+    functor(Expr, Op, 1),
+    memberchk(Op, [-, abs, sign, min, max]).
+is_arithmetic(X) :- number(X).
+
+% compile_starlog_expr(+Expr, +Out, -Goals)
+% Compile a Starlog expression into Prolog goal(s).
+
+% String concatenation: Out is (A : B)
+compile_starlog_expr((A : B), Out, Goals) :-
+    !,
+    compile_value(A, AVal, AGoals),
+    compile_value(B, BVal, BGoals),
+    append(AGoals, BGoals, PreGoals),
+    append(PreGoals, [string_concat(AVal, BVal, Out)], Goals).
+
+% List append: Out is (A & B)
+compile_starlog_expr((A & B), Out, Goals) :-
+    !,
+    compile_value(A, AVal, AGoals),
+    compile_value(B, BVal, BGoals),
+    append(AGoals, BGoals, PreGoals),
+    append(PreGoals, [append(AVal, BVal, Out)], Goals).
+
+% Atom concatenation: Out is (A • B)
+compile_starlog_expr((A • B), Out, Goals) :-
+    !,
+    compile_value(A, AVal, AGoals),
+    compile_value(B, BVal, BGoals),
+    append(AGoals, BGoals, PreGoals),
+    append(PreGoals, [atom_concat(AVal, BVal, Out)], Goals).
+
+% Value-returning builtin: Out is func(Args...)
+compile_starlog_expr(Expr, Out, Goals) :-
+    compound(Expr),
+    Expr =.. [Name|Args],
+    is_value_builtin(Name, Arity, PrologPred),
+    length(Args, Arity),
+    !,
+    compile_values(Args, Vals, PreGoals),
+    append(Vals, [Out], PrologArgs),
+    PrologGoal =.. [PrologPred|PrologArgs],
+    append(PreGoals, [PrologGoal], Goals).
+
+% Nullary builtin: Out is func
+compile_starlog_expr(Expr, Out, [PrologGoal]) :-
+    atom(Expr),
+    is_value_builtin(Expr, 0, PrologPred),
+    !,
+    PrologGoal =.. [PrologPred, Out].
+
+% Arithmetic expression - keep as is/2
+compile_starlog_expr(Expr, Out, [Out is Expr]) :-
+    is_arithmetic(Expr),
+    !.
+
+% Unknown - treat as value
+compile_starlog_expr(Expr, Out, [Out = Expr]).
+
+% compile_value(+Expr, -Value, -Goals)
+% Compile a value expression into goals and a result value.
+compile_value(Expr, Value, Goals) :-
+    is_starlog_expr(Expr),
+    !,
+    compile_starlog_expr(Expr, Value, Goals).
+compile_value(Expr, Expr, []).
+
+% compile_values(+Exprs, -Values, -Goals)
+% Compile a list of value expressions.
+compile_values([], [], []).
+compile_values([E|Es], [V|Vs], Goals) :-
+    compile_value(E, V, EGoals),
+    compile_values(Es, Vs, EsGoals),
+    append(EGoals, EsGoals, Goals).
