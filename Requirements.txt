@@ -1,0 +1,185 @@
+Requirements Document: Starlog-in-Prolog Repository
+
+1. Purpose
+
+Create a new SWI-Prolog repository that lets a developer write Starlog syntax directly inside normal .pl files and run it immediately, without converting files.
+
+The repository must support Starlog’s “value-returning” style using is (e.g., C is A:B) and operator syntax (:, &, •), while transparently expanding it into equivalent Prolog goals at load-time (or goal-call-time).
+
+2. Scope
+
+In scope
+	•	Direct entry of Starlog goals in Prolog source files.
+	•	Automatic expansion of Starlog “is-expressions” into normal Prolog predicates.
+	•	Optional decompression of nested expressions into sequential goals (like your decompressor).
+	•	Compatibility with SWI-Prolog module system and normal Prolog code.
+
+Out of scope (v1)
+	•	Full Starlog parser independent of Prolog reader.
+	•	Cross-file conversion CLI (that’s the old workflow).
+	•	Supporting every Prolog predicate as a value-returning function (limit to a defined builtin table + extensibility hooks).
+
+3. Target Environment
+	•	SWI-Prolog 8.x+.
+	•	Must work in both:
+	•	interactive queries (?- ...)
+	•	loaded modules/files (consult/1, use_module/1)
+
+4. User Stories
+	1.	As a developer, I want to write:
+
+E is •(A:(B:(D•F)), C),
+
+and have it behave as if I wrote a sequence of string_concat/3 + atom_concat/3 calls.
+
+	2.	As a developer, I want to write:
+
+X is A & B
+
+and have it execute append(A,B,X).
+
+	3.	As a developer, I want Starlog syntax to coexist with ordinary Prolog in the same file, without special file suffixes.
+
+5. Core Syntax Requirements
+
+5.1 Operators
+
+The library must define Starlog operators (configurable, but these defaults):
+
+:- op(700, xfx, is).   % keep Prolog’s is token, but treat as Starlog in specific patterns
+:- op(600, yfx, ':').  % string concat expression form
+:- op(600, yfx, '&').  % list append expression form
+:- op(600, yfx, '•').  % atom concat expression form
+
+5.2 Allowed Starlog “is” Forms (v1)
+
+The expander must recognize and rewrite these patterns in goal position:
+	•	Out is (A : B)  → string_concat(A,B,Out)
+	•	Out is (A & B)  → append(A,B,Out)
+	•	Out is (A • B)  → atom_concat(A,B,Out)
+	•	Out is string_length(A) → string_length(A,Out)
+	•	Out is atom_length(A) → atom_length(A,Out)
+	•	Out is number_string(A) → number_string(A,Out)
+	•	etc. (extendable table)
+
+5.3 Nested Expressions
+
+Nested expressions like:
+
+E is •(A:(B:(D•F)), C)
+
+must be supported by expanding into a safe execution order using fresh temporaries, e.g.:
+
+atom_concat(D, F, T1),
+string_concat(B, T1, T2),
+string_concat(A, T2, T3),
+atom_concat(T3, C, E).
+
+6. Expansion Mechanism Requirements
+
+6.1 Primary mechanism
+
+Implement Starlog-in-Prolog using goal expansion and/or term expansion:
+	•	goal_expansion/2 for bodies of clauses.
+	•	term_expansion/2 for rewriting whole clauses when needed.
+
+6.2 Where expansion applies
+
+Expansion must apply to:
+	•	clause bodies: Head :- Body
+	•	directives :- Goal (optional but strongly desired)
+	•	interactive use: provide a helper predicate starlog_call/1 so users can do:
+
+?- starlog_call(A is [1]:[2]).
+
+and have it expanded then executed.
+
+6.3 Safety rule
+
+Do not rewrite standard arithmetic is/2 unless the RHS matches Starlog expression patterns or registered Starlog value-builtin patterns.
+
+Example:
+	•	Keep: X is Y+1 as arithmetic.
+	•	Rewrite: X is A:B as string_concat/3.
+
+7. Extensibility Requirements
+
+7.1 Registering new value-builtin mappings
+
+Provide an API to register new “value-returning” predicate expansions, e.g.:
+
+:- starlog_register_value_builtin(foo/2, foo).  % meaning: Out is foo(A,B) -> foo(A,B,Out)
+
+or a more explicit mapping form.
+
+7.2 Operator set configuration
+
+Allow users to opt-in/out of operators (especially if : conflicts with other code).
+
+8. Diagnostics & Debugging
+	•	Provide a flag like starlog_debug(true/false).
+	•	When enabled, print:
+	•	original Starlog goal
+	•	expanded Prolog goal list
+	•	temp vars introduced (optionally)
+
+9. Non-Functional Requirements
+	•	Must not break normal module loading.
+	•	Must preserve determinism characteristics as much as possible.
+	•	Must avoid rewriting inside quoted terms unless explicitly requested.
+	•	Must be robust: if a pattern isn’t recognized, leave it unchanged.
+
+10. Repository Layout Requirements
+
+starlog_in_prolog/
+  README.md
+  LICENSE (BSD-3)
+  starlog_in_prolog.pl          % main library module
+  starlog_expand.pl             % expander: compile Starlog -> list of Prolog goals
+  starlog_registry.pl           % builtin mapping registry + user extension hooks
+  tests/
+    test_basic.pl
+    test_nested.pl
+    test_arithmetic_is.pl
+    test_mixed_prolog_starlog.pl
+
+11. Acceptance Tests
+	1.	Direct Starlog concat
+	•	Input:
+
+t(A) :- A is "x":"y".
+
+
+	•	Behavior: t(A) yields "xy".
+
+	2.	List append
+	•	Input:
+
+t(A) :- A is [1] & [2].
+
+
+	•	Behavior: t([1,2]).
+
+	3.	Nested expression decompression
+	•	Input:
+
+t(E) :- E is •("a":"b", "c").
+
+
+	•	Behavior: E == 'abc' (or "abc" depending on atom/string choices).
+
+	4.	Arithmetic is preserved
+	•	Input:
+
+t(X) :- X is 1+2.
+
+
+	•	Behavior: X = 3 and no Starlog rewriting occurs.
+
+12. README Requirements
+
+README must include:
+	•	“Quick start” example showing Starlog in a normal .pl file.
+	•	Explanation of when is/2 is treated as Starlog vs arithmetic.
+	•	How to call starlog_call/1 in the REPL for direct typing.
+	•	List of builtins supported by default and how to add more.
