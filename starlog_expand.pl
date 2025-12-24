@@ -94,6 +94,7 @@ list_to_conjunction([], true).
 
 % is_starlog_expr(+Expr)
 % Check if an expression is a Starlog expression (not arithmetic).
+is_starlog_expr(Expr) :- var(Expr), !, fail.  % Variables are not expressions
 is_starlog_expr(_ : _) :- !.
 is_starlog_expr(_ & _) :- !.
 is_starlog_expr(_ • _) :- !.
