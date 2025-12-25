@@ -98,6 +98,7 @@ is_starlog_expr(Expr) :- var(Expr), !, fail.  % Variables are not expressions
 is_starlog_expr(_ : _) :- !.
 is_starlog_expr(_ & _) :- !.
 is_starlog_expr(_ • _) :- !.
+is_starlog_expr(no_eval(_)) :- !.  % Special case for no_eval
 is_starlog_expr(Expr) :-
     \+ is_arithmetic(Expr),  % Exclude arithmetic first
     compound(Expr),
@@ -159,6 +160,10 @@ compile_starlog_expr((A • B), Out, Goals) :-
     compile_value(B, BVal, BGoals),
     append(AGoals, BGoals, PreGoals),
     append(PreGoals, [atom_concat(AVal, BVal, Out)], Goals).
+
+% Special case: no_eval(Expr) - returns expression without evaluating
+compile_starlog_expr(no_eval(Expr), Out, [Out = Expr]) :-
+    !.
 
 % Value-returning builtin: Out is func(Args...)
 compile_starlog_expr(Expr, Out, Goals) :-
