@@ -167,6 +167,41 @@ This is useful for:
 - Understanding how Prolog predicates map to Starlog syntax
 - Generating Starlog code programmatically
 
+### Maximal Compression
+
+Use `starlog_output_code/3` or `starlog_output_file/3` with the `compress(true)` option to maximally compress Starlog code by nesting expressions:
+
+```prolog
+?- starlog_output_code((string_concat("hello", " ", T1), 
+                        string_concat(T1, "world", T2)), _, [compress(true)]).
+A is "hello":" ":"world"
+
+?- starlog_output_code((append([1],[2],L1), reverse(L1,L2)), _, [compress(true)]).
+A is reverse([1]&[2])
+```
+
+The compression algorithm:
+- Nests expressions where an intermediate variable is used only once
+- Preserves variables that are used multiple times
+- Excludes if-then clauses, logical control structures (or, not)
+- Excludes calls without an output that is another's input
+
+Example comparison:
+
+```prolog
+% Without compression (default)
+?- starlog_output_code((string_concat("a","b",T1), 
+                        string_concat("c","d",T2), 
+                        string_concat(T1,T2,T3)), _).
+A is "a":"b",B is "c":"d",C is A:B
+
+% With compression
+?- starlog_output_code((string_concat("a","b",T1), 
+                        string_concat("c","d",T2), 
+                        string_concat(T1,T2,T3)), _, [compress(true)]).
+A is "a":"b":("c":"d")
+```
+
 ### Output Code for a File
 
 Use `starlog_output_file/1` to convert an entire Prolog file to Starlog notation:
@@ -180,11 +215,27 @@ combine_lists(A,B,C,D):-C is A&B,D is reverse(C).
 ...
 ```
 
-Or write to a file using `starlog_output_file/2`:
+Or with maximal compression using `starlog_output_file/3`:
+
+```prolog
+?- starlog_output_file('my_program.pl', user_output, [compress(true)]).
+% Starlog code output for file: my_program.pl
+
+greet(A,B,C):-C is "Hello, ":A:" ":B.
+combine_lists(A,B,C,D):-D is reverse(A&B).
+...
+```
+
+Or write to a file using `starlog_output_file/2` or `starlog_output_file/3`:
 
 ```prolog
 ?- open('output.pl', write, Stream),
    starlog_output_file('input.pl', Stream),
+   close(Stream).
+
+% With compression
+?- open('output.pl', write, Stream),
+   starlog_output_file('input.pl', Stream, [compress(true)]),
    close(Stream).
 ```
 
