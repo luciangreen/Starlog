@@ -30,7 +30,7 @@ test_function_with_colon :-
 % Previously: ERROR: Arithmetic: `(:)/2' is not a function
 test_unregistered_with_colon :-
     starlog_call(A is foo(1:1)),
-    A = foo("11"),  % Should evaluate the argument but keep the structure
+    A = foo("11"),  % 1:1 expands to string concatenation "11", result is foo("11")
     write('✓ Unregistered predicate with colon operator test passed'), nl.
 
 % Test 4: Nested compound terms with operators

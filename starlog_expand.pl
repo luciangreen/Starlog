@@ -186,10 +186,9 @@ compile_starlog_expr(Expr, Out, [Out is Expr]) :-
 
 % Compound term with Starlog operators in arguments (not a registered builtin)
 compile_starlog_expr(Expr, Out, Goals) :-
-    compound(Expr),
-    Expr =.. [Functor|Args],
     contains_starlog_operator(Expr),
     !,
+    Expr =.. [Functor|Args],
     compile_values(Args, Vals, PreGoals),
     Result =.. [Functor|Vals],
     append(PreGoals, [Out = Result], Goals).
