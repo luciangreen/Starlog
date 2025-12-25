@@ -277,10 +277,20 @@ convert_prolog_to_starlog(Goal, Goal).
 % ============================================================
 % Starlog Compression
 % ============================================================
+% This section implements maximal compression of Starlog expressions.
+% The algorithm nests expressions by replacing intermediate variables
+% with their defining expressions when the variable is used exactly once.
+% This creates more concise, functional-style code.
+%
+% Key features:
+% - Iterative compression until no more nesting is possible
+% - Preserves variables used multiple times
+% - Excludes control structures (if-then, or, not) from nesting
+% - Prevents circular references
 
 % compress_starlog(+StarlogForm, -CompressedForm)
 % Maximally compress Starlog code by nesting expressions where possible.
-% Excludes: if-then clauses, logical control structures (or, not), 
+% Excludes: if-then clauses, logical control structures (or, not),
 % and calls without an output that is another's input.
 compress_starlog(StarlogForm, CompressedForm) :-
     % Collect all goals from conjunction
@@ -332,12 +342,14 @@ compress_one_pass_helper([Goal|Rest], Processed, Result, Changed) :-
     ).
 
 % try_nest_goal(+Goal, +LaterGoals, -NewLaterGoals)
-% Try to nest Goal into one of the LaterGoals
+% Try to nest Goal into one of the LaterGoals.
 % Only nest if the output variable is used exactly once in later goals
+% and the expression is not a control structure.
 try_nest_goal(Goal, LaterGoals, NewLaterGoals) :-
-    % Goal must be: Var is Expr
+    % Goal must be: Var is Expr, and Expr must not be a control structure
     Goal = (OutVar is Expr),
     \+ is_control_structure(Expr),
+    !,
     % Count how many times OutVar is used in LaterGoals
     count_var_uses(OutVar, LaterGoals, UseCount),
     % Only nest if used exactly once
@@ -352,7 +364,9 @@ count_var_uses(Var, Goals, Count) :-
     length(Uses, Count).
 
 % find_and_replace_use(+Var, +Replacement, +Goals, -NewGoals)
-% Find the first goal that uses Var and replace Var with Replacement
+% Find the first goal that uses Var and replace Var with Replacement.
+% Direct substitution is used (no copy_term) to preserve variable bindings
+% across the entire goal structure.
 find_and_replace_use(Var, Replacement, [Goal|Rest], [NewGoal|Rest]) :-
     % Check if Goal uses Var and is not a control structure
     \+ is_control_goal(Goal),
