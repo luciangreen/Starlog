@@ -234,12 +234,19 @@ compile_values([E|Es], [V|Vs], Goals) :-
 
 % contains_eval(+Expr)
 % Check if an expression contains eval() anywhere in its structure
+% Uses a direct recursive approach without generating choice points
 contains_eval(eval(_)) :- !.
 contains_eval(Expr) :-
     compound(Expr),
     Expr =.. [_|Args],
-    member(Arg, Args),
-    contains_eval(Arg).
+    contains_eval_in_list(Args).
+
+% contains_eval_in_list(+Args)
+% Check if any argument in the list contains eval()
+contains_eval_in_list([Arg|_]) :-
+    contains_eval(Arg), !.
+contains_eval_in_list([_|Rest]) :-
+    contains_eval_in_list(Rest).
 
 % process_eval_in_no_eval(+Expr, -ProcessedExpr, -Goals)
 % Process eval() expressions inside a no_eval context
@@ -254,17 +261,14 @@ process_eval_in_no_eval(Expr, ProcessedExpr, Goals) :-
     Expr =.. [Functor|Args],
     process_eval_in_args(Args, ProcessedArgs, Goals),
     ProcessedExpr =.. [Functor|ProcessedArgs].
+% Atomic values and non-compound terms that don't contain eval - return as-is
 process_eval_in_no_eval(Expr, Expr, []).
 
 % process_eval_in_args(+Args, -ProcessedArgs, -Goals)
 % Process a list of arguments, evaluating any eval() expressions
+% Combines detection and processing in a single pass for efficiency
 process_eval_in_args([], [], []).
 process_eval_in_args([Arg|Args], [ProcessedArg|ProcessedArgs], Goals) :-
-    (contains_eval(Arg) ->
-        process_eval_in_no_eval(Arg, ProcessedArg, ArgGoals)
-    ;
-        ProcessedArg = Arg,
-        ArgGoals = []
-    ),
+    process_eval_in_no_eval(Arg, ProcessedArg, ArgGoals),
     process_eval_in_args(Args, ProcessedArgs, RestGoals),
     append(ArgGoals, RestGoals, Goals).
