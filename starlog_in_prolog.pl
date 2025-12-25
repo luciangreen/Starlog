@@ -545,19 +545,13 @@ starlog_to_prolog_code(StarlogGoal, PrologCode) :-
 % Options:
 %   decompress(true) - Apply maximal decompression (default)
 %   decompress(false) - Minimal decompression
-starlog_to_prolog_code(StarlogGoal, PrologCode, Options) :-
+starlog_to_prolog_code(StarlogGoal, PrologCode, _Options) :-
     % Expand Starlog to Prolog goals
+    % Decompression is automatically done by expand_starlog_goal
+    % which flattens nested expressions
     starlog_expand:expand_starlog_goal(StarlogGoal, ExpandedGoal),
-    % Apply decompression if requested (default is true)
-    (\+ member(decompress(false), Options) ->
-        % Decompression is already done by expand_starlog_goal
-        % which flattens nested expressions
-        DecompressedGoal = ExpandedGoal
-    ;
-        DecompressedGoal = ExpandedGoal
-    ),
     % Apply human-friendly variable renaming
-    rename_variables(DecompressedGoal, RenamedGoal),
+    rename_variables(ExpandedGoal, RenamedGoal),
     PrologCode = RenamedGoal,
     % Output the result
     write_term(PrologCode, [numbervars(true), quoted(true)]), nl.
@@ -613,11 +607,10 @@ output_clause_as_prolog((?- Query), OutputStream, _Options) :-
 output_clause_as_prolog((Head :- Body), OutputStream, _Options) :-
     !,
     % Expand Starlog body to Prolog
-    starlog_expand:expand_starlog_goal(Body, ExpandedBody),
     % Decompression is already done by expand_starlog_goal
-    DecompressedBody = ExpandedBody,
+    starlog_expand:expand_starlog_goal(Body, ExpandedBody),
     % Apply human-friendly variable renaming
-    rename_variables((Head :- DecompressedBody), RenamedClause),
+    rename_variables((Head :- ExpandedBody), RenamedClause),
     write_term(OutputStream, RenamedClause, [numbervars(true), quoted(true)]),
     write(OutputStream, '.'), nl(OutputStream), nl(OutputStream).
 
