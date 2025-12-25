@@ -17,6 +17,8 @@
 :- op(600, yfx, ':').
 :- op(600, yfx, '&').
 :- op(600, yfx, '•').
+:- op(600, fx, '..=').  % List to term conversion
+:- op(600, fx, '=..').  % Term to list conversion (unary prefix)
 
 % Debug flag
 :- dynamic starlog_debug/1.
@@ -98,6 +100,8 @@ is_starlog_expr(Expr) :- var(Expr), !, fail.  % Variables are not expressions
 is_starlog_expr(_ : _) :- !.
 is_starlog_expr(_ & _) :- !.
 is_starlog_expr(_ • _) :- !.
+is_starlog_expr(..=(_)) :- !.  % List to term conversion
+is_starlog_expr(=..(_)) :- !.  % Term to list conversion
 is_starlog_expr(no_eval(_)) :- !.  % Special case for no_eval
 is_starlog_expr(eval(_)) :- !.  % Special case for eval
 is_starlog_expr(Expr) :-
@@ -113,10 +117,12 @@ is_starlog_expr(Expr) :-
 is_starlog_expr(_) :- fail.
 
 % contains_starlog_operator(+Term)
-% Check if a term contains Starlog operators (: & •) anywhere in its structure.
+% Check if a term contains Starlog operators (: & • ..= =..) anywhere in its structure.
 contains_starlog_operator(_ : _) :- !.
 contains_starlog_operator(_ & _) :- !.
 contains_starlog_operator(_ • _) :- !.
+contains_starlog_operator(..=(_)) :- !.
+contains_starlog_operator(=..(_)) :- !.
 contains_starlog_operator(Expr) :-
     compound(Expr),
     Expr =.. [_|Args],
@@ -161,6 +167,22 @@ compile_starlog_expr((A • B), Out, Goals) :-
     compile_value(B, BVal, BGoals),
     append(AGoals, BGoals, PreGoals),
     append(PreGoals, [atom_concat(AVal, BVal, Out)], Goals).
+
+% List to term conversion: Out is ..=(List)
+% Converts a list to a term using the univ operator
+% Example: A is ..=([f,0,1]) gives A = f(0,1)
+compile_starlog_expr(..=(List), Out, Goals) :-
+    !,
+    compile_value(List, ListVal, ListGoals),
+    append(ListGoals, [Out =.. ListVal], Goals).
+
+% Term to list conversion: Out is =..(Term)
+% Converts a term to a list using the univ operator
+% Example: A is =..(f(0,1)) gives A = [f,0,1]
+compile_starlog_expr(=..(Term), Out, Goals) :-
+    !,
+    compile_value(Term, TermVal, TermGoals),
+    append(TermGoals, [TermVal =.. Out], Goals).
 
 % Special case: no_eval(Expr) - returns expression without evaluating
 % But first check if Expr contains eval() expressions that need to be processed

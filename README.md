@@ -55,6 +55,8 @@ Special operators are used for common operations:
 - **String concatenation**: `C is (A : B)` - expands to `string_concat(A, B, C)`
 - **List append**: `C is (A & B)` - expands to `append(A, B, C)`
 - **Atom concatenation**: `C is (A • B)` - expands to `atom_concat(A, B, C)`
+- **List to term**: `T is ..=([f,0,1])` - expands to `T =.. [f,0,1]` (creates term `f(0,1)`)
+- **Term to list**: `L is =..(f(0,1))` - expands to `f(0,1) =.. L` (creates list `[f,0,1]`)
 
 ### Expression Evaluation and Preservation
 
@@ -477,6 +479,31 @@ E = [2, 4, 5].  % Only eval parts are evaluated
 % Complex nested case with lists
 ?- F is no_eval(eval([1] & [2])).
 F = [1, 2].  % List append is evaluated
+```
+
+### Example 6: Term Manipulation with Univ Operators
+
+```prolog
+:- use_module(starlog_in_prolog).
+
+% Convert list to term
+create_term(List, Term) :-
+    Term is ..=(List).
+
+?- create_term([f,0,1], T).
+T = f(0,1).
+
+% Convert term to list
+term_to_list(Term, List) :-
+    List is =..(Term).
+
+?- term_to_list(foo(a,b,c), L).
+L = [foo, a, b, c].
+
+% Roundtrip conversion
+?- T is ..=([bar,x,y]), L is =..(T).
+T = bar(x, y),
+L = [bar, x, y].
 ```
 
 ## Installation
