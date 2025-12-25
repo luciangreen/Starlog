@@ -101,7 +101,7 @@ is_starlog_expr(_ : _) :- !.
 is_starlog_expr(_ & _) :- !.
 is_starlog_expr(_ • _) :- !.
 is_starlog_expr(..=(_)) :- !.  % List to term conversion
-is_starlog_expr(=.._) :- !.  % Term to list conversion
+is_starlog_expr(=..(_)) :- !.  % Term to list conversion
 is_starlog_expr(no_eval(_)) :- !.  % Special case for no_eval
 is_starlog_expr(eval(_)) :- !.  % Special case for eval
 is_starlog_expr(Expr) :-
