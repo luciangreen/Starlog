@@ -164,6 +164,8 @@ rename_variables(Term, RenamedTerm) :-
 
 % rename_vars_list(+Vars, +StartIndex)
 % Rename a list of variables starting from StartIndex
+% Note: Uses SWI-Prolog's '$VAR'/1 special term for variable naming with numbervars/3.
+% This is a standard SWI-Prolog feature for pretty-printing variables with readable names.
 rename_vars_list([], _).
 rename_vars_list([Var|Vars], Index) :-
     generate_var_name(Index, Name),
@@ -233,6 +235,10 @@ convert_prolog_to_starlog(append(A, B, C), (C is (A&B))) :- !.
 convert_prolog_to_starlog(atom_concat(A, B, C), (C is (A•B))) :- !.
 
 % Value-returning builtins
+% Convert Prolog predicates back to Starlog 'is' notation.
+% For example: reverse([1,2,3], R) -> R is reverse([1,2,3])
+% The predicate is_value_builtin(Name, Arity, PrologPred) is used in reverse:
+% we have the PrologPred and want to find the Name (BaseName) to use in Starlog.
 convert_prolog_to_starlog(Goal, (Out is Func)) :-
     Goal =.. [Pred|Args],
     Args \= [],
