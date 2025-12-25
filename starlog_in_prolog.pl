@@ -8,7 +8,11 @@
     starlog_register_value_builtin/3,
     starlog_unregister_value_builtin/2,
     starlog_set_debug/1,
-    starlog_show_expansion/1
+    starlog_show_expansion/1,
+    starlog_output_code/1,
+    starlog_output_code/2,
+    starlog_output_file/1,
+    starlog_output_file/2
 ]).
 
 :- use_module(starlog_expand).
@@ -132,3 +136,172 @@ print_starlog_steps([prolog(Goal)|Rest], N) :-
     format('  ~w. ~w~n', [N, Goal]),
     N1 is N + 1,
     print_starlog_steps(Rest, N1).
+
+% ============================================================
+% Variable Renaming Utilities
+% ============================================================
+
+% generate_var_name(+Index, -Name)
+% Generate a variable name from an index (0 -> A, 1 -> B, ..., 26 -> A1, etc.)
+generate_var_name(Index, Name) :-
+    Index < 26,
+    !,
+    Code is 65 + Index,  % 65 is ASCII for 'A'
+    atom_codes(Name, [Code]).
+generate_var_name(Index, Name) :-
+    Cycle is Index // 26,
+    Offset is Index mod 26,
+    Code is 65 + Offset,
+    atom_codes(BaseName, [Code]),
+    atom_concat(BaseName, Cycle, Name).
+
+% rename_variables(+Term, -RenamedTerm)
+% Rename all variables in a term to human-friendly names (A, B, C, ..., A1, B1, ...)
+rename_variables(Term, RenamedTerm) :-
+    term_variables(Term, Vars),
+    rename_vars_list(Vars, 0),
+    copy_term(Term, RenamedTerm).
+
+% rename_vars_list(+Vars, +StartIndex)
+% Rename a list of variables starting from StartIndex
+rename_vars_list([], _).
+rename_vars_list([Var|Vars], Index) :-
+    generate_var_name(Index, Name),
+    Var = '$VAR'(Name),
+    NextIndex is Index + 1,
+    rename_vars_list(Vars, NextIndex).
+
+% ============================================================
+% Starlog Code Output Predicates
+% ============================================================
+
+% starlog_output_code(+Goal)
+% Output the Starlog code representation of a goal with human-friendly variable names.
+% This shows how a Prolog goal would be written in Starlog notation.
+starlog_output_code(Goal) :-
+    starlog_output_code(Goal, _).
+
+% starlog_output_code(+Goal, -StarlogCode)
+% Output the Starlog code representation of a goal and return it as a term.
+starlog_output_code(Goal, StarlogCode) :-
+    % First, check if it's already a Starlog expression
+    (is_already_starlog(Goal) ->
+        % If it's already Starlog, just rename variables and output
+        rename_variables(Goal, RenamedGoal),
+        StarlogCode = RenamedGoal,
+        write_term(StarlogCode, [numbervars(true), quoted(true)]), nl
+    ;
+        % Otherwise, convert Prolog to Starlog
+        convert_prolog_to_starlog(Goal, StarlogForm),
+        rename_variables(StarlogForm, RenamedStarlog),
+        StarlogCode = RenamedStarlog,
+        write_term(StarlogCode, [numbervars(true), quoted(true)]), nl
+    ).
+
+% is_already_starlog(+Goal)
+% Check if a goal is already in Starlog form (contains 'is' with operators)
+is_already_starlog(_ is Expr) :-
+    contains_starlog_op(Expr).
+is_already_starlog(_) :- fail.
+
+% contains_starlog_op(+Expr)
+% Check if expression contains Starlog operators
+contains_starlog_op(_ : _) :- !.
+contains_starlog_op(_ & _) :- !.
+contains_starlog_op(_ • _) :- !.
+contains_starlog_op(Expr) :-
+    compound(Expr),
+    Expr =.. [_|Args],
+    member(Arg, Args),
+    contains_starlog_op(Arg).
+
+% convert_prolog_to_starlog(+PrologGoal, -StarlogForm)
+% Convert a Prolog goal to Starlog notation.
+% This is the inverse of the expansion process.
+convert_prolog_to_starlog((Goal, Rest), (StarlogGoal, StarlogRest)) :-
+    !,
+    convert_prolog_to_starlog(Goal, StarlogGoal),
+    convert_prolog_to_starlog(Rest, StarlogRest).
+
+% String concatenation
+convert_prolog_to_starlog(string_concat(A, B, C), (C is (A:B))) :- !.
+
+% List append
+convert_prolog_to_starlog(append(A, B, C), (C is (A&B))) :- !.
+
+% Atom concatenation
+convert_prolog_to_starlog(atom_concat(A, B, C), (C is (A•B))) :- !.
+
+% Value-returning builtins
+convert_prolog_to_starlog(Goal, (Out is Func)) :-
+    Goal =.. [Pred|Args],
+    Args \= [],
+    append(InArgs, [Out], Args),
+    InArgs \= [],
+    starlog_registry:is_value_builtin(BaseName, Arity, Pred),
+    length(InArgs, Arity),
+    !,
+    (InArgs = [] -> Func = BaseName ; Func =.. [BaseName|InArgs]).
+
+% Nullary value-returning builtins
+convert_prolog_to_starlog(Goal, (Out is Func)) :-
+    Goal =.. [Pred, Out],
+    starlog_registry:is_value_builtin(Func, 0, Pred),
+    !.
+
+% Default: keep as is
+convert_prolog_to_starlog(Goal, Goal).
+
+% starlog_output_file(+FilePath)
+% Output Starlog code representation for all clauses in a file.
+starlog_output_file(FilePath) :-
+    starlog_output_file(FilePath, user_output).
+
+% starlog_output_file(+FilePath, +OutputStream)
+% Output Starlog code representation for all clauses in a file to a stream.
+starlog_output_file(FilePath, OutputStream) :-
+    format(OutputStream, '% Starlog code output for file: ~w~n~n', [FilePath]),
+    setup_call_cleanup(
+        open(FilePath, read, Stream),
+        read_and_output_clauses(Stream, OutputStream),
+        close(Stream)
+    ).
+
+% read_and_output_clauses(+InputStream, +OutputStream)
+% Read clauses from input stream and output their Starlog representation.
+read_and_output_clauses(InputStream, OutputStream) :-
+    read_term(InputStream, Term, []),
+    (Term == end_of_file ->
+        true
+    ;
+        output_clause_as_starlog(Term, OutputStream),
+        read_and_output_clauses(InputStream, OutputStream)
+    ).
+
+% output_clause_as_starlog(+Clause, +OutputStream)
+% Output a single clause in Starlog notation.
+output_clause_as_starlog((:- Directive), OutputStream) :-
+    !,
+    % Directives are output as-is
+    write_term(OutputStream, (:- Directive), [numbervars(true), quoted(true)]),
+    write(OutputStream, '.'), nl(OutputStream), nl(OutputStream).
+
+output_clause_as_starlog((?- Query), OutputStream) :-
+    !,
+    % Queries are output as-is
+    write_term(OutputStream, (?- Query), [numbervars(true), quoted(true)]),
+    write(OutputStream, '.'), nl(OutputStream), nl(OutputStream).
+
+output_clause_as_starlog((Head :- Body), OutputStream) :-
+    !,
+    % Convert body to Starlog, keep head as is
+    convert_prolog_to_starlog(Body, StarlogBody),
+    rename_variables((Head :- StarlogBody), RenamedClause),
+    write_term(OutputStream, RenamedClause, [numbervars(true), quoted(true)]),
+    write(OutputStream, '.'), nl(OutputStream), nl(OutputStream).
+
+output_clause_as_starlog(Fact, OutputStream) :-
+    % Facts are output as-is
+    rename_variables(Fact, RenamedFact),
+    write_term(OutputStream, RenamedFact, [numbervars(true), quoted(true)]),
+    write(OutputStream, '.'), nl(OutputStream), nl(OutputStream).
