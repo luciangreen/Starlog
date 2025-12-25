@@ -54,6 +54,27 @@ Special operators are used for common operations:
 - **List append**: `C is (A & B)` - expands to `append(A, B, C)`
 - **Atom concatenation**: `C is (A • B)` - expands to `atom_concat(A, B, C)`
 
+### Expression Preservation with no_eval
+
+The `no_eval/1` function prevents evaluation of expressions, preserving them as data:
+
+```prolog
+% Preserve arithmetic expressions
+A is no_eval(1+1)          % A = 1+1 (not 2)
+
+% Preserve Starlog operators
+B is no_eval("x":"y")      % B = "x":"y" (not "xy")
+
+% Preserve complex expressions
+C is no_eval((1+2)*(3+4))  % C = (1+2)*(3+4) (not 21)
+```
+
+This is useful for:
+- Storing formulas as data structures
+- Manipulating expressions symbolically
+- Lazy evaluation patterns
+- Template systems
+
 ### Value-Returning Builtins
 
 Many Prolog predicates can be written in Starlog syntax:
@@ -89,7 +110,7 @@ X is Y * 5    % Also arithmetic
 
 The library distinguishes between Starlog and arithmetic based on the right-hand side:
 
-- **Starlog**: `Out is (A : B)`, `Out is func(Args)`, `Out is (A & B)`, `Out is (A • B)`
+- **Starlog**: `Out is (A : B)`, `Out is func(Args)`, `Out is (A & B)`, `Out is (A • B)`, `Out is no_eval(Expr)`
 - **Arithmetic**: `Out is 1+2`, `Out is X*Y`, `Out is sqrt(N)` (when sqrt/1 is arithmetic)
 
 ## Supported Built-in Predicates
@@ -292,6 +313,28 @@ complex_concat(A, B, C, Result) :-
 R = "Hello World".
 ```
 
+### Example 4: Expression Preservation with no_eval
+
+```prolog
+:- use_module(starlog_in_prolog).
+
+% Store a formula without evaluating it
+store_formula(Formula) :-
+    F is no_eval(Formula),
+    format('Stored formula: ~w~n', [F]).
+
+?- store_formula(x*2 + y).
+Stored formula: x*2+y
+
+% Preserve arithmetic expressions
+?- A is no_eval(1+1).
+A = 1+1.  % Not evaluated to 2
+
+% Preserve Starlog operators
+?- B is no_eval("hello":"world").
+B = "hello":"world".  % Not concatenated
+```
+
 ## Installation
 
 1. Clone this repository
@@ -313,6 +356,7 @@ swipl -s test_basic.pl
 swipl -s test_nested.pl  
 swipl -s test_arithmetic_is.pl
 swipl -s test_mixed_prolog_starlog.pl
+swipl -s test_no_eval.pl
 ```
 
 ## Requirements
