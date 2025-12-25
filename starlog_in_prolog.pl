@@ -11,8 +11,10 @@
     starlog_show_expansion/1,
     starlog_output_code/1,
     starlog_output_code/2,
+    starlog_output_code/3,
     starlog_output_file/1,
-    starlog_output_file/2
+    starlog_output_file/2,
+    starlog_output_file/3
 ]).
 
 :- use_module(starlog_expand).
@@ -186,6 +188,14 @@ starlog_output_code(Goal) :-
 % starlog_output_code(+Goal, -StarlogCode)
 % Output the Starlog code representation of a goal and return it as a term.
 starlog_output_code(Goal, StarlogCode) :-
+    starlog_output_code(Goal, StarlogCode, []).
+
+% starlog_output_code(+Goal, -StarlogCode, +Options)
+% Output the Starlog code representation with options.
+% Options:
+%   compress(true) - Apply maximal compression by nesting expressions
+%   compress(false) - No compression (default)
+starlog_output_code(Goal, StarlogCode, Options) :-
     % First, check if it's already a Starlog expression
     (is_already_starlog(Goal) ->
         % If it's already Starlog, just rename variables and output
@@ -195,7 +205,13 @@ starlog_output_code(Goal, StarlogCode) :-
     ;
         % Otherwise, convert Prolog to Starlog
         convert_prolog_to_starlog(Goal, StarlogForm),
-        rename_variables(StarlogForm, RenamedStarlog),
+        % Apply compression if requested
+        (member(compress(true), Options) ->
+            compress_starlog(StarlogForm, CompressedForm)
+        ;
+            CompressedForm = StarlogForm
+        ),
+        rename_variables(CompressedForm, RenamedStarlog),
         StarlogCode = RenamedStarlog,
         write_term(StarlogCode, [numbervars(true), quoted(true)]), nl
     ).
@@ -258,6 +274,160 @@ convert_prolog_to_starlog(Goal, (Out is Func)) :-
 % Default: keep as is
 convert_prolog_to_starlog(Goal, Goal).
 
+% ============================================================
+% Starlog Compression
+% ============================================================
+
+% compress_starlog(+StarlogForm, -CompressedForm)
+% Maximally compress Starlog code by nesting expressions where possible.
+% Excludes: if-then clauses, logical control structures (or, not), 
+% and calls without an output that is another's input.
+compress_starlog(StarlogForm, CompressedForm) :-
+    % Collect all goals from conjunction
+    collect_goals(StarlogForm, Goals),
+    % Compress by iteratively nesting goals
+    compress_goals_iterative(Goals, CompressedGoals),
+    % Convert back to conjunction
+    goals_to_conjunction(CompressedGoals, CompressedForm).
+
+% collect_goals(+Conjunction, -Goals)
+% Collect all goals from a conjunction into a list
+collect_goals((A, B), Goals) :-
+    !,
+    collect_goals(A, GoalsA),
+    collect_goals(B, GoalsB),
+    append(GoalsA, GoalsB, Goals).
+collect_goals(Goal, [Goal]).
+
+% compress_goals_iterative(+Goals, -CompressedGoals)
+% Iteratively compress goals until no more compression is possible
+compress_goals_iterative(Goals, CompressedGoals) :-
+    compress_one_pass(Goals, IntermediateGoals, Changed),
+    (Changed = true ->
+        compress_goals_iterative(IntermediateGoals, CompressedGoals)
+    ;
+        CompressedGoals = Goals
+    ).
+
+% compress_one_pass(+Goals, -CompressedGoals, -Changed)
+% Try to compress one variable in the goal list
+compress_one_pass(Goals, CompressedGoals, Changed) :-
+    compress_one_pass_helper(Goals, [], CompressedGoals, Changed).
+
+% compress_one_pass_helper(+RemainingGoals, +ProcessedGoals, -Result, -Changed)
+compress_one_pass_helper([], Processed, Result, false) :-
+    reverse(Processed, Result).
+compress_one_pass_helper([Goal|Rest], Processed, Result, Changed) :-
+    % Try to nest this goal into a later goal
+    (try_nest_goal(Goal, Rest, NewRest) ->
+        % Successfully nested - discard Goal and use NewRest
+        % Combine processed goals with the modified rest
+        reverse(Processed, RevProcessed),
+        append(RevProcessed, NewRest, AllGoals),
+        Result = AllGoals,
+        Changed = true
+    ;
+        % Cannot nest - move to processed and continue
+        compress_one_pass_helper(Rest, [Goal|Processed], Result, Changed)
+    ).
+
+% try_nest_goal(+Goal, +LaterGoals, -NewLaterGoals)
+% Try to nest Goal into one of the LaterGoals
+% Only nest if the output variable is used exactly once in later goals
+try_nest_goal(Goal, LaterGoals, NewLaterGoals) :-
+    % Goal must be: Var is Expr
+    Goal = (OutVar is Expr),
+    \+ is_control_structure(Expr),
+    % Count how many times OutVar is used in LaterGoals
+    count_var_uses(OutVar, LaterGoals, UseCount),
+    % Only nest if used exactly once
+    UseCount =:= 1,
+    % Find and replace that one use
+    find_and_replace_use(OutVar, Expr, LaterGoals, NewLaterGoals).
+
+% count_var_uses(+Var, +Goals, -Count)
+% Count how many goals use Var as input
+count_var_uses(Var, Goals, Count) :-
+    findall(1, (member(Goal, Goals), uses_var_as_input(Goal, Var)), Uses),
+    length(Uses, Count).
+
+% find_and_replace_use(+Var, +Replacement, +Goals, -NewGoals)
+% Find the first goal that uses Var and replace Var with Replacement
+find_and_replace_use(Var, Replacement, [Goal|Rest], [NewGoal|Rest]) :-
+    % Check if Goal uses Var and is not a control structure
+    \+ is_control_goal(Goal),
+    uses_var_as_input(Goal, Var),
+    % Check that Var is not the output of this goal (would create circular reference)
+    \+ is_output_of_goal(Goal, Var),
+    % Substitute Var with Replacement (no copy_term - work with original)
+    substitute_term(Goal, Var, Replacement, NewGoal),
+    !.
+find_and_replace_use(Var, Replacement, [Goal|Rest], [Goal|NewRest]) :-
+    find_and_replace_use(Var, Replacement, Rest, NewRest).
+
+% uses_var_as_input(+Goal, +Var)
+% Check if Goal uses Var as an input (not as output)
+uses_var_as_input((_ is Expr), Var) :-
+    !,
+    contains_var(Expr, Var).
+uses_var_as_input(Goal, Var) :-
+    \+ (Goal = (_ is _)),
+    contains_var(Goal, Var).
+
+% is_output_of_goal(+Goal, +Var)
+% Check if Var is the output of Goal
+is_output_of_goal((V is _), Var) :-
+    V == Var.
+
+% contains_var(+Term, +Var)
+% Check if Term contains Var
+contains_var(Term, Var) :-
+    Term == Var, !.
+contains_var(Term, Var) :-
+    compound(Term),
+    Term =.. [_|Args],
+    member(Arg, Args),
+    contains_var(Arg, Var).
+
+% is_control_structure(+Expr)
+% Check if expression is a control structure
+is_control_structure((_;_)) :- !.
+is_control_structure((_->_)) :- !.
+is_control_structure((_->_;_)) :- !.
+is_control_structure(\+(_)) :- !.
+is_control_structure(not(_)) :- !.
+
+% is_control_goal(+Goal)
+% Check if goal is a control structure
+is_control_goal((_;_)) :- !.
+is_control_goal((_->_)) :- !.
+is_control_goal((_->_;_)) :- !.
+is_control_goal(\+(_)) :- !.
+is_control_goal(not(_)) :- !.
+is_control_goal(!).
+
+% substitute_term(+Term, +Old, +New, -Result)
+% Substitute all occurrences of Old with New in Term
+substitute_term(Term, Old, New, Result) :-
+    Term == Old,
+    !,
+    Result = New.
+substitute_term(Term, _Old, _New, Term) :-
+    var(Term),
+    !.
+substitute_term(Term, Old, New, Result) :-
+    compound(Term),
+    !,
+    Term =.. [Functor|Args],
+    maplist(substitute_term_arg(Old, New), Args, NewArgs),
+    Result =.. [Functor|NewArgs].
+substitute_term(Term, _Old, _New, Term).
+
+% substitute_term_arg(+Old, +New, +Arg, -NewArg)
+% Helper for substituting in arguments
+substitute_term_arg(Old, New, Arg, NewArg) :-
+    substitute_term(Arg, Old, New, NewArg).
+
 % starlog_output_file(+FilePath)
 % Output Starlog code representation for all clauses in a file.
 starlog_output_file(FilePath) :-
@@ -266,47 +436,61 @@ starlog_output_file(FilePath) :-
 % starlog_output_file(+FilePath, +OutputStream)
 % Output Starlog code representation for all clauses in a file to a stream.
 starlog_output_file(FilePath, OutputStream) :-
+    starlog_output_file(FilePath, OutputStream, []).
+
+% starlog_output_file(+FilePath, +OutputStream, +Options)
+% Output Starlog code representation for all clauses in a file to a stream with options.
+% Options:
+%   compress(true) - Apply maximal compression by nesting expressions
+%   compress(false) - No compression (default)
+starlog_output_file(FilePath, OutputStream, Options) :-
     format(OutputStream, '% Starlog code output for file: ~w~n~n', [FilePath]),
     setup_call_cleanup(
         open(FilePath, read, Stream),
-        read_and_output_clauses(Stream, OutputStream),
+        read_and_output_clauses(Stream, OutputStream, Options),
         close(Stream)
     ).
 
-% read_and_output_clauses(+InputStream, +OutputStream)
+% read_and_output_clauses(+InputStream, +OutputStream, +Options)
 % Read clauses from input stream and output their Starlog representation.
-read_and_output_clauses(InputStream, OutputStream) :-
+read_and_output_clauses(InputStream, OutputStream, Options) :-
     read_term(InputStream, Term, []),
     (Term == end_of_file ->
         true
     ;
-        output_clause_as_starlog(Term, OutputStream),
-        read_and_output_clauses(InputStream, OutputStream)
+        output_clause_as_starlog(Term, OutputStream, Options),
+        read_and_output_clauses(InputStream, OutputStream, Options)
     ).
 
-% output_clause_as_starlog(+Clause, +OutputStream)
+% output_clause_as_starlog(+Clause, +OutputStream, +Options)
 % Output a single clause in Starlog notation.
-output_clause_as_starlog((:- Directive), OutputStream) :-
+output_clause_as_starlog((:- Directive), OutputStream, _Options) :-
     !,
     % Directives are output as-is
     write_term(OutputStream, (:- Directive), [numbervars(true), quoted(true)]),
     write(OutputStream, '.'), nl(OutputStream), nl(OutputStream).
 
-output_clause_as_starlog((?- Query), OutputStream) :-
+output_clause_as_starlog((?- Query), OutputStream, _Options) :-
     !,
     % Queries are output as-is
     write_term(OutputStream, (?- Query), [numbervars(true), quoted(true)]),
     write(OutputStream, '.'), nl(OutputStream), nl(OutputStream).
 
-output_clause_as_starlog((Head :- Body), OutputStream) :-
+output_clause_as_starlog((Head :- Body), OutputStream, Options) :-
     !,
     % Convert body to Starlog, keep head as is
     convert_prolog_to_starlog(Body, StarlogBody),
-    rename_variables((Head :- StarlogBody), RenamedClause),
+    % Apply compression if requested
+    (member(compress(true), Options) ->
+        compress_starlog(StarlogBody, CompressedBody)
+    ;
+        CompressedBody = StarlogBody
+    ),
+    rename_variables((Head :- CompressedBody), RenamedClause),
     write_term(OutputStream, RenamedClause, [numbervars(true), quoted(true)]),
     write(OutputStream, '.'), nl(OutputStream), nl(OutputStream).
 
-output_clause_as_starlog(Fact, OutputStream) :-
+output_clause_as_starlog(Fact, OutputStream, _Options) :-
     % Facts are output as-is
     rename_variables(Fact, RenamedFact),
     write_term(OutputStream, RenamedFact, [numbervars(true), quoted(true)]),
