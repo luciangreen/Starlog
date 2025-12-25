@@ -99,6 +99,7 @@ is_starlog_expr(_ : _) :- !.
 is_starlog_expr(_ & _) :- !.
 is_starlog_expr(_ • _) :- !.
 is_starlog_expr(no_eval(_)) :- !.  % Special case for no_eval
+is_starlog_expr(eval(_)) :- !.  % Special case for eval
 is_starlog_expr(Expr) :-
     \+ is_arithmetic(Expr),  % Exclude arithmetic first
     compound(Expr),
@@ -162,8 +163,22 @@ compile_starlog_expr((A • B), Out, Goals) :-
     append(PreGoals, [atom_concat(AVal, BVal, Out)], Goals).
 
 % Special case: no_eval(Expr) - returns expression without evaluating
-compile_starlog_expr(no_eval(Expr), Out, [Out = Expr]) :-
-    !.
+% But first check if Expr contains eval() expressions that need to be processed
+compile_starlog_expr(no_eval(Expr), Out, Goals) :-
+    !,
+    (contains_eval(Expr) ->
+        % Process eval() expressions inside no_eval
+        process_eval_in_no_eval(Expr, ProcessedExpr, Goals1),
+        append(Goals1, [Out = ProcessedExpr], Goals)
+    ;
+        % No eval() inside, just return the expression as-is
+        Goals = [Out = Expr]
+    ).
+
+% Special case: eval(Expr) - forces evaluation of expression
+compile_starlog_expr(eval(Expr), Out, Goals) :-
+    !,
+    compile_starlog_expr(Expr, Out, Goals).
 
 % Value-returning builtin: Out is func(Args...)
 compile_starlog_expr(Expr, Out, Goals) :-
@@ -216,3 +231,44 @@ compile_values([E|Es], [V|Vs], Goals) :-
     compile_value(E, V, EGoals),
     compile_values(Es, Vs, EsGoals),
     append(EGoals, EsGoals, Goals).
+
+% contains_eval(+Expr)
+% Check if an expression contains eval() anywhere in its structure
+% Uses a direct recursive approach without generating choice points
+contains_eval(eval(_)) :- !.
+contains_eval(Expr) :-
+    compound(Expr),
+    Expr =.. [_|Args],
+    contains_eval_in_list(Args).
+
+% contains_eval_in_list(+Args)
+% Check if any argument in the list contains eval()
+contains_eval_in_list([Arg|_]) :-
+    contains_eval(Arg), !.
+contains_eval_in_list([_|Rest]) :-
+    contains_eval_in_list(Rest).
+
+% process_eval_in_no_eval(+Expr, -ProcessedExpr, -Goals)
+% Process eval() expressions inside a no_eval context
+% This evaluates eval() subexpressions while preserving the rest
+process_eval_in_no_eval(eval(Inner), Value, Goals) :-
+    !,
+    % Found an eval - compile it normally to evaluate it
+    compile_starlog_expr(Inner, Value, Goals).
+process_eval_in_no_eval(Expr, ProcessedExpr, Goals) :-
+    compound(Expr),
+    !,
+    Expr =.. [Functor|Args],
+    process_eval_in_args(Args, ProcessedArgs, Goals),
+    ProcessedExpr =.. [Functor|ProcessedArgs].
+% Atomic values and non-compound terms that don't contain eval - return as-is
+process_eval_in_no_eval(Expr, Expr, []).
+
+% process_eval_in_args(+Args, -ProcessedArgs, -Goals)
+% Process a list of arguments, evaluating any eval() expressions
+% Combines detection and processing in a single pass for efficiency
+process_eval_in_args([], [], []).
+process_eval_in_args([Arg|Args], [ProcessedArg|ProcessedArgs], Goals) :-
+    process_eval_in_no_eval(Arg, ProcessedArg, ArgGoals),
+    process_eval_in_args(Args, ProcessedArgs, RestGoals),
+    append(ArgGoals, RestGoals, Goals).
