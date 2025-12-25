@@ -40,6 +40,8 @@ user:string_number(String, Number) :-
 :- op(600, yfx, user:(':' )).
 :- op(600, yfx, user:('&')).
 :- op(600, yfx, user:('•')).
+:- op(600, fx, user:('..=')).  % List to term conversion
+:- op(600, fx, user:('=..')).  % Term to list conversion (unary prefix)
 
 % Install goal expansion hook
 :- multifile user:goal_expansion/2.
@@ -233,6 +235,8 @@ is_already_starlog(_) :- fail.
 contains_starlog_op(_ : _) :- !.
 contains_starlog_op(_ & _) :- !.
 contains_starlog_op(_ • _) :- !.
+contains_starlog_op(..=(_)) :- !.
+contains_starlog_op(=..(_)) :- !.
 contains_starlog_op(Expr) :-
     compound(Expr),
     Expr =.. [_|Args],
@@ -255,6 +259,11 @@ convert_prolog_to_starlog(append(A, B, C), (C is (A&B))) :- !.
 
 % Atom concatenation
 convert_prolog_to_starlog(atom_concat(A, B, C), (C is (A•B))) :- !.
+
+% Univ operator conversions
+% Convert Term =.. List to Starlog notation
+convert_prolog_to_starlog((Term =.. Out), (Out is =..(Term))) :- !.
+convert_prolog_to_starlog((Out =.. List), (Out is ..=(List))) :- !.
 
 % Value-returning builtins
 % Convert Prolog predicates back to Starlog 'is' notation.
