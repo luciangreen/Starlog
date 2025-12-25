@@ -54,7 +54,33 @@ Special operators are used for common operations:
 - **List append**: `C is (A & B)` - expands to `append(A, B, C)`
 - **Atom concatenation**: `C is (A • B)` - expands to `atom_concat(A, B, C)`
 
-### Expression Preservation with no_eval
+### Expression Evaluation and Preservation
+
+**By default, Starlog evaluates all expressions.** This is the standard behavior:
+
+```prolog
+A is 1+1              % A = 2 (arithmetic evaluated)
+B is "x":"y"          % B = "xy" (concatenation evaluated)
+C is [1] & [2]        % C = [1,2] (append evaluated)
+```
+
+#### Explicit Evaluation with eval
+
+The `eval/1` function explicitly marks an expression for evaluation. While this is the default behavior, it becomes useful when you need to force evaluation inside `no_eval` contexts:
+
+```prolog
+% Normal evaluation (eval is implicit/default)
+A is 1+1              % A = 2
+
+% Explicit eval (same result)
+B is eval(1+1)        % B = 2
+
+% Force evaluation inside no_eval
+C is no_eval(eval(1+1))         % C = 2 (inner eval forces evaluation)
+D is no_eval("x" : eval("y":"z"))  % D = "x":"yz" (nested eval)
+```
+
+#### Expression Preservation with no_eval
 
 The `no_eval/1` function prevents evaluation of expressions, preserving them as data:
 
@@ -67,6 +93,9 @@ B is no_eval("x":"y")      % B = "x":"y" (not "xy")
 
 % Preserve complex expressions
 C is no_eval((1+2)*(3+4))  % C = (1+2)*(3+4) (not 21)
+
+% Use eval to selectively evaluate parts
+D is no_eval(eval(1+1) + 3)  % D = 2 + 3 (only 1+1 is evaluated)
 ```
 
 This is useful for:
@@ -74,6 +103,7 @@ This is useful for:
 - Manipulating expressions symbolically
 - Lazy evaluation patterns
 - Template systems
+- Selectively evaluating parts of expressions with `eval`
 
 ### Value-Returning Builtins
 
@@ -110,8 +140,10 @@ X is Y * 5    % Also arithmetic
 
 The library distinguishes between Starlog and arithmetic based on the right-hand side:
 
-- **Starlog**: `Out is (A : B)`, `Out is func(Args)`, `Out is (A & B)`, `Out is (A • B)`, `Out is no_eval(Expr)`
+- **Starlog**: `Out is (A : B)`, `Out is func(Args)`, `Out is (A & B)`, `Out is (A • B)`, `Out is no_eval(Expr)`, `Out is eval(Expr)`
 - **Arithmetic**: `Out is 1+2`, `Out is X*Y`, `Out is sqrt(N)` (when sqrt/1 is arithmetic)
+
+**Note**: `eval` is the default behavior for Starlog expressions. You only need to use `eval()` explicitly when forcing evaluation inside `no_eval()` contexts.
 
 ## Supported Built-in Predicates
 
@@ -415,6 +447,36 @@ A = 1+1.  % Not evaluated to 2
 B = "hello":"world".  % Not concatenated
 ```
 
+### Example 5: Selective Evaluation with eval inside no_eval
+
+```prolog
+:- use_module(starlog_in_prolog).
+
+% Evaluate is the default behavior
+?- A is 1+1.
+A = 2.
+
+% Explicit eval (same as default)
+?- B is eval(1+1).
+B = 2.
+
+% Force evaluation inside no_eval context
+?- C is no_eval(eval(1+1)).
+C = 2.  % Inner expression evaluated despite no_eval
+
+% Nested evaluation in preserved structures
+?- D is no_eval("Result: " : eval("x":"y")).
+D = "Result:":"xy".  % Only eval(...) part is evaluated
+
+% Multiple eval expressions
+?- E is no_eval([eval(1+1), eval(2+2), 5]).
+E = [2, 4, 5].  % Only eval parts are evaluated
+
+% Complex nested case with lists
+?- F is no_eval(eval([1] & [2])).
+F = [1, 2].  % List append is evaluated
+```
+
 ## Installation
 
 1. Clone this repository
@@ -437,6 +499,7 @@ swipl -s test_nested.pl
 swipl -s test_arithmetic_is.pl
 swipl -s test_mixed_prolog_starlog.pl
 swipl -s test_no_eval.pl
+swipl -s test_eval.pl
 ```
 
 ## Requirements
