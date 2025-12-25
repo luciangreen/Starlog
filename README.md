@@ -262,6 +262,86 @@ Or write to a file using `starlog_output_file/2` or `starlog_output_file/3`:
 
 The output uses human-friendly variable names (A, B, C, ..., Z, A1, B1, ...) making the code more readable.
 
+## Converting Starlog to Prolog
+
+The library also provides features to convert Starlog code back to standard Prolog with maximal decompression, using human-friendly variable names (A, B, C, A1, B1, etc.).
+
+### Convert Individual Goals
+
+Use `starlog_to_prolog_code/1` to convert a Starlog goal to standard Prolog:
+
+```prolog
+?- starlog_to_prolog_code(A is "hello":"world").
+string_concat("hello","world",A)
+
+?- starlog_to_prolog_code(A is [1,2]&[3,4]).
+append([1,2],[3,4],A)
+
+?- starlog_to_prolog_code(A is reverse([1,2]&[3,4])).
+append([1,2],[3,4],A),reverse(A,B)
+```
+
+This is useful for:
+- Converting Starlog code to standard Prolog
+- Understanding how Starlog operators map to Prolog predicates
+- Generating Prolog code from Starlog notation
+
+### Maximal Decompression
+
+The conversion automatically decompresses nested expressions into sequential goals:
+
+```prolog
+% Nested Starlog expression
+?- starlog_to_prolog_code(A is "hello":" ":"world").
+string_concat("hello"," ",A),string_concat(A,"world",B)
+
+% Deeply nested expression
+?- starlog_to_prolog_code(Result is reverse([1]&[2]&[3])).
+append([1],[2],A),append(A,[3],B),reverse(B,C)
+```
+
+The decompression algorithm:
+- Flattens nested expressions into sequential goals
+- Maintains proper variable dependencies and execution order
+- Uses human-friendly variable names (A, B, C, etc.)
+- Preserves semantics of the original Starlog code
+
+### Convert Entire Files
+
+Use `starlog_to_prolog_file/1` to convert an entire Starlog file to standard Prolog:
+
+```prolog
+?- starlog_to_prolog_file('my_starlog_code.pl').
+% Prolog code output for file: my_starlog_code.pl
+
+greet(A,B):-string_concat("Hello, ",A,B).
+combine_and_reverse(A,B,C):-append(A,B,D),reverse(D,C).
+...
+```
+
+Or write to a file using `starlog_to_prolog_file/2`:
+
+```prolog
+?- open('output_prolog.pl', write, Stream),
+   starlog_to_prolog_file('input_starlog.pl', Stream),
+   close(Stream).
+```
+
+### Bidirectional Conversion
+
+The library supports bidirectional conversion between Prolog and Starlog:
+
+```prolog
+% Prolog → Starlog (with compression)
+?- starlog_output_code((string_concat("hello"," ",T1), 
+                        string_concat(T1,"world",T2)), _, [compress(true)]).
+A is "hello":" ":"world"
+
+% Starlog → Prolog (with decompression)
+?- starlog_to_prolog_code(A is "hello":" ":"world").
+string_concat("hello"," ",A),string_concat(A,"world",B)
+```
+
 ## Debugging
 
 Enable debug output to see expansions:
@@ -367,18 +447,22 @@ swipl -s test_no_eval.pl
 
 ```
 starlog_in_prolog/
-  README.md                        # This file
-  LICENSE                          # BSD-3 license
-  Requirements.txt                 # Original specification
-  Requirements.md                  # Additional requirements
-  starlog_in_prolog.pl            # Main library module
-  starlog_expand.pl               # Expander: compile Starlog -> Prolog goals
-  starlog_registry.pl             # Builtin mapping registry + extension hooks
+  README.md                           # This file
+  LICENSE                             # BSD-3 license
+  Requirements.txt                    # Original specification
+  Requirements.md                     # Additional requirements
+  starlog_in_prolog.pl               # Main library module
+  starlog_expand.pl                  # Expander: compile Starlog -> Prolog goals
+  starlog_registry.pl                # Builtin mapping registry + extension hooks
+  demo_output_feature.pl             # Demo: Prolog to Starlog conversion
+  demo_starlog_to_prolog.pl          # Demo: Starlog to Prolog conversion
   tests/
-    test_basic.pl                 # Basic functionality tests
-    test_nested.pl                # Nested expression tests
-    test_arithmetic_is.pl         # Arithmetic preservation tests
-    test_mixed_prolog_starlog.pl  # Mixed Prolog/Starlog tests
+    test_basic.pl                    # Basic functionality tests
+    test_nested.pl                   # Nested expression tests
+    test_arithmetic_is.pl            # Arithmetic preservation tests
+    test_mixed_prolog_starlog.pl     # Mixed Prolog/Starlog tests
+    test_starlog_to_prolog.pl        # Starlog to Prolog conversion tests
+    test_starlog_to_prolog_file.pl   # File conversion tests
 ```
 
 ## License
