@@ -26,12 +26,12 @@ test_function_with_colon :-
     A = ["aa"],
     write('✓ Function call with colon operator test passed'), nl.
 
-% Test 3: Unregistered predicate with colon operator
+% Test 3: Registered predicate with colon operator (string to number conversion)
 % Previously: ERROR: Arithmetic: `(:)/2' is not a function
-test_unregistered_with_colon :-
-    starlog_call(A is foo(1:1)),
-    A = foo("11"),  % 1:1 expands to string concatenation "11", result is foo("11")
-    write('✓ Unregistered predicate with colon operator test passed'), nl.
+test_registered_string_number :-
+    starlog_call(A is string_number(1:1)),
+    A = 11,  % 1:1 expands to "11", then string_number converts to number 11
+    write('✓ Registered predicate string_number test passed'), nl.
 
 % Test 4: Nested compound terms with operators
 test_nested_compound :-
@@ -62,7 +62,7 @@ run_tests :-
     write('Running compound term with operators tests...'), nl, nl,
     catch(test_list_with_colon, E1, (write('✗ Test 1 failed: '), write(E1), nl)),
     catch(test_function_with_colon, E2, (write('✗ Test 2 failed: '), write(E2), nl)),
-    catch(test_unregistered_with_colon, E3, (write('✗ Test 3 failed: '), write(E3), nl)),
+    catch(test_registered_string_number, E3, (write('✗ Test 3 failed: '), write(E3), nl)),
     catch(test_nested_compound, E4, (write('✗ Test 4 failed: '), write(E4), nl)),
     catch(test_registered_with_operator, E5, (write('✗ Test 5 failed: '), write(E5), nl)),
     catch(test_compound_with_append, E6, (write('✗ Test 6 failed: '), write(E6), nl)),
