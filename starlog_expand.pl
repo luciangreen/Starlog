@@ -104,7 +104,22 @@ is_starlog_expr(Expr) :-
     functor(Expr, Name, Arity),
     is_value_builtin(Name, Arity, _),
     !.
+is_starlog_expr(Expr) :-
+    \+ is_arithmetic(Expr),  % Exclude arithmetic
+    contains_starlog_operator(Expr),
+    !.
 is_starlog_expr(_) :- fail.
+
+% contains_starlog_operator(+Term)
+% Check if a term contains Starlog operators (: & •) anywhere in its structure.
+contains_starlog_operator(_ : _) :- !.
+contains_starlog_operator(_ & _) :- !.
+contains_starlog_operator(_ • _) :- !.
+contains_starlog_operator(Expr) :-
+    compound(Expr),
+    Expr =.. [_|Args],
+    member(Arg, Args),
+    contains_starlog_operator(Arg).
 
 % is_arithmetic(+Expr)
 % Check if expression is arithmetic (should use Prolog is/2).
@@ -168,6 +183,16 @@ compile_starlog_expr(Expr, Out, [PrologGoal]) :-
 compile_starlog_expr(Expr, Out, [Out is Expr]) :-
     is_arithmetic(Expr),
     !.
+
+% Compound term with Starlog operators in arguments (not a registered builtin)
+compile_starlog_expr(Expr, Out, Goals) :-
+    compound(Expr),
+    Expr =.. [Functor|Args],
+    contains_starlog_operator(Expr),
+    !,
+    compile_values(Args, Vals, PreGoals),
+    Result =.. [Functor|Vals],
+    append(PreGoals, [Out = Result], Goals).
 
 % Unknown - treat as value
 compile_starlog_expr(Expr, Out, [Out = Expr]).
