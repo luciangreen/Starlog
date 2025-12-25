@@ -94,7 +94,23 @@ string_concat(A, _G2, _G3),
 atom_concat(_G3, C, E)
 ```
 
-### 4. Arithmetic Preservation
+### 4. Expression Evaluation Control
+Starlog evaluates expressions by default (`eval` is the default behavior), but provides `no_eval` and `eval` for fine-grained control:
+```prolog
+% Default evaluation (eval is implicit)
+A is 1+1                        % A = 2
+B is "x":"y"                    % B = "xy"
+
+% Preserve expressions with no_eval
+C is no_eval(1+1)               % C = 1+1 (not evaluated)
+D is no_eval("x":"y")           % D = "x":"y" (not evaluated)
+
+% Force evaluation inside no_eval with eval
+E is no_eval(eval(1+1))         % E = 2 (inner eval forces evaluation)
+F is no_eval("a" : eval("b":"c"))  % F = "a":"bc" (only eval part evaluated)
+```
+
+### 5. Arithmetic Preservation
 Standard Prolog arithmetic expressions remain unchanged:
 ```prolog
 X is 1+2      % Treated as arithmetic, not Starlog
@@ -142,9 +158,11 @@ All tests passing:
 - ✅ 5/5 nested expression tests
 - ✅ 5/5 arithmetic preservation tests
 - ✅ 5/5 mixed Prolog/Starlog tests
+- ✅ 8/8 no_eval tests
+- ✅ 12/12 eval tests
 - ✅ 7/7 acceptance tests from Requirements.txt
 
-**Total: 28/28 tests passing (100%)**
+**Total: 48/48 tests passing (100%)**
 
 ## Requirements Compliance
 

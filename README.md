@@ -45,6 +45,8 @@ L = [1, 2].
 
 ## Starlog Syntax
 
+**Important**: By default, Starlog evaluates all expressions. The `eval()` function is only needed when you want to force evaluation inside `no_eval()` contexts.
+
 The library supports the following Starlog patterns:
 
 ### Special Operators
