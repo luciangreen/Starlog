@@ -107,7 +107,9 @@ prolog_goal_to_starlog(atom_concat(A, B, C), starlog(C, (A•B))) :- !.
 prolog_goal_to_starlog((Out = Expr), assign(Out, Expr)) :- !.
 prolog_goal_to_starlog(Goal, StarlogForm) :-
     Goal =.. [Pred|Args],
+    Args \= [],  % Ensure there are arguments
     append(InArgs, [OutArg], Args),
+    InArgs \= [],  % Ensure there are input arguments
     !,
     InTerm =.. [Pred|InArgs],
     StarlogForm = starlog(OutArg, InTerm).
