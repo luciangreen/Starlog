@@ -14,7 +14,13 @@
     starlog_output_code/3,
     starlog_output_file/1,
     starlog_output_file/2,
-    starlog_output_file/3
+    starlog_output_file/3,
+    starlog_to_prolog_code/1,
+    starlog_to_prolog_code/2,
+    starlog_to_prolog_code/3,
+    starlog_to_prolog_file/1,
+    starlog_to_prolog_file/2,
+    starlog_to_prolog_file/3
 ]).
 
 :- use_module(starlog_expand).
@@ -505,6 +511,117 @@ output_clause_as_starlog((Head :- Body), OutputStream, Options) :-
     write(OutputStream, '.'), nl(OutputStream), nl(OutputStream).
 
 output_clause_as_starlog(Fact, OutputStream, _Options) :-
+    % Facts are output as-is
+    rename_variables(Fact, RenamedFact),
+    write_term(OutputStream, RenamedFact, [numbervars(true), quoted(true)]),
+    write(OutputStream, '.'), nl(OutputStream), nl(OutputStream).
+
+% ============================================================
+% Starlog to Prolog Conversion (Maximal Decompression)
+% ============================================================
+% This section implements conversion from Starlog syntax to standard Prolog.
+% The algorithm decompresses nested expressions into sequential goals,
+% using human-friendly variable names (A, B, C, ..., A1, B1, ...).
+%
+% Key features:
+% - Expands Starlog operators (: & •) to standard Prolog predicates
+% - Flattens nested expressions into sequential goals
+% - Uses human-friendly variable naming
+% - Handles both individual goals and entire files
+
+% starlog_to_prolog_code(+StarlogGoal)
+% Convert a Starlog goal to Prolog code with maximal decompression.
+% Outputs the Prolog code with human-friendly variable names.
+starlog_to_prolog_code(StarlogGoal) :-
+    starlog_to_prolog_code(StarlogGoal, _).
+
+% starlog_to_prolog_code(+StarlogGoal, -PrologCode)
+% Convert a Starlog goal to Prolog code and return it as a term.
+starlog_to_prolog_code(StarlogGoal, PrologCode) :-
+    starlog_to_prolog_code(StarlogGoal, PrologCode, []).
+
+% starlog_to_prolog_code(+StarlogGoal, -PrologCode, +Options)
+% Convert a Starlog goal to Prolog code with options.
+% Options:
+%   decompress(true) - Apply maximal decompression (default)
+%   decompress(false) - Minimal decompression
+starlog_to_prolog_code(StarlogGoal, PrologCode, Options) :-
+    % Expand Starlog to Prolog goals
+    starlog_expand:expand_starlog_goal(StarlogGoal, ExpandedGoal),
+    % Apply decompression if requested (default is true)
+    (\+ member(decompress(false), Options) ->
+        % Decompression is already done by expand_starlog_goal
+        % which flattens nested expressions
+        DecompressedGoal = ExpandedGoal
+    ;
+        DecompressedGoal = ExpandedGoal
+    ),
+    % Apply human-friendly variable renaming
+    rename_variables(DecompressedGoal, RenamedGoal),
+    PrologCode = RenamedGoal,
+    % Output the result
+    write_term(PrologCode, [numbervars(true), quoted(true)]), nl.
+
+% starlog_to_prolog_file(+FilePath)
+% Convert a Starlog file to Prolog code with maximal decompression.
+starlog_to_prolog_file(FilePath) :-
+    starlog_to_prolog_file(FilePath, user_output).
+
+% starlog_to_prolog_file(+FilePath, +OutputStream)
+% Convert a Starlog file to Prolog code and write to a stream.
+starlog_to_prolog_file(FilePath, OutputStream) :-
+    starlog_to_prolog_file(FilePath, OutputStream, []).
+
+% starlog_to_prolog_file(+FilePath, +OutputStream, +Options)
+% Convert a Starlog file to Prolog code with options.
+% Options:
+%   decompress(true) - Apply maximal decompression (default)
+%   decompress(false) - Minimal decompression
+starlog_to_prolog_file(FilePath, OutputStream, Options) :-
+    format(OutputStream, '% Prolog code output for file: ~w~n~n', [FilePath]),
+    setup_call_cleanup(
+        open(FilePath, read, Stream),
+        read_and_output_prolog_clauses(Stream, OutputStream, Options),
+        close(Stream)
+    ).
+
+% read_and_output_prolog_clauses(+InputStream, +OutputStream, +Options)
+% Read clauses from input stream and output their Prolog representation.
+read_and_output_prolog_clauses(InputStream, OutputStream, Options) :-
+    read_term(InputStream, Term, []),
+    (Term == end_of_file ->
+        true
+    ;
+        output_clause_as_prolog(Term, OutputStream, Options),
+        read_and_output_prolog_clauses(InputStream, OutputStream, Options)
+    ).
+
+% output_clause_as_prolog(+Clause, +OutputStream, +Options)
+% Output a single clause in Prolog notation.
+output_clause_as_prolog((:- Directive), OutputStream, _Options) :-
+    !,
+    % Directives are output as-is
+    write_term(OutputStream, (:- Directive), [numbervars(true), quoted(true)]),
+    write(OutputStream, '.'), nl(OutputStream), nl(OutputStream).
+
+output_clause_as_prolog((?- Query), OutputStream, _Options) :-
+    !,
+    % Queries are output as-is
+    write_term(OutputStream, (?- Query), [numbervars(true), quoted(true)]),
+    write(OutputStream, '.'), nl(OutputStream), nl(OutputStream).
+
+output_clause_as_prolog((Head :- Body), OutputStream, _Options) :-
+    !,
+    % Expand Starlog body to Prolog
+    starlog_expand:expand_starlog_goal(Body, ExpandedBody),
+    % Decompression is already done by expand_starlog_goal
+    DecompressedBody = ExpandedBody,
+    % Apply human-friendly variable renaming
+    rename_variables((Head :- DecompressedBody), RenamedClause),
+    write_term(OutputStream, RenamedClause, [numbervars(true), quoted(true)]),
+    write(OutputStream, '.'), nl(OutputStream), nl(OutputStream).
+
+output_clause_as_prolog(Fact, OutputStream, _Options) :-
     % Facts are output as-is
     rename_variables(Fact, RenamedFact),
     write_term(OutputStream, RenamedFact, [numbervars(true), quoted(true)]),
