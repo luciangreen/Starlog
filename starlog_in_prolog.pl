@@ -241,11 +241,6 @@ convert_prolog_to_starlog((Goal, Rest), (StarlogGoal, StarlogRest)) :-
     convert_prolog_to_starlog(Goal, StarlogGoal),
     convert_prolog_to_starlog(Rest, StarlogRest).
 
-% no_eval: Out = Expr -> Out is no_eval(Expr)
-convert_prolog_to_starlog((Out = Expr), (Out is no_eval(Expr))) :-
-    compound(Expr),
-    !.
-
 % String concatenation
 convert_prolog_to_starlog(string_concat(A, B, C), (C is (A:B))) :- !.
 
