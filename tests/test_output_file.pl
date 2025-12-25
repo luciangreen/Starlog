@@ -4,8 +4,10 @@
 :- use_module('../starlog_in_prolog').
 
 test_file_output :-
+    working_directory(CWD, CWD),
+    atom_concat(CWD, 'sample_prolog.pl', FilePath),
     write('=== Testing starlog_output_file ==='), nl, nl,
-    starlog_output_file('sample_prolog.pl'),
+    starlog_output_file(FilePath),
     nl,
     write('=== Test complete ==='), nl.
 

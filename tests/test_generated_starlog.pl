@@ -3,11 +3,22 @@
 
 :- use_module('../starlog_in_prolog').
 
-% Load the generated Starlog file
-:- consult('sample_starlog.pl').
-
 test_generated :-
     write('Testing generated Starlog code...'), nl, nl,
+    
+    % First generate the starlog file
+    working_directory(CWD, CWD),
+    atom_concat(CWD, 'sample_prolog.pl', InPath),
+    atom_concat(CWD, 'sample_starlog.pl', OutPath),
+    
+    setup_call_cleanup(
+        open(OutPath, write, Stream),
+        starlog_output_file(InPath, Stream),
+        close(Stream)
+    ),
+    
+    % Load the generated Starlog file
+    consult(OutPath),
     
     write('Test 1: greet/3'), nl,
     greet("John", "Doe", Greeting),

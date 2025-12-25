@@ -4,15 +4,19 @@
 :- use_module('../starlog_in_prolog').
 
 test_output_to_file :-
+    working_directory(CWD, CWD),
+    atom_concat(CWD, 'sample_prolog.pl', InPath),
+    atom_concat(CWD, 'sample_starlog.pl', OutPath),
+    
     write('Writing Starlog output to sample_starlog.pl...'), nl,
     setup_call_cleanup(
-        open('sample_starlog.pl', write, Stream),
-        starlog_output_file('sample_prolog.pl', Stream),
+        open(OutPath, write, Stream),
+        starlog_output_file(InPath, Stream),
         close(Stream)
     ),
     write('Done! Reading back the file:'), nl, nl,
     setup_call_cleanup(
-        open('sample_starlog.pl', read, ReadStream),
+        open(OutPath, read, ReadStream),
         read_and_display(ReadStream),
         close(ReadStream)
     ).
