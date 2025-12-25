@@ -98,6 +98,7 @@ default_value_builtin(log, 1).
 default_value_builtin(log10, 1).
 default_value_builtin(exp, 1).
 default_value_builtin(string_to_number, 1).
+default_value_builtin(string_number, 1).
 default_value_builtin(random, 1).
 
 % Other operations
