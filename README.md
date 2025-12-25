@@ -143,6 +143,53 @@ You can register your own value-returning builtins:
 % Now: Out is bar(X) expands to my_bar(X,Out)
 ```
 
+## Outputting Starlog Code
+
+The library provides features to convert Prolog code back to Starlog notation with human-friendly variable names (A, B, C, A1, B1, etc.).
+
+### Output Code for a Goal
+
+Use `starlog_output_code/1` to convert a Prolog goal to Starlog notation:
+
+```prolog
+?- starlog_output_code(string_concat("x", "y", C)).
+A is "x":"y"
+
+?- starlog_output_code(append([1,2], [3,4], L)).
+A is [1,2]&[3,4]
+
+?- starlog_output_code(reverse([1,2,3], R)).
+A is reverse([1,2,3])
+```
+
+This is useful for:
+- Converting existing Prolog code to Starlog notation
+- Understanding how Prolog predicates map to Starlog syntax
+- Generating Starlog code programmatically
+
+### Output Code for a File
+
+Use `starlog_output_file/1` to convert an entire Prolog file to Starlog notation:
+
+```prolog
+?- starlog_output_file('my_program.pl').
+% Starlog code output for file: my_program.pl
+
+greet(A,B,C):-D is "Hello, ":A,E is D:" ",C is E:B.
+combine_lists(A,B,C,D):-C is A&B,D is reverse(C).
+...
+```
+
+Or write to a file using `starlog_output_file/2`:
+
+```prolog
+?- open('output.pl', write, Stream),
+   starlog_output_file('input.pl', Stream),
+   close(Stream).
+```
+
+The output uses human-friendly variable names (A, B, C, ..., Z, A1, B1, ...) making the code more readable.
+
 ## Debugging
 
 Enable debug output to see expansions:

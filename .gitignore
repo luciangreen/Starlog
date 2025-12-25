@@ -1,0 +1,11 @@
+# Generated files
+tests/sample_starlog.pl
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+
+# Build artifacts
+a.out
