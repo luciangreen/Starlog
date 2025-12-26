@@ -209,7 +209,7 @@ starlog_output_code(Goal, StarlogCode, Options) :-
         % If it's already Starlog, just rename variables and output
         rename_variables(Goal, RenamedGoal),
         StarlogCode = RenamedGoal,
-        write_term(StarlogCode, [numbervars(true), quoted(true)]), nl
+        pretty_write_body(StarlogCode, user_output, 0), nl
     ;
         % Otherwise, convert Prolog to Starlog
         convert_prolog_to_starlog(Goal, StarlogForm),
@@ -221,7 +221,7 @@ starlog_output_code(Goal, StarlogCode, Options) :-
         ),
         rename_variables(CompressedForm, RenamedStarlog),
         StarlogCode = RenamedStarlog,
-        write_term(StarlogCode, [numbervars(true), quoted(true)]), nl
+        pretty_write_body(StarlogCode, user_output, 0), nl
     ).
 
 % is_already_starlog(+Goal)
@@ -516,7 +516,9 @@ output_clause_as_starlog((Head :- Body), OutputStream, Options) :-
         CompressedBody = StarlogBody
     ),
     rename_variables((Head :- CompressedBody), RenamedClause),
-    write_term(OutputStream, RenamedClause, [numbervars(true), quoted(true)]),
+    % Use pretty printer for the clause
+    RenamedClause = (RenamedHead :- RenamedBody),
+    pretty_write_term_at_level((RenamedHead :- RenamedBody), OutputStream, 0),
     write(OutputStream, '.'), nl(OutputStream), nl(OutputStream).
 
 output_clause_as_starlog(Fact, OutputStream, _Options) :-
@@ -524,6 +526,271 @@ output_clause_as_starlog(Fact, OutputStream, _Options) :-
     rename_variables(Fact, RenamedFact),
     write_term(OutputStream, RenamedFact, [numbervars(true), quoted(true)]),
     write(OutputStream, '.'), nl(OutputStream), nl(OutputStream).
+
+% ============================================================
+% Pretty Printing with Indentation
+% ============================================================
+% This section implements pretty printing for Starlog code with proper
+% indentation for nested calls and logical control structures.
+%
+% Key features:
+% - Indents nested calls, findall, and, or, not, if-then, if-then-else
+% - Maintains proper formatting for complex structures
+% - Uses configurable indentation levels
+
+% pretty_write_term(+Term, +OutputStream, +IndentLevel)
+% Write a term with pretty printing and indentation.
+pretty_write_term(Term, OutputStream, IndentLevel) :-
+    write_indent(OutputStream, IndentLevel),
+    pretty_write_term_at_level(Term, OutputStream, IndentLevel).
+
+% write_indent(+OutputStream, +Level)
+% Write indentation spaces to the output stream.
+write_indent(OutputStream, Level) :-
+    Spaces is Level * 2,
+    write_spaces(OutputStream, Spaces).
+
+% write_spaces(+OutputStream, +Count)
+% Write Count spaces to the output stream.
+write_spaces(_, 0) :- !.
+write_spaces(OutputStream, Count) :-
+    Count > 0,
+    write(OutputStream, ' '),
+    Count1 is Count - 1,
+    write_spaces(OutputStream, Count1).
+
+% pretty_write_term_at_level(+Term, +OutputStream, +IndentLevel)
+% Write a term with context-aware formatting.
+pretty_write_term_at_level((Head :- Body), OutputStream, IndentLevel) :-
+    !,
+    write_term(OutputStream, Head, [numbervars(true), quoted(true)]),
+    write(OutputStream, ':-'),
+    nl(OutputStream),
+    NextLevel is IndentLevel + 1,
+    pretty_write_body(Body, OutputStream, NextLevel).
+
+% Handle facts
+pretty_write_term_at_level(Fact, OutputStream, _IndentLevel) :-
+    \+ (Fact = (_ :- _)),
+    \+ (Fact = (_ , _)),
+    \+ (Fact = (_ ; _)),
+    \+ (Fact = (_ -> _)),
+    \+ (Fact = (\+ _)),
+    !,
+    write_term(OutputStream, Fact, [numbervars(true), quoted(true)]).
+
+% pretty_write_body(+Body, +OutputStream, +IndentLevel)
+% Write a clause body with proper indentation.
+
+% If-then-else (must come before disjunction)
+pretty_write_body((Cond -> Then ; Else), OutputStream, IndentLevel) :-
+    !,
+    write_indent(OutputStream, IndentLevel),
+    write(OutputStream, '('),
+    nl(OutputStream),
+    NextLevel is IndentLevel + 1,
+    write_indent(OutputStream, NextLevel),
+    pretty_write_goal(Cond, OutputStream, NextLevel),
+    nl(OutputStream),
+    write_indent(OutputStream, IndentLevel),
+    write(OutputStream, '->'),
+    nl(OutputStream),
+    pretty_write_body(Then, OutputStream, NextLevel),
+    nl(OutputStream),
+    write_indent(OutputStream, IndentLevel),
+    write(OutputStream, ';'),
+    nl(OutputStream),
+    pretty_write_body(Else, OutputStream, NextLevel),
+    nl(OutputStream),
+    write_indent(OutputStream, IndentLevel),
+    write(OutputStream, ')').
+
+% If-then (no else)
+pretty_write_body((Cond -> Then), OutputStream, IndentLevel) :-
+    !,
+    write_indent(OutputStream, IndentLevel),
+    write(OutputStream, '('),
+    nl(OutputStream),
+    NextLevel is IndentLevel + 1,
+    write_indent(OutputStream, NextLevel),
+    pretty_write_goal(Cond, OutputStream, NextLevel),
+    nl(OutputStream),
+    write_indent(OutputStream, IndentLevel),
+    write(OutputStream, '->'),
+    nl(OutputStream),
+    pretty_write_body(Then, OutputStream, NextLevel),
+    nl(OutputStream),
+    write_indent(OutputStream, IndentLevel),
+    write(OutputStream, ')').
+
+% Disjunction (or)
+pretty_write_body((Goal ; Rest), OutputStream, IndentLevel) :-
+    !,
+    write_indent(OutputStream, IndentLevel),
+    write(OutputStream, '('),
+    nl(OutputStream),
+    NextLevel is IndentLevel + 1,
+    pretty_write_body(Goal, OutputStream, NextLevel),
+    nl(OutputStream),
+    write_indent(OutputStream, IndentLevel),
+    write(OutputStream, ';'),
+    nl(OutputStream),
+    pretty_write_body(Rest, OutputStream, NextLevel),
+    nl(OutputStream),
+    write_indent(OutputStream, IndentLevel),
+    write(OutputStream, ')').
+
+% Conjunction (and)
+pretty_write_body((Goal, Rest), OutputStream, IndentLevel) :-
+    !,
+    write_indent(OutputStream, IndentLevel),
+    pretty_write_goal(Goal, OutputStream, IndentLevel),
+    write(OutputStream, ','),
+    nl(OutputStream),
+    pretty_write_body(Rest, OutputStream, IndentLevel).
+
+% Negation
+pretty_write_body(\+ Goal, OutputStream, IndentLevel) :-
+    !,
+    write_indent(OutputStream, IndentLevel),
+    write(OutputStream, '\\+ '),
+    (is_simple_negated_goal(Goal) ->
+        % Simple goal - write on same line
+        pretty_write_goal(Goal, OutputStream, IndentLevel)
+    ;
+        % Complex goal - write on next line with indent
+        nl(OutputStream),
+        NextLevel is IndentLevel + 1,
+        pretty_write_body(Goal, OutputStream, NextLevel)
+    ).
+
+% Single goal
+pretty_write_body(Goal, OutputStream, IndentLevel) :-
+    write_indent(OutputStream, IndentLevel),
+    pretty_write_goal(Goal, OutputStream, IndentLevel).
+
+% is_simple_negated_goal(+Goal)
+% Check if a negated goal is simple enough to stay on same line.
+is_simple_negated_goal(Goal) :-
+    \+ (Goal = (_ , _)),
+    \+ (Goal = (_ ; _)),
+    \+ (Goal = (_ -> _)),
+    \+ (Goal = (\+ _)),
+    \+ (Goal = findall(_, _, _)).
+
+% pretty_write_goal(+Goal, +OutputStream, +IndentLevel)
+% Write a single goal with context-aware formatting.
+
+% is_complex_control_goal(+Goal)
+% Check if a goal is a complex control structure that needs indentation.
+is_complex_control_goal(Goal) :-
+    compound(Goal),
+    (Goal = (_ , _) ; Goal = (_ ; _) ; Goal = (_ -> _) ; Goal = (\+ _)).
+
+% findall with indentation
+pretty_write_goal(findall(Template, Goal, Result), OutputStream, IndentLevel) :-
+    !,
+    write(OutputStream, 'findall('),
+    nl(OutputStream),
+    NextLevel is IndentLevel + 1,
+    write_indent(OutputStream, NextLevel),
+    write_term(OutputStream, Template, [numbervars(true), quoted(true)]),
+    write(OutputStream, ','),
+    nl(OutputStream),
+    write_indent(OutputStream, NextLevel),
+    % Format the goal - check if it needs indentation
+    (is_complex_control_goal(Goal) ->
+        % Complex goal - use body formatter with parens
+        write(OutputStream, '('),
+        nl(OutputStream),
+        NextNextLevel is NextLevel + 1,
+        pretty_write_body(Goal, OutputStream, NextNextLevel),
+        nl(OutputStream),
+        write_indent(OutputStream, NextLevel),
+        write(OutputStream, ')')
+    ;
+        % Simple goal - write inline
+        write_term(OutputStream, Goal, [numbervars(true), quoted(true)])
+    ),
+    write(OutputStream, ','),
+    nl(OutputStream),
+    write_indent(OutputStream, NextLevel),
+    write_term(OutputStream, Result, [numbervars(true), quoted(true)]),
+    nl(OutputStream),
+    write_indent(OutputStream, IndentLevel),
+    write(OutputStream, ')').
+
+% Handle 'is' expressions with findall (2 args in Starlog form)
+pretty_write_goal(Out is findall(Template, Goal), OutputStream, IndentLevel) :-
+    !,
+    write_term(OutputStream, Out, [numbervars(true), quoted(true)]),
+    write(OutputStream, ' is '),
+    nl(OutputStream),
+    NextLevel is IndentLevel + 1,
+    write_indent(OutputStream, NextLevel),
+    write(OutputStream, 'findall('),
+    nl(OutputStream),
+    NextNextLevel is NextLevel + 1,
+    write_indent(OutputStream, NextNextLevel),
+    write_term(OutputStream, Template, [numbervars(true), quoted(true)]),
+    write(OutputStream, ','),
+    nl(OutputStream),
+    write_indent(OutputStream, NextNextLevel),
+    % Check if goal is complex - if so, wrap in parens and indent
+    (is_complex_control_goal(Goal) ->
+        % Complex goal - format with indentation and wrap in parens
+        write(OutputStream, '('),
+        nl(OutputStream),
+        NextNextNextLevel is NextNextLevel + 1,
+        pretty_write_body(Goal, OutputStream, NextNextNextLevel),
+        nl(OutputStream),
+        write_indent(OutputStream, NextNextLevel),
+        write(OutputStream, ')')
+    ;
+        % Simple goal - write inline
+        write_term(OutputStream, Goal, [numbervars(true), quoted(true)])
+    ),
+    nl(OutputStream),
+    write_indent(OutputStream, NextLevel),
+    write(OutputStream, ')').
+
+% Handle 'is' expressions that might have complex RHS (but not findall)
+pretty_write_goal(Out is Expr, OutputStream, IndentLevel) :-
+    \+ is_simple_expr(Expr),
+    !,
+    write_term(OutputStream, Out, [numbervars(true), quoted(true)]),
+    write(OutputStream, ' is '),
+    nl(OutputStream),
+    NextLevel is IndentLevel + 1,
+    write_indent(OutputStream, NextLevel),
+    write_term(OutputStream, Expr, [numbervars(true), quoted(true)]).
+
+% Handle control structures in goal position
+pretty_write_goal(Goal, OutputStream, IndentLevel) :-
+    (Goal = (_ -> _ ; _) ; Goal = (_ -> _) ; Goal = (_ ; _) ; Goal = (\+ _) ; Goal = (_ , _)),
+    !,
+    pretty_write_body(Goal, OutputStream, IndentLevel).
+
+% Default: simple goal
+pretty_write_goal(Goal, OutputStream, _IndentLevel) :-
+    write_term(OutputStream, Goal, [numbervars(true), quoted(true)]).
+
+% is_simple_expr(+Expr)
+% Check if an expression is simple enough not to need indentation.
+is_simple_expr(Expr) :-
+    \+ compound(Expr), !.
+is_simple_expr(Expr) :-
+    compound(Expr),
+    Expr =.. [_|Args],
+    \+ (member(Arg, Args), compound(Arg), is_control_like(Arg)).
+
+% is_control_like(+Term)
+% Check if a term is a control structure that needs indentation.
+is_control_like((_ , _)).
+is_control_like((_ ; _)).
+is_control_like((_ -> _)).
+is_control_like(\+ _).
+is_control_like(findall(_, _, _)).
 
 % ============================================================
 % Starlog to Prolog Conversion (Maximal Decompression)
@@ -562,8 +829,8 @@ starlog_to_prolog_code(StarlogGoal, PrologCode, _Options) :-
     % Apply human-friendly variable renaming
     rename_variables(ExpandedGoal, RenamedGoal),
     PrologCode = RenamedGoal,
-    % Output the result
-    write_term(PrologCode, [numbervars(true), quoted(true)]), nl.
+    % Output the result with pretty printing
+    pretty_write_body(PrologCode, user_output, 0), nl.
 
 % starlog_to_prolog_file(+FilePath)
 % Convert a Starlog file to Prolog code with maximal decompression.
@@ -620,7 +887,8 @@ output_clause_as_prolog((Head :- Body), OutputStream, _Options) :-
     starlog_expand:expand_starlog_goal(Body, ExpandedBody),
     % Apply human-friendly variable renaming
     rename_variables((Head :- ExpandedBody), RenamedClause),
-    write_term(OutputStream, RenamedClause, [numbervars(true), quoted(true)]),
+    RenamedClause = (RenamedHead :- RenamedBody),
+    pretty_write_term_at_level((RenamedHead :- RenamedBody), OutputStream, 0),
     write(OutputStream, '.'), nl(OutputStream), nl(OutputStream).
 
 output_clause_as_prolog(Fact, OutputStream, _Options) :-
