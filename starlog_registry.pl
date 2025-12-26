@@ -101,6 +101,14 @@ default_value_builtin(string_to_number, 1).
 default_value_builtin(string_number, 1).
 default_value_builtin(random, 1).
 
+% Mathematical solvers
+default_value_builtin(solve_equation, 1).
+default_value_builtin(solve_equation, 2).
+default_value_builtin(solve_system, 1).
+default_value_builtin(solve_system, 2).
+default_value_builtin(gaussian_elimination, 1).
+default_value_builtin(gaussian_elimination, 2).
+
 % Other operations
 default_value_builtin(findall, 2).
 default_value_builtin(string_from_file, 1).
