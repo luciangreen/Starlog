@@ -4,6 +4,10 @@
 
 :- use_module(starlog_in_prolog).
 
+% Helper to ensure a value is a string
+ensure_string(Val, Str) :-
+    (atom(Val) -> atom_string(Val, Str) ; Str = Val).
+
 demo_string_concat :-
     write('===================================='), nl,
     write('String Concatenation Dual Expression'), nl,
@@ -19,11 +23,11 @@ demo_string_concat :-
     
     write('Verification:'), nl,
     % Convert to strings for string_concat verification
-    (atom(a) -> atom_string(a, AS1) ; AS1 = a),
-    (atom(A) -> atom_string(A, AS2) ; AS2 = A),
+    ensure_string(a, AS1),
+    ensure_string(A, AS2),
     string_concat(AS1, AS2, LHS),
-    (atom(B) -> atom_string(B, BS1) ; BS1 = B),
-    (atom(b) -> atom_string(b, BS2) ; BS2 = b),
+    ensure_string(B, BS1),
+    ensure_string(b, BS2),
     string_concat(BS1, BS2, RHS),
     format('  a + ~w = ~w~n', [A, LHS]),
     format('  ~w + b = ~w~n', [B, RHS]),

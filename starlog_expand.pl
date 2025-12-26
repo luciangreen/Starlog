@@ -232,23 +232,22 @@ is_concat_dual_expr((_ • _), (_ • _)) :- !.
 solve_concat_dual_expr((A : B), (C : D), Goals) :-
     !,
     % Use bidirectional string concat constraint solver
-    Goals = string_concat_dual(A, B, C, D).
+    Goals = starlog_expand:string_concat_dual(A, B, C, D).
 
 % Atom concatenation dual expression  
 solve_concat_dual_expr((A • B), (C • D), Goals) :-
     !,
     % Use bidirectional atom concat constraint solver
-    Goals = atom_concat_dual(A, B, C, D).
+    Goals = starlog_expand:atom_concat_dual(A, B, C, D).
 
-% string_concat_dual(?A, ?B, ?C, ?D)
-% Bidirectional constraint solver for (A:B) is (C:D)
-% Meaning: string_concat(A, B, Result) and string_concat(C, D, Result)
-% So: A + B = C + D where + is string concatenation
-string_concat_dual(A, B, C, D) :-
+% concat_dual(?A, ?B, ?C, ?D, +ConcatPred)
+% Generic bidirectional constraint solver for concat operations
+% ConcatPred should be string_concat or atom_concat
+concat_dual(A, B, C, D, ConcatPred) :-
     % If all are bound, just check equality
     (ground(A), ground(B), ground(C), ground(D)) ->
-        (string_concat(A, B, R1),
-         string_concat(C, D, R2),
+        (call(ConcatPred, A, B, R1),
+         call(ConcatPred, C, D, R2),
          R1 = R2)
     ;
     % Special case: A and D are bound, B and C are variables
@@ -267,38 +266,22 @@ string_concat_dual(A, B, C, D) :-
     ;
     % Other cases - use standard constraint with both concat calls
     % This will work for cases where append-like behavior applies
-        (string_concat(A, B, Result),
-         string_concat(C, D, Result)).
+        (call(ConcatPred, A, B, Result),
+         call(ConcatPred, C, D, Result)).
+
+% string_concat_dual(?A, ?B, ?C, ?D)
+% Bidirectional constraint solver for (A:B) is (C:D)
+% Meaning: string_concat(A, B, Result) and string_concat(C, D, Result)
+% So: A + B = C + D where + is string concatenation
+string_concat_dual(A, B, C, D) :-
+    concat_dual(A, B, C, D, string_concat).
 
 % atom_concat_dual(?A, ?B, ?C, ?D)
 % Bidirectional constraint solver for (A•B) is (C•D)
 % Meaning: atom_concat(A, B, Result) and atom_concat(C, D, Result)
 % So: A + B = C + D where + is atom concatenation
 atom_concat_dual(A, B, C, D) :-
-    % If all are bound, just check equality
-    (ground(A), ground(B), ground(C), ground(D)) ->
-        (atom_concat(A, B, R1),
-         atom_concat(C, D, R2),
-         R1 = R2)
-    ;
-    % Special case: A and D are bound, B and C are variables
-    % Constraint: A + B = C + D. Solution: B = D and C = A
-    % This gives: A + B = A + D (LHS) and C + D = A + D (RHS), so both sides equal
-    (nonvar(A), var(B), var(C), nonvar(D)) ->
-        (B = D,
-         C = A)
-    ;
-    % Special case: B and C are bound, A and D are variables
-    % Constraint: A + B = C + D. Solution: A = C and D = B
-    % This gives: A + B = C + B (LHS) and C + D = C + B (RHS), so both sides equal
-    (var(A), nonvar(B), nonvar(C), var(D)) ->
-        (A = C,
-         D = B)
-    ;
-    % Other cases - use standard constraint with both concat calls
-    % This will work for cases where append-like behavior applies
-        (atom_concat(A, B, Result),
-         atom_concat(C, D, Result)).
+    concat_dual(A, B, C, D, atom_concat).
 
 % compile_starlog_expr(+Expr, +Out, -Goals)
 % Compile a Starlog expression into Prolog goal(s).
