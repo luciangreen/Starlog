@@ -11,9 +11,9 @@ This implementation adds a feature that converts Starlog files or calls to Prolo
 Added six new predicates for Starlog to Prolog conversion:
 
 **Individual Goal Conversion:**
-- `starlog_to_prolog_code/1` - Convert and output a Starlog goal
-- `starlog_to_prolog_code/2` - Convert and return as a term
-- `starlog_to_prolog_code/3` - Convert with options
+- `starlog_to_prolog_code/1` - Convert and output a Starlog goal to stdout
+- `starlog_to_prolog_code/2` - Convert and return as a term (without printing)
+- `starlog_to_prolog_code/3` - Convert with options (including print control)
 
 **File Conversion:**
 - `starlog_to_prolog_file/1` - Convert file to stdout
@@ -139,3 +139,37 @@ This implementation addresses the issue requirements:
 - Minimal changes to existing functionality
 - Comprehensive test coverage
 - Detailed documentation
+
+## Update: Output to Variables (2025-12-26)
+
+### Changes Made
+
+Modified the behavior of the 2-argument versions to enable outputting to variables without printing:
+
+**Previous Behavior:**
+- `/2` versions would both print to stdout AND return the code in a variable
+
+**New Behavior:**
+- `/1` versions print to stdout (for interactive use)
+- `/2` versions return the code in a variable **without printing** (for programmatic use)
+- `/3` versions have a `print(true/false)` option for explicit control
+
+### Implementation
+
+Added a `print(true/false)` option to the `/3` versions:
+- `/1` calls `/3` with `print(true)` to maintain backward compatibility
+- `/2` calls `/3` with `print(false)` to only return the code
+- `/3` checks for `print(true)` option before calling `pretty_write_body`
+
+### Testing
+
+Created `tests/test_output_to_variable.pl` with comprehensive tests:
+- ✅ `/2` versions return code without printing
+- ✅ `/1` versions still print to stdout
+- ✅ `/3` versions respect print option
+- ✅ All existing tests still pass
+- ✅ All demos work correctly
+
+This change applies to both:
+- `starlog_to_prolog_code/1,2,3`
+- `starlog_output_code/1,2,3`
