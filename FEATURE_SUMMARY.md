@@ -44,7 +44,11 @@ A is "x":"y"
 ```
 
 #### `starlog_output_code/2`
-Same as above but also returns the Starlog code as a term.
+Returns the Starlog code as a term **without printing to stdout**.
+Use this when you need the code as a variable for further processing.
+
+#### `starlog_output_code/3`
+Advanced version with options for compression, eval handling, and printing control.
 
 #### `starlog_output_file/1`
 Converts an entire Prolog file to Starlog notation:
@@ -156,8 +160,15 @@ All tests pass:
 ### Exported Predicates
 
 ```prolog
+% Output to stdout
 starlog_output_code(+Goal)
+
+% Return code in variable (no printing)
 starlog_output_code(+Goal, -StarlogCode)
+
+% Advanced options including print control
+starlog_output_code(+Goal, -StarlogCode, +Options)
+
 starlog_output_file(+FilePath)
 starlog_output_file(+FilePath, +OutputStream)
 ```
@@ -197,6 +208,44 @@ contains_starlog_op(+Expr)
 3. **Preservation**: Already-Starlog code is preserved without modification
 
 4. **Extensibility**: Works with all registered value-returning builtins in `starlog_registry.pl`
+
+## Update: Output to Variables (2025-12-26)
+
+### Changes Made
+
+Modified the behavior of `/2` predicates to enable outputting to variables without printing:
+
+**Previous Behavior:**
+- `/2` versions would both print to stdout AND return the code in a variable
+
+**New Behavior:**
+- `/1` versions print to stdout only (for interactive use)
+- `/2` versions return code in variable **without printing** (for programmatic use)  
+- `/3` versions have explicit `print(true/false)` option for control
+
+### Example Usage
+
+```prolog
+% Print to stdout (interactive use)
+?- starlog_output_code(string_concat("x", "y", C)).
+A is "x":"y"
+
+% Get code in variable without printing (programmatic use)
+?- starlog_output_code(string_concat("x", "y", C), Code).
+Code = (A is "x":"y").
+
+% Explicit control
+?- starlog_output_code(string_concat("x", "y", C), Code, [print(false)]).
+Code = (A is "x":"y").
+```
+
+### Testing
+
+Added `tests/test_output_to_variable.pl` with 6 comprehensive tests verifying:
+- ✅ `/2` versions return without printing
+- ✅ `/1` versions still print
+- ✅ `/3` versions respect print option
+- ✅ Backward compatibility maintained
 
 ## Future Enhancements
 
