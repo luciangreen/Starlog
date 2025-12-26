@@ -330,7 +330,7 @@ You can control this behavior using the `output_eval` and `output_no_eval` optio
 A is 1+1
 
 ?- starlog_output_code(B is eval("x":"y")).
-B is "x":"y"
+B is "xy"
 
 % Keep no_eval() wrappers
 ?- starlog_output_code(A is no_eval(1+1), _, [output_no_eval(true)]).

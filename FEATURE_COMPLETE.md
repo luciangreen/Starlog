@@ -28,7 +28,7 @@ Four new options provide complete control:
 A is 1+1                    % ← no_eval() wrapper removed
 
 ?- starlog_output_code(B is eval("x":"y")).
-B is "x":"y"               % ← eval() wrapper removed
+B is "xy"                  % ← eval() wrapper removed and evaluated
 ```
 
 ### Example 2: Keep no_eval() only
@@ -37,7 +37,7 @@ B is "x":"y"               % ← eval() wrapper removed
 A is no_eval(1+1)          % ← no_eval() wrapper kept
 
 ?- starlog_output_code(B is eval("x":"y"), _, [output_no_eval(true)]).
-B is "x":"y"               % ← eval() wrapper still stripped
+B is "xy"                  % ← eval() wrapper still stripped and evaluated
 ```
 
 ### Example 3: Keep eval() only
