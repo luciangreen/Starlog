@@ -234,8 +234,35 @@ The library distinguishes between Starlog and arithmetic based on the right-hand
 
 - **Starlog**: `Out is (A : B)`, `Out is func(Args)`, `Out is (A & B)`, `Out is (A • B)`, `Out is no_eval(Expr)`, `Out is eval(Expr)`
 - **Arithmetic**: `Out is 1+2`, `Out is X*Y`, `Out is sqrt(N)` (when sqrt/1 is arithmetic)
+- **Dual Starlog expressions**: `(Expr1) is (Expr2)` where both sides are Starlog expressions - see below
 
 **Note**: `eval` is the default behavior for Starlog expressions. You only need to use `eval()` explicitly when forcing evaluation inside `no_eval()` contexts.
+
+### Dual Starlog Expressions
+
+When both the left-hand side and right-hand side of `is/2` are Starlog expressions, the library compiles both expressions and unifies their results. This enables powerful pattern matching and equation solving:
+
+```prolog
+% Find A and B such that [1]&A equals B&[2]
+?- ([1] & A) is (B & [2]).
+A = [2],
+B = [1].
+
+% Nested dual expressions
+?- (([1] & [2]) & A) is (B & [3]).
+A = [3],
+B = [1, 2].
+
+% String concatenation dual expressions
+?- ("hello" : "world") is ("hello" : "world").
+true.
+```
+
+This feature is particularly useful for:
+- Solving equations with Starlog operators
+- Pattern matching with variable substitution
+- Constraint-based programming with Starlog syntax
+- Verifying equivalence of complex expressions
 
 ## Supported Built-in Predicates
 
@@ -687,7 +714,43 @@ This feature enables:
 - Meta-programming patterns with Starlog syntax
 - Deferred execution of Starlog expressions
 
-### Example 7: Term Manipulation with Univ Operators
+### Example 7: Dual Starlog Expressions for Equation Solving
+
+```prolog
+:- use_module(starlog_in_prolog).
+
+% Solve for variables in list append equations
+solve_list_equation :-
+    ([1] & A) is (B & [2]),
+    format('A = ~w, B = ~w~n', [A, B]).
+
+?- solve_list_equation.
+A = [2], B = [1]
+
+% Verify equivalence of expressions
+verify_concatenation :-
+    ("hello" : " " : "world") is ("hello " : "world"),
+    write('Expressions are equivalent!'), nl.
+
+?- verify_concatenation.
+Expressions are equivalent!
+
+% Nested dual expressions for complex patterns
+nested_pattern :-
+    (([1] & [2]) & A) is (B & [3]),
+    format('A = ~w, B = ~w~n', [A, B]).
+
+?- nested_pattern.
+A = [3], B = [1, 2]
+```
+
+This feature is particularly useful for:
+- Solving equations with Starlog operators
+- Pattern matching with variable substitution  
+- Constraint-based programming
+- Verifying expression equivalence
+
+### Example 8: Term Manipulation with Univ Operators
 
 ```prolog
 :- use_module(starlog_in_prolog).
