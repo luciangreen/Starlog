@@ -202,7 +202,27 @@ You can register your own value-returning builtins:
 
 ## Outputting Starlog Code
 
-The library provides features to convert Prolog code back to Starlog notation with human-friendly variable names (A, B, C, A1, B1, etc.).
+The library provides features to convert Prolog code back to Starlog notation with human-friendly variable names (A, B, C, A1, B1, etc.) and **pretty printing with proper indentation** for nested calls and logical control structures.
+
+### Pretty Printed Output
+
+The output automatically formats code with indentation for:
+- Nested calls (findall, and, or, not)
+- Logical control structures (if-then, if-then-else)
+- Complex nested expressions
+
+Example:
+```prolog
+?- starlog_output_code(findall(X, (member(X, [1,2,3]), X > 1), Result)).
+A is 
+  findall(
+    B,
+    (
+      member(B,[1,2,3]),
+      B>1
+    )
+  )
+```
 
 ### Output Code for a Goal
 
