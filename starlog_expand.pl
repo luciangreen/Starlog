@@ -232,13 +232,13 @@ is_concat_dual_expr((_ • _), (_ • _)) :- !.
 solve_concat_dual_expr((A : B), (C : D), Goals) :-
     !,
     % Use bidirectional string concat constraint solver
-    Goals = starlog_expand:string_concat_dual(A, B, C, D).
+    Goals = string_concat_dual(A, B, C, D).
 
 % Atom concatenation dual expression  
 solve_concat_dual_expr((A • B), (C • D), Goals) :-
     !,
     % Use bidirectional atom concat constraint solver
-    Goals = starlog_expand:atom_concat_dual(A, B, C, D).
+    Goals = atom_concat_dual(A, B, C, D).
 
 % string_concat_dual(?A, ?B, ?C, ?D)
 % Bidirectional constraint solver for (A:B) is (C:D)
@@ -254,22 +254,21 @@ string_concat_dual(A, B, C, D) :-
     % Special case: A and D are bound, B and C are variables
     % Constraint: A + B = C + D. Solution: B = D and C = A
     % This gives: A + B = A + D (LHS) and C + D = A + D (RHS), so both sides equal
-    ( (nonvar(A), var(B), var(C), nonvar(D)) ->
-        B = D,
-        C = A
+    (nonvar(A), var(B), var(C), nonvar(D)) ->
+        (B = D,
+         C = A)
     ;
     % Special case: B and C are bound, A and D are variables  
     % Constraint: A + B = C + D. Solution: A = C and D = B
     % This gives: A + B = C + B (LHS) and C + D = C + B (RHS), so both sides equal
     (var(A), nonvar(B), nonvar(C), var(D)) ->
-        A = C,
-        D = B
+        (A = C,
+         D = B)
     ;
     % Other cases - use standard constraint with both concat calls
     % This will work for cases where append-like behavior applies
-        string_concat(A, B, Result),
-        string_concat(C, D, Result)
-    ).
+        (string_concat(A, B, Result),
+         string_concat(C, D, Result)).
 
 % atom_concat_dual(?A, ?B, ?C, ?D)
 % Bidirectional constraint solver for (A•B) is (C•D)
@@ -285,22 +284,21 @@ atom_concat_dual(A, B, C, D) :-
     % Special case: A and D are bound, B and C are variables
     % Constraint: A + B = C + D. Solution: B = D and C = A
     % This gives: A + B = A + D (LHS) and C + D = A + D (RHS), so both sides equal
-    ( (nonvar(A), var(B), var(C), nonvar(D)) ->
-        B = D,
-        C = A
+    (nonvar(A), var(B), var(C), nonvar(D)) ->
+        (B = D,
+         C = A)
     ;
     % Special case: B and C are bound, A and D are variables
     % Constraint: A + B = C + D. Solution: A = C and D = B
     % This gives: A + B = C + B (LHS) and C + D = C + B (RHS), so both sides equal
     (var(A), nonvar(B), nonvar(C), var(D)) ->
-        A = C,
-        D = B
+        (A = C,
+         D = B)
     ;
     % Other cases - use standard constraint with both concat calls
     % This will work for cases where append-like behavior applies
-        atom_concat(A, B, Result),
-        atom_concat(C, D, Result)
-    ).
+        (atom_concat(A, B, Result),
+         atom_concat(C, D, Result)).
 
 % compile_starlog_expr(+Expr, +Out, -Goals)
 % Compile a Starlog expression into Prolog goal(s).
