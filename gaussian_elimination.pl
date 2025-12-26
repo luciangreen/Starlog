@@ -212,9 +212,9 @@ count_non_zero_rows(Matrix, NumVars, Count) :-
 % Count how many variables have a pivot (leading coefficient) in some row
 % A variable has a pivot if it's the first non-zero coefficient in some row
 count_variables_with_pivots(Matrix, NumVars, Count) :-
+    NumVars1 is NumVars - 1,
     findall(VarIdx, 
-            (between(0, NumVars, VarIdx), 
-             VarIdx < NumVars,
+            (between(0, NumVars1, VarIdx), 
              has_pivot_in_column(Matrix, VarIdx, NumVars)), 
             VarsWithPivots),
     length(VarsWithPivots, Count).
