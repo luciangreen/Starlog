@@ -43,6 +43,61 @@ A = "xy".
 L = [1, 2].
 ```
 
+### Saving Results to Variables
+
+The library provides predicates to explicitly save call results to variables:
+
+#### starlog_call/2 - Execute and Save Result
+
+Execute a Starlog goal and explicitly return the result in a variable:
+
+```prolog
+?- starlog_call(X is "hello":"world", Result).
+Result = "helloworld".
+
+?- starlog_call(Y is [1,2] & [3,4], Result).
+Result = [1, 2, 3, 4].
+
+?- starlog_call(Z is reverse([1,2,3]), Result).
+Result = [3, 2, 1].
+```
+
+#### starlog_eval/2 - Evaluate Expression
+
+Evaluate a Starlog expression and return the result:
+
+```prolog
+?- starlog_eval("x":"y", Result).
+Result = "xy".
+
+?- starlog_eval(1+1, Result).
+Result = 2.
+
+?- starlog_eval([a] & [b,c], Result).
+Result = [a, b, c].
+```
+
+#### starlog_no_eval/2 - Preserve Expression
+
+Preserve a Starlog expression without evaluation:
+
+```prolog
+?- starlog_no_eval(1+1, Result).
+Result = 1+1.
+
+?- starlog_no_eval("hello":"world", Result).
+Result = "hello":"world".
+
+?- starlog_no_eval([a] & [b], Result).
+Result = [a] & [b].
+```
+
+These predicates are useful for:
+- Explicitly capturing results for later use
+- Building symbolic expressions as data structures
+- Template systems and meta-programming
+- Functional composition patterns
+
 ## Starlog Syntax
 
 **Important**: By default, Starlog evaluates all expressions. The `eval()` function is only needed when you want to force evaluation inside `no_eval()` contexts.

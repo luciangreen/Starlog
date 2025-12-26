@@ -5,6 +5,9 @@
 
 :- module(starlog_in_prolog, [
     starlog_call/1,
+    starlog_call/2,
+    starlog_eval/2,
+    starlog_no_eval/2,
     starlog_register_value_builtin/3,
     starlog_unregister_value_builtin/2,
     starlog_set_debug/1,
@@ -75,6 +78,36 @@ goals_to_conjunction([], true).
 starlog_call(Goal) :-
     starlog_expand:expand_starlog_goal(Goal, ExpandedGoal),
     call(ExpandedGoal).
+
+% starlog_call(+Goal, -Result)
+% Execute a Starlog goal and explicitly return the result.
+% This is useful when you want to save the result of a Prolog or Starlog
+% call to a variable. The goal should be of the form 'Var is Expr'.
+% Example: starlog_call(X is "hello":"world", Result) binds Result to "helloworld"
+starlog_call((Var is Expr), Result) :-
+    !,
+    starlog_expand:expand_starlog_goal((Var is Expr), ExpandedGoal),
+    call(ExpandedGoal),
+    Result = Var.
+starlog_call(Goal, _Result) :-
+    throw(error(type_error(starlog_is_expression, Goal), 
+                context(starlog_call/2, 'Goal must be of the form: Var is Expr'))).
+
+% starlog_eval(+Expr, -Result)
+% Evaluate a Starlog expression and return the result.
+% This forces evaluation of the expression, similar to wrapping it in eval().
+% Example: starlog_eval("x":"y", Result) binds Result to "xy"
+% Example: starlog_eval(1+1, Result) binds Result to 2
+starlog_eval(Expr, Result) :-
+    starlog_call((Result is eval(Expr)), Result).
+
+% starlog_no_eval(+Expr, -Result)
+% Preserve a Starlog expression without evaluation and return it.
+% This prevents evaluation of the expression, similar to wrapping it in no_eval().
+% Example: starlog_no_eval("x":"y", Result) binds Result to "x":"y" (not "xy")
+% Example: starlog_no_eval(1+1, Result) binds Result to 1+1 (not 2)
+starlog_no_eval(Expr, Result) :-
+    starlog_call((Result is no_eval(Expr)), Result).
 
 % starlog_register_value_builtin(+Name, +Arity, +PrologPred)
 % Register a new value-returning builtin.
