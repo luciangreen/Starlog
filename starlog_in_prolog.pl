@@ -245,6 +245,8 @@ contains_starlog_op(_ & _) :- !.
 contains_starlog_op(_ • _) :- !.
 contains_starlog_op(..=(_)) :- !.
 contains_starlog_op(=..(_)) :- !.
+contains_starlog_op(eval(_)) :- !.
+contains_starlog_op(no_eval(_)) :- !.
 contains_starlog_op(Expr) :-
     compound(Expr),
     Expr =.. [_|Args],
