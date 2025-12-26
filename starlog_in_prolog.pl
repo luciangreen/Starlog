@@ -25,12 +25,17 @@
     starlog_to_prolog_file/2,
     starlog_to_prolog_file/3,
     solve_equation/2,
-    solve_equation/3
+    solve_equation/3,
+    solve_system/2,
+    solve_system/3,
+    gaussian_elimination/2,
+    gaussian_elimination/3
 ]).
 
 :- use_module(starlog_expand).
 :- use_module(starlog_registry).
 :- use_module(algebra_solver).
+:- use_module(gaussian_elimination).
 
 % Define helper predicates in user module
 :- multifile user:string_number/2.
