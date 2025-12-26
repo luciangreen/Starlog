@@ -108,11 +108,13 @@ The solver uses the Gaussian elimination algorithm with the following steps:
 
 2. **Solution Type Detection**: Determine if system has unique, infinite, or no solution
    - Check for inconsistency (0 = nonzero)
-   - Count non-zero rows vs number of variables
+   - Count variables with pivots (leading coefficients)
+   - If all variables have pivots: unique solution
+   - If some variables lack pivots: infinite solutions (free parameters)
 
 3. **Back Substitution**: Solve for variables starting from last row
    - For unique solutions: compute exact values
-   - For infinite solutions: some variables remain free
+   - For infinite solutions: variables without pivots remain free (unbound)
 
 ## Matrix Format
 
@@ -168,6 +170,25 @@ Solution = [2.25, 1.75, 2.75].
 Type = infinite.
 ```
 
+### Example 4: Parametric System with Free Variable
+
+```prolog
+% System with free variable x₂:
+%   2x₁ + 0x₂ + 3x₃ = 2
+%   3x₁ + 0x₂ + 0x₃ = 1
+%   0x₁ + 0x₂ + 2.25x₃ = 1
+% Solution: (x₁, x₂, x₃) = (1/3, t, 4/9) where t is any value
+
+?- solve_system([[2, 0, 3, 2], [3, 0, 0, 1], [0, 0, 2.25, 1]], Solution, Type).
+Type = infinite,
+Solution = [0.333333..., _FreeVar, 0.444444...].
+
+% The solution shows:
+%   x₁ = 1/3 ≈ 0.333...
+%   x₂ = t (free parameter, shown as unbound variable)
+%   x₃ = 4/9 ≈ 0.444...
+```
+
 ## Features
 
 - ✅ Solves systems with unique solutions
@@ -189,8 +210,8 @@ The algorithm uses partial pivoting, selecting the row with the largest absolute
 
 ### Solution Types
 
-- **Unique**: System has exactly one solution (full rank)
-- **Infinite**: System is underdetermined (rank < number of variables)
+- **Unique**: System has exactly one solution (all variables have pivots)
+- **Infinite**: System is underdetermined (some variables lack pivots, creating free parameters)
 - **None**: System is inconsistent (row with all zeros except constant)
 
 ### Free Variables
@@ -209,6 +230,12 @@ Run the test suite:
 ```bash
 swipl -g "run_all_tests" -t halt tests/test_gaussian_elimination.pl
 ```
+
+## Demo Programs
+
+- `demo_gaussian_elimination.pl`: Basic examples and usage
+- `demo_starlog_gaussian.pl`: Using Gaussian elimination with Starlog syntax
+- `demo_parametric_system.pl`: Parametric system with free variables (x₁=1/3, x₂=t, x₃=4/9)
 
 ## References
 
