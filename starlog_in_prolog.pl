@@ -23,11 +23,14 @@
     starlog_to_prolog_code/3,
     starlog_to_prolog_file/1,
     starlog_to_prolog_file/2,
-    starlog_to_prolog_file/3
+    starlog_to_prolog_file/3,
+    solve_equation/2,
+    solve_equation/3
 ]).
 
 :- use_module(starlog_expand).
 :- use_module(starlog_registry).
+:- use_module(algebra_solver).
 
 % Define helper predicates in user module
 :- multifile user:string_number/2.
