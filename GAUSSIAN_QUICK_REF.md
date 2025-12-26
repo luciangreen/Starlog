@@ -65,6 +65,18 @@ Solution = [2.0, 1.0],
 Type = unique.
 ```
 
+### Example 4: Parametric System
+```prolog
+% System with free variable x₂
+% 2x₁ + 0x₂ + 3x₃ = 2
+% 3x₁ + 0x₂ + 0x₃ = 1
+% 0x₁ + 0x₂ + 2.25x₃ = 1
+% Solution: (1/3, t, 4/9)
+?- solve_system([[2, 0, 3, 2], [3, 0, 0, 1], [0, 0, 2.25, 1]], Solution, Type).
+Solution = [0.333..., _FreeVar, 0.444...],
+Type = infinite.
+```
+
 ## Predicates
 
 - `solve_system(+Matrix, -Solution)` - Solve and return solution
@@ -83,4 +95,5 @@ Type = unique.
 - `GAUSSIAN_ELIMINATION.md` - Full documentation
 - `demo_gaussian_elimination.pl` - Examples
 - `demo_starlog_gaussian.pl` - Starlog syntax examples
+- `demo_parametric_system.pl` - Parametric system example
 - `tests/test_gaussian_elimination.pl` - Test suite
