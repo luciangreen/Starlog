@@ -466,6 +466,13 @@ The decompression algorithm:
 - Uses human-friendly variable names (A, B, C, etc.)
 - Preserves semantics of the original Starlog code
 
+### Output Code to a Variable
+
+```
+?- starlog_to_prolog_code(A is "hello":"world", Code, [print(false)]).
+Code = string_concat("hello", "world", A).
+```
+
 ### Convert Entire Files
 
 Use `starlog_to_prolog_file/1` to convert an entire Starlog file to standard Prolog:
@@ -496,6 +503,9 @@ The library supports bidirectional conversion between Prolog and Starlog:
 ?- starlog_output_code((string_concat("hello"," ",T1), 
                         string_concat(T1,"world",T2)), _, [compress(true)]).
 A is "hello":" ":"world"
+
+?- starlog_output_code(string_concat(A, B, C), Code).
+Code = (A is B:C).
 
 % Starlog → Prolog (with decompression)
 ?- starlog_to_prolog_code(A is "hello":" ":"world").
