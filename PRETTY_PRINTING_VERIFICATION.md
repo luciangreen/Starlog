@@ -59,8 +59,8 @@ A is
 ### Test 2: Prolog Output
 ```prolog
 ?- starlog_to_prolog_code(A is "a":" ":"b").
-string_concat("a"," ",A),
-string_concat(A,"b",A)
+string_concat(" ","b",A),
+string_concat("a",A,B)
 ```
 
 ### Test 3: File Output
