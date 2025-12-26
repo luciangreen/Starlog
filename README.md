@@ -318,6 +318,55 @@ Or write to a file using `starlog_output_file/2` or `starlog_output_file/3`:
 
 The output uses human-friendly variable names (A, B, C, ..., Z, A1, B1, ...) making the code more readable.
 
+### Controlling eval() and no_eval() Output
+
+By default, when outputting Starlog code, the `eval()` and `no_eval()` wrappers are **stripped** from the output, showing only their contents. This makes the output cleaner and more concise, since evaluation is the default behavior in Starlog anyway.
+
+You can control this behavior using the `output_eval` and `output_no_eval` options:
+
+```prolog
+% Default behavior - strips both eval() and no_eval()
+?- starlog_output_code(A is no_eval(1+1)).
+A is 1+1
+
+?- starlog_output_code(B is eval("x":"y")).
+B is "x":"y"
+
+% Keep no_eval() wrappers
+?- starlog_output_code(A is no_eval(1+1), _, [output_no_eval(true)]).
+A is no_eval(1+1)
+
+% Keep eval() wrappers
+?- starlog_output_code(B is eval("x":"y"), _, [output_eval(true)]).
+B is eval("x":"y")
+
+% Keep both wrappers
+?- starlog_output_code(C is no_eval(eval(1+1)), _, [output_eval(true), output_no_eval(true)]).
+C is no_eval(eval(1+1))
+```
+
+The same options work with `starlog_output_file/3`:
+
+```prolog
+% Default - strips both eval() and no_eval()
+?- starlog_output_file('input.pl', user_output).
+
+% Keep no_eval() wrappers
+?- starlog_output_file('input.pl', user_output, [output_no_eval(true)]).
+
+% Keep both eval() and no_eval() wrappers
+?- starlog_output_file('input.pl', user_output, [output_eval(true), output_no_eval(true)]).
+```
+
+Options summary:
+- `output_eval(false)` - Strip `eval()` wrappers (default)
+- `output_eval(true)` - Keep `eval()` wrappers in output
+- `output_no_eval(false)` - Strip `no_eval()` wrappers (default)
+- `output_no_eval(true)` - Keep `no_eval()` wrappers in output
+
+These options can be combined with `compress(true)` for maximum control over the output format.
+
+
 ## Converting Starlog to Prolog
 
 The library also provides features to convert Starlog code back to standard Prolog with maximal decompression, using human-friendly variable names (A, B, C, A1, B1, etc.).
