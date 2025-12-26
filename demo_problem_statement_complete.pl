@@ -18,9 +18,12 @@ demo_string_concat :-
     format('  B = ~w~n', [B]), nl,
     
     write('Verification:'), nl,
-    atom_string(a, AS1), atom_string(A, AS2),
+    % Convert to strings for string_concat verification
+    (atom(a) -> atom_string(a, AS1) ; AS1 = a),
+    (atom(A) -> atom_string(A, AS2) ; AS2 = A),
     string_concat(AS1, AS2, LHS),
-    atom_string(B, BS1), atom_string(b, BS2),
+    (atom(B) -> atom_string(B, BS1) ; BS1 = B),
+    (atom(b) -> atom_string(b, BS2) ; BS2 = b),
     string_concat(BS1, BS2, RHS),
     format('  a + ~w = ~w~n', [A, LHS]),
     format('  ~w + b = ~w~n', [B, RHS]),

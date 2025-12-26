@@ -240,7 +240,7 @@ solve_concat_dual_expr((A • B), (C • D), Goals) :-
     % Use bidirectional atom concat constraint solver
     Goals = starlog_expand:atom_concat_dual(A, B, C, D).
 
-% string_concat_dual(+A, ?B, ?C, +D)
+% string_concat_dual(?A, ?B, ?C, ?D)
 % Bidirectional constraint solver for (A:B) is (C:D)
 % Meaning: string_concat(A, B, Result) and string_concat(C, D, Result)
 % So: A + B = C + D where + is string concatenation
@@ -252,13 +252,15 @@ string_concat_dual(A, B, C, D) :-
          R1 = R2)
     ;
     % Special case: A and D are bound, B and C are variables
-    % Solution: A + B = C + D means B = D and C = A, giving result = A + D
+    % Constraint: A + B = C + D. Solution: B = D and C = A
+    % This gives: A + B = A + D (LHS) and C + D = A + D (RHS), so both sides equal
     ( (nonvar(A), var(B), var(C), nonvar(D)) ->
         B = D,
         C = A
     ;
     % Special case: B and C are bound, A and D are variables  
-    % Solution: A + B = C + D means A = C and D = B, giving result = C + B
+    % Constraint: A + B = C + D. Solution: A = C and D = B
+    % This gives: A + B = C + B (LHS) and C + D = C + B (RHS), so both sides equal
     (var(A), nonvar(B), nonvar(C), var(D)) ->
         A = C,
         D = B
@@ -269,7 +271,7 @@ string_concat_dual(A, B, C, D) :-
         string_concat(C, D, Result)
     ).
 
-% atom_concat_dual(+A, ?B, ?C, +D)
+% atom_concat_dual(?A, ?B, ?C, ?D)
 % Bidirectional constraint solver for (A•B) is (C•D)
 % Meaning: atom_concat(A, B, Result) and atom_concat(C, D, Result)
 % So: A + B = C + D where + is atom concatenation
@@ -281,13 +283,15 @@ atom_concat_dual(A, B, C, D) :-
          R1 = R2)
     ;
     % Special case: A and D are bound, B and C are variables
-    % Solution: A + B = C + D means B = D and C = A, giving result = A + D
+    % Constraint: A + B = C + D. Solution: B = D and C = A
+    % This gives: A + B = A + D (LHS) and C + D = A + D (RHS), so both sides equal
     ( (nonvar(A), var(B), var(C), nonvar(D)) ->
         B = D,
         C = A
     ;
     % Special case: B and C are bound, A and D are variables
-    % Solution: A + B = C + D means A = C and D = B, giving result = C + B
+    % Constraint: A + B = C + D. Solution: A = C and D = B
+    % This gives: A + B = C + B (LHS) and C + D = C + B (RHS), so both sides equal
     (var(A), nonvar(B), nonvar(C), var(D)) ->
         A = C,
         D = B
