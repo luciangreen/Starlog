@@ -47,6 +47,29 @@ expand_starlog_term(Term, Term).
 % expand_goal_internal(+Goal, -Expanded)
 % Internal goal expansion logic.
 
+% Handle variables - don't expand them
+expand_goal_internal(Goal, Goal) :-
+    var(Goal),
+    !.
+
+% Special pattern: Var=(StarlogGoal),Var -> Var=(StarlogGoal),starlog_call(Var)
+% or Var=(StarlogGoal),(Var,Rest) -> Var=(StarlogGoal),(starlog_call(Var),Rest)
+% This allows A=(C is no_eval(eval(1+1))),A to work correctly
+expand_goal_internal((A, B), Expanded) :-
+    nonvar(A),
+    compound(A),
+    A = (Var = RHS),  % Check if A is a unification
+    var(Var),
+    nonvar(RHS),
+    contains_starlog_in_term(RHS),
+    is_var_or_starts_with_var(B, Var),
+    !,
+    % Transform to use starlog_call
+    expand_goal_internal(A, EA),
+    replace_first_var_with_starlog_call(B, Var, NewB),
+    expand_goal_internal(NewB, EB),
+    Expanded = (EA, EB).
+
 % Handle conjunctions
 expand_goal_internal((A, B), (EA, EB)) :-
     !,
@@ -128,6 +151,41 @@ contains_starlog_operator(Expr) :-
     Expr =.. [_|Args],
     member(Arg, Args),
     contains_starlog_operator(Arg).
+
+% contains_starlog_in_term(+Term)
+% Check if a term contains Starlog expressions (is/2 with Starlog operators or special functions)
+contains_starlog_in_term(_ is Expr) :-
+    is_starlog_expr(Expr),
+    !.
+contains_starlog_in_term(Term) :-
+    compound(Term),
+    Term \= (_ is _),  % Not already checked above
+    Term =.. [_|Args],
+    member(Arg, Args),
+    contains_starlog_in_term(Arg).
+
+% is_var_or_starts_with_var(+Goal, +Var)
+% Check if Goal is Var or starts with Var (i.e., (Var, Rest))
+% Fails if Goal doesn't match either pattern (intentional - used in pattern detection)
+is_var_or_starts_with_var(Goal, Var) :-
+    Goal == Var,
+    !.
+is_var_or_starts_with_var((First, _Rest), Var) :-
+    First == Var,
+    !.
+
+% replace_first_var_with_starlog_call(+Goal, +Var, -NewGoal)
+% Replace the first occurrence of Var in Goal with starlog_call(Var)
+% If Goal doesn't start with Var, returns Goal unchanged (fallback for non-matching cases)
+replace_first_var_with_starlog_call(Goal, Var, starlog_in_prolog:starlog_call(Var)) :-
+    Goal == Var,
+    !.
+replace_first_var_with_starlog_call((First, Rest), Var, (starlog_in_prolog:starlog_call(Var), Rest)) :-
+    First == Var,
+    !.
+% Fallback: if Goal doesn't match expected patterns, return unchanged
+% This handles edge cases where the pattern detection succeeded but replacement context differs
+replace_first_var_with_starlog_call(Goal, _Var, Goal).
 
 % is_arithmetic(+Expr)
 % Check if expression is arithmetic (should use Prolog is/2).

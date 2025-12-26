@@ -65,6 +65,36 @@ user:term_expansion(Term, Expanded) :-
     starlog_expand:expand_starlog_term(Term, Expanded),
     Term \== Expanded.
 
+% Install call hook to support runtime goal expansion
+% This allows variable-bound Starlog goals to work correctly when called via call/1
+:- multifile prolog:call_hook/2.
+
+prolog:call_hook(Goal, ExpandedGoal) :-
+    % Quick check: only try to expand if Goal looks like it might be a Starlog expression
+    % This avoids the overhead of attempted expansion for normal Prolog goals
+    (var(Goal) ; compound(Goal)),
+    might_be_starlog_goal(Goal),
+    % Try to expand as a Starlog goal
+    starlog_expand:expand_starlog_goal(Goal, Expanded),
+    Goal \== Expanded,
+    !,
+    % Goal was expanded - return the expanded version
+    ExpandedGoal = Expanded.
+
+% might_be_starlog_goal(+Goal)
+% Quick preliminary check to filter out obviously non-Starlog goals
+% This improves performance by avoiding expensive expansion attempts on normal Prolog goals
+might_be_starlog_goal(Goal) :-
+    var(Goal),  % Variables might contain Starlog goals
+    !.
+might_be_starlog_goal(_ is _) :- !.  % Contains 'is' - might be Starlog
+might_be_starlog_goal((_ , _)) :- !.  % Conjunction - might contain Starlog
+might_be_starlog_goal((_ ; _)) :- !.  % Disjunction - might contain Starlog
+might_be_starlog_goal((_ -> _)) :- !.  % If-then - might contain Starlog
+might_be_starlog_goal(\+ _) :- !.  % Negation - might contain Starlog
+% Note: We err on the side of caution - if we're not sure, we say it might be Starlog
+% The actual expansion will fail quickly if it's not really Starlog
+
 % goals_to_conjunction(+Goals, -Conjunction)
 % Convert a list of goals to a conjunction.
 goals_to_conjunction([Goal], Goal) :- !.

@@ -43,6 +43,39 @@ A = "xy".
 L = [1, 2].
 ```
 
+### Variable-Bound Starlog Goals
+
+The library automatically detects and handles variable-bound Starlog goals, allowing you to bind a goal to a variable and execute it later:
+
+```prolog
+?- use_module(starlog_in_prolog).
+?- A = (C is no_eval(eval(1+1))), A.
+C = 2.
+
+?- B = (D is "Hello" : "World"), B.
+D = "HelloWorld".
+
+?- E = (F is [1,2] & [3,4]), E.
+F = [1, 2, 3, 4].
+```
+
+**How it works**: When the library detects the pattern `Var = (StarlogGoal), Var`, it automatically transforms it to `Var = (StarlogGoal), starlog_call(Var)` during compilation. This ensures that the Starlog expression is properly expanded when executed.
+
+**Important notes**:
+- This pattern detection works in Prolog files and at the interactive REPL
+- It does NOT work with `-g` command-line goals (use `starlog_call/1` instead)
+- For more complex scenarios where the goal is not executed immediately after binding, use `starlog_call/1` explicitly:
+
+```prolog
+% When the goal is stored and executed later
+process_goal(Goal) :-
+    % ... other code ...
+    starlog_call(Goal).
+
+?- MyGoal = (X is "a":"b":"c"), process_goal(MyGoal).
+X = "abc".
+```
+
 ### Saving Results to Variables
 
 The library provides predicates to explicitly save call results to variables:
@@ -615,7 +648,46 @@ E = [2, 4, 5].  % Only eval parts are evaluated
 F = [1, 2].  % List append is evaluated
 ```
 
-### Example 6: Term Manipulation with Univ Operators
+### Example 6: Variable-Bound Starlog Goals
+
+```prolog
+:- use_module(starlog_in_prolog).
+
+% Basic pattern: bind a goal to a variable and execute it
+?- A = (C is no_eval(eval(1+1))), A.
+C = 2.
+
+% Bind and execute string concatenation
+?- B = (D is "Hello" : " " : "World"), B.
+D = "Hello World".
+
+% Bind and execute list operations
+?- E = (F is reverse([1,2] & [3,4])), E.
+F = [4, 3, 2, 1].
+
+% Multiple variable-bound goals
+?- G = (H is "first":"part"), G, I = (J is "second":"part"), I.
+H = "firstpart",
+J = "secondpart".
+
+% For non-immediate execution, use starlog_call/1
+process_goal(Goal) :-
+    write('Processing: '),
+    starlog_call(Goal),
+    write('Done!'), nl.
+
+?- MyGoal = (X is "delayed":"execution"), process_goal(MyGoal).
+Processing: Done!
+X = "delayedexecution".
+```
+
+This feature enables:
+- Dynamic goal construction and execution
+- Storing Starlog expressions as first-class values
+- Meta-programming patterns with Starlog syntax
+- Deferred execution of Starlog expressions
+
+### Example 7: Term Manipulation with Univ Operators
 
 ```prolog
 :- use_module(starlog_in_prolog).
