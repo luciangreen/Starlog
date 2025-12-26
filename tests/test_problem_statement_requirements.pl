@@ -34,6 +34,20 @@ test_req1_nested :-
     assertion(B = [1,2]),
     write(' ✓'), nl.
 
+test_req1_string_var_solve :-
+    write('Req 1.5: String concat variable solving - (a : A) is (B : b)...'),
+    (a : A) is (B : b),
+    assertion(A = b),
+    assertion(B = a),
+    write(' ✓ (A=b, B=a)'), nl.
+
+test_req1_atom_var_solve :-
+    write('Req 1.6: Atom concat variable solving - (a • A) is (B • b)...'),
+    (a • A) is (B • b),
+    assertion(A = b),
+    assertion(B = a),
+    write(' ✓ (A=b, B=a)'), nl.
+
 % Requirement 2: Arithmetic operator selection with disjunction
 % Pattern: 3 is 1(A is +;-;/)2
 % Find the operator A that makes 3 = 1 A 2 true
@@ -118,26 +132,28 @@ run_tests :-
     catch(test_req1_string_concat, E2, (write('✗ FAILED: '), write(E2), nl)),
     catch(test_req1_atom_concat, E3, (write('✗ FAILED: '), write(E3), nl)),
     catch(test_req1_nested, E4, (write('✗ FAILED: '), write(E4), nl)),
+    catch(test_req1_string_var_solve, E5, (write('✗ FAILED: '), write(E5), nl)),
+    catch(test_req1_atom_var_solve, E6, (write('✗ FAILED: '), write(E6), nl)),
     nl,
     
     write('=== Requirement 2: Operator Selection ==='), nl,
-    catch(test_req2_operator_selection, E5, (write('✗ FAILED: '), write(E5), nl)),
-    catch(test_req2_multiple_solutions, E6, (write('✗ FAILED: '), write(E6), nl)),
+    catch(test_req2_operator_selection, E7, (write('✗ FAILED: '), write(E7), nl)),
+    catch(test_req2_multiple_solutions, E8, (write('✗ FAILED: '), write(E8), nl)),
     nl,
     
     write('=== Requirement 3: Value Selection ==='), nl,
-    catch(test_req3_value_selection, E7, (write('✗ FAILED: '), write(E7), nl)),
-    catch(test_req3_multiple_solutions, E8, (write('✗ FAILED: '), write(E8), nl)),
+    catch(test_req3_value_selection, E9, (write('✗ FAILED: '), write(E9), nl)),
+    catch(test_req3_multiple_solutions, E10, (write('✗ FAILED: '), write(E10), nl)),
     nl,
     
     write('=== Requirement 4: Nested is Expressions ==='), nl,
-    catch(test_req4_nested_is, E9, (write('✗ FAILED: '), write(E9), nl)),
-    catch(test_req4_complex_nested, E10, (write('✗ FAILED: '), write(E10), nl)),
+    catch(test_req4_nested_is, E11, (write('✗ FAILED: '), write(E11), nl)),
+    catch(test_req4_complex_nested, E12, (write('✗ FAILED: '), write(E12), nl)),
     nl,
     
     write('=== Integration Tests ==='), nl,
-    catch(test_integration_1, E11, (write('✗ FAILED: '), write(E11), nl)),
-    catch(test_integration_2, E12, (write('✗ FAILED: '), write(E12), nl)),
+    catch(test_integration_1, E13, (write('✗ FAILED: '), write(E13), nl)),
+    catch(test_integration_2, E14, (write('✗ FAILED: '), write(E14), nl)),
     nl,
     
     write('==================================================================='), nl,
