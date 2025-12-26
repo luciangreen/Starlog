@@ -65,6 +65,18 @@ user:term_expansion(Term, Expanded) :-
     starlog_expand:expand_starlog_term(Term, Expanded),
     Term \== Expanded.
 
+% Install call hook to support runtime goal expansion
+% This allows variable-bound Starlog goals to work correctly when called via call/1
+:- multifile prolog:call_hook/2.
+
+prolog:call_hook(Goal, ExpandedGoal) :-
+    % Try to expand as a Starlog goal
+    starlog_expand:expand_starlog_goal(Goal, Expanded),
+    Goal \== Expanded,
+    !,
+    % Goal was expanded - return the expanded version
+    ExpandedGoal = Expanded.
+
 % goals_to_conjunction(+Goals, -Conjunction)
 % Convert a list of goals to a conjunction.
 goals_to_conjunction([Goal], Goal) :- !.
