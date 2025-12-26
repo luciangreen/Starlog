@@ -750,7 +750,43 @@ This feature is particularly useful for:
 - Constraint-based programming
 - Verifying expression equivalence
 
-### Example 8: Term Manipulation with Univ Operators
+### Example 8: Operator and Value Selection with Disjunction
+
+```prolog
+:- use_module(starlog_in_prolog).
+
+% Find operator Op where 3 = 1 Op 2
+find_operator :-
+    findall(Op, (member(Op, [+, -, *, /]), Expr =.. [Op, 1, 2], 3 is Expr), Ops),
+    format('Operators that satisfy 3 = 1 Op 2: ~w~n', [Ops]).
+
+?- find_operator.
+Operators that satisfy 3 = 1 Op 2: [+]
+
+% Find value A where 3 = 1 + A
+find_value :-
+    findall(A, (member(A, [1, 2, 3]), 3 is 1+A), As),
+    format('Values that satisfy 3 = 1 + A: ~w~n', [As]).
+
+?- find_value.
+Values that satisfy 3 = 1 + A: [2]
+
+% Find multiple solutions
+find_multiple_operators :-
+    findall(Op, (member(Op, [+, -, *, /]), Expr =.. [Op, 2, 3], 6 is Expr), Ops),
+    format('Operators that satisfy 6 = 2 Op 3: ~w~n', [Ops]).
+
+?- find_multiple_operators.
+Operators that satisfy 6 = 2 Op 3: [*]
+```
+
+This pattern (from the problem statement "3 is 1(A is +;-;/)2") demonstrates:
+- Operator selection from a set of choices
+- Value selection from a set of candidates
+- Using `findall` with arithmetic constraints
+- Solving mathematical equations by testing alternatives
+
+### Example 9: Term Manipulation with Univ Operators
 
 ```prolog
 :- use_module(starlog_in_prolog).
