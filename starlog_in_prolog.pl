@@ -759,6 +759,12 @@ pretty_write_goal(Out is Expr, OutputStream, IndentLevel) :-
     write_indent(OutputStream, NextLevel),
     write_term(OutputStream, Expr, [numbervars(true), quoted(true)]).
 
+% Handle control structures in goal position
+pretty_write_goal(Goal, OutputStream, IndentLevel) :-
+    (Goal = (_ -> _ ; _) ; Goal = (_ -> _) ; Goal = (_ ; _) ; Goal = (\+ _) ; Goal = (_ , _)),
+    !,
+    pretty_write_body(Goal, OutputStream, IndentLevel).
+
 % Default: simple goal
 pretty_write_goal(Goal, OutputStream, _IndentLevel) :-
     write_term(OutputStream, Goal, [numbervars(true), quoted(true)]).
