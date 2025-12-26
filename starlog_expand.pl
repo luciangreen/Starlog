@@ -100,6 +100,19 @@ expand_goal_internal(\+ A, \+ EA) :-
     !,
     expand_goal_internal(A, EA).
 
+% Starlog is-expression with both sides being expressions: (Expr1 is Expr2)
+% This handles cases like ([1] & A) is (B & [2])
+expand_goal_internal((LHS is RHS), Expanded) :-
+    is_starlog_expr(LHS),
+    is_starlog_expr(RHS),
+    !,
+    % Compile both sides and unify the results
+    compile_starlog_expr(LHS, LHSResult, LHSGoals),
+    compile_starlog_expr(RHS, RHSResult, RHSGoals),
+    append(LHSGoals, RHSGoals, AllGoals),
+    append(AllGoals, [LHSResult = RHSResult], FinalGoals),
+    list_to_conjunction(FinalGoals, Expanded).
+
 % Starlog is-expression: Out is Expr
 expand_goal_internal((Out is Expr), Expanded) :-
     is_starlog_expr(Expr),
