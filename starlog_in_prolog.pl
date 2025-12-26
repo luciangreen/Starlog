@@ -203,12 +203,18 @@ starlog_output_code(Goal, StarlogCode) :-
 % Options:
 %   compress(true) - Apply maximal compression by nesting expressions
 %   compress(false) - No compression (default)
+%   output_eval(true) - Keep eval() wrappers in output
+%   output_eval(false) - Strip eval() wrappers (default)
+%   output_no_eval(true) - Keep no_eval() wrappers in output
+%   output_no_eval(false) - Strip no_eval() wrappers (default)
 starlog_output_code(Goal, StarlogCode, Options) :-
     % First, check if it's already a Starlog expression
     (is_already_starlog(Goal) ->
         % If it's already Starlog, just rename variables and output
         rename_variables(Goal, RenamedGoal),
-        StarlogCode = RenamedGoal,
+        % Strip eval/no_eval based on options
+        strip_eval_no_eval_based_on_options(RenamedGoal, Options, StrippedGoal),
+        StarlogCode = StrippedGoal,
         pretty_write_body(StarlogCode, user_output, 0), nl
     ;
         % Otherwise, convert Prolog to Starlog
@@ -220,7 +226,9 @@ starlog_output_code(Goal, StarlogCode, Options) :-
             CompressedForm = StarlogForm
         ),
         rename_variables(CompressedForm, RenamedStarlog),
-        StarlogCode = RenamedStarlog,
+        % Strip eval/no_eval based on options
+        strip_eval_no_eval_based_on_options(RenamedStarlog, Options, StrippedStarlog),
+        StarlogCode = StrippedStarlog,
         pretty_write_body(StarlogCode, user_output, 0), nl
     ).
 
@@ -242,6 +250,91 @@ contains_starlog_op(Expr) :-
     Expr =.. [_|Args],
     member(Arg, Args),
     contains_starlog_op(Arg).
+
+% strip_eval_no_eval_based_on_options(+Term, +Options, -StrippedTerm)
+% Strip eval() and no_eval() wrappers based on options.
+% By default (if options not specified), both are stripped.
+strip_eval_no_eval_based_on_options(Term, Options, StrippedTerm) :-
+    % Check options - default is to strip both eval and no_eval
+    (member(output_eval(true), Options) -> StripEval = false ; StripEval = true),
+    (member(output_no_eval(true), Options) -> StripNoEval = false ; StripNoEval = true),
+    strip_eval_no_eval(Term, StripEval, StripNoEval, StrippedTerm).
+
+% strip_eval_no_eval(+Term, +StripEval, +StripNoEval, -StrippedTerm)
+% Strip eval() and/or no_eval() wrappers from a term.
+% StripEval: true to remove eval() wrappers, false to keep them
+% StripNoEval: true to remove no_eval() wrappers, false to keep them
+
+% Handle conjunction
+strip_eval_no_eval((A, B), StripEval, StripNoEval, (StrippedA, StrippedB)) :-
+    !,
+    strip_eval_no_eval(A, StripEval, StripNoEval, StrippedA),
+    strip_eval_no_eval(B, StripEval, StripNoEval, StrippedB).
+
+% Handle disjunction
+strip_eval_no_eval((A ; B), StripEval, StripNoEval, (StrippedA ; StrippedB)) :-
+    !,
+    strip_eval_no_eval(A, StripEval, StripNoEval, StrippedA),
+    strip_eval_no_eval(B, StripEval, StripNoEval, StrippedB).
+
+% Handle if-then-else
+strip_eval_no_eval((A -> B ; C), StripEval, StripNoEval, (StrippedA -> StrippedB ; StrippedC)) :-
+    !,
+    strip_eval_no_eval(A, StripEval, StripNoEval, StrippedA),
+    strip_eval_no_eval(B, StripEval, StripNoEval, StrippedB),
+    strip_eval_no_eval(C, StripEval, StripNoEval, StrippedC).
+
+% Handle if-then
+strip_eval_no_eval((A -> B), StripEval, StripNoEval, (StrippedA -> StrippedB)) :-
+    !,
+    strip_eval_no_eval(A, StripEval, StripNoEval, StrippedA),
+    strip_eval_no_eval(B, StripEval, StripNoEval, StrippedB).
+
+% Handle negation
+strip_eval_no_eval(\+ A, StripEval, StripNoEval, \+ StrippedA) :-
+    !,
+    strip_eval_no_eval(A, StripEval, StripNoEval, StrippedA).
+
+% Handle 'is' expressions
+strip_eval_no_eval((Out is Expr), StripEval, StripNoEval, (Out is StrippedExpr)) :-
+    !,
+    strip_eval_no_eval(Expr, StripEval, StripNoEval, StrippedExpr).
+
+% Strip eval() wrapper if requested
+strip_eval_no_eval(eval(Inner), true, StripNoEval, StrippedInner) :-
+    !,
+    strip_eval_no_eval(Inner, true, StripNoEval, StrippedInner).
+
+% Keep eval() wrapper if requested
+strip_eval_no_eval(eval(Inner), false, StripNoEval, eval(StrippedInner)) :-
+    !,
+    strip_eval_no_eval(Inner, false, StripNoEval, StrippedInner).
+
+% Strip no_eval() wrapper if requested
+strip_eval_no_eval(no_eval(Inner), StripEval, true, StrippedInner) :-
+    !,
+    strip_eval_no_eval(Inner, StripEval, true, StrippedInner).
+
+% Keep no_eval() wrapper if requested
+strip_eval_no_eval(no_eval(Inner), StripEval, false, no_eval(StrippedInner)) :-
+    !,
+    strip_eval_no_eval(Inner, StripEval, false, StrippedInner).
+
+% Handle compound terms recursively
+strip_eval_no_eval(Term, StripEval, StripNoEval, StrippedTerm) :-
+    compound(Term),
+    !,
+    Term =.. [Functor|Args],
+    maplist(strip_eval_no_eval_arg(StripEval, StripNoEval), Args, StrippedArgs),
+    StrippedTerm =.. [Functor|StrippedArgs].
+
+% Atomic terms - return as-is
+strip_eval_no_eval(Term, _StripEval, _StripNoEval, Term).
+
+% strip_eval_no_eval_arg(+StripEval, +StripNoEval, +Arg, -StrippedArg)
+% Helper for stripping in arguments
+strip_eval_no_eval_arg(StripEval, StripNoEval, Arg, StrippedArg) :-
+    strip_eval_no_eval(Arg, StripEval, StripNoEval, StrippedArg).
 
 % convert_prolog_to_starlog(+PrologGoal, -StarlogForm)
 % Convert a Prolog goal to Starlog notation.
@@ -472,6 +565,10 @@ starlog_output_file(FilePath, OutputStream) :-
 % Options:
 %   compress(true) - Apply maximal compression by nesting expressions
 %   compress(false) - No compression (default)
+%   output_eval(true) - Keep eval() wrappers in output
+%   output_eval(false) - Strip eval() wrappers (default)
+%   output_no_eval(true) - Keep no_eval() wrappers in output
+%   output_no_eval(false) - Strip no_eval() wrappers (default)
 starlog_output_file(FilePath, OutputStream, Options) :-
     format(OutputStream, '% Starlog code output for file: ~w~n~n', [FilePath]),
     setup_call_cleanup(
@@ -516,9 +613,11 @@ output_clause_as_starlog((Head :- Body), OutputStream, Options) :-
         CompressedBody = StarlogBody
     ),
     rename_variables((Head :- CompressedBody), RenamedClause),
-    % Use pretty printer for the clause
+    % Strip eval/no_eval based on options
     RenamedClause = (RenamedHead :- RenamedBody),
-    pretty_write_term_at_level((RenamedHead :- RenamedBody), OutputStream, 0),
+    strip_eval_no_eval_based_on_options(RenamedBody, Options, StrippedBody),
+    % Use pretty printer for the clause
+    pretty_write_term_at_level((RenamedHead :- StrippedBody), OutputStream, 0),
     write(OutputStream, '.'), nl(OutputStream), nl(OutputStream).
 
 output_clause_as_starlog(Fact, OutputStream, _Options) :-
