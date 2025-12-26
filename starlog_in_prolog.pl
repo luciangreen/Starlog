@@ -653,7 +653,7 @@ pretty_write_body((Goal, Rest), OutputStream, IndentLevel) :-
 pretty_write_body(\+ Goal, OutputStream, IndentLevel) :-
     !,
     write_indent(OutputStream, IndentLevel),
-    write(OutputStream, '\\+'),
+    write(OutputStream, '\\+ '),
     (is_simple_negated_goal(Goal) ->
         % Simple goal - write on same line
         pretty_write_goal(Goal, OutputStream, IndentLevel)
@@ -681,6 +681,12 @@ is_simple_negated_goal(Goal) :-
 % pretty_write_goal(+Goal, +OutputStream, +IndentLevel)
 % Write a single goal with context-aware formatting.
 
+% is_complex_control_goal(+Goal)
+% Check if a goal is a complex control structure that needs indentation.
+is_complex_control_goal(Goal) :-
+    compound(Goal),
+    (Goal = (_ , _) ; Goal = (_ ; _) ; Goal = (_ -> _) ; Goal = (\+ _)).
+
 % findall with indentation
 pretty_write_goal(findall(Template, Goal, Result), OutputStream, IndentLevel) :-
     !,
@@ -693,7 +699,7 @@ pretty_write_goal(findall(Template, Goal, Result), OutputStream, IndentLevel) :-
     nl(OutputStream),
     write_indent(OutputStream, NextLevel),
     % Format the goal - check if it needs indentation
-    (compound(Goal), (Goal = (_ , _) ; Goal = (_ ; _) ; Goal = (_ -> _) ; Goal = (\+ _)) ->
+    (is_complex_control_goal(Goal) ->
         % Complex goal - use body formatter with parens
         write(OutputStream, '('),
         nl(OutputStream),
@@ -731,7 +737,7 @@ pretty_write_goal(Out is findall(Template, Goal), OutputStream, IndentLevel) :-
     nl(OutputStream),
     write_indent(OutputStream, NextNextLevel),
     % Check if goal is complex - if so, wrap in parens and indent
-    (compound(Goal), (Goal = (_ , _) ; Goal = (_ ; _) ; Goal = (_ -> _)) ->
+    (is_complex_control_goal(Goal) ->
         % Complex goal - format with indentation and wrap in parens
         write(OutputStream, '('),
         nl(OutputStream),
