@@ -224,12 +224,13 @@ rename_vars_list([Var|Vars], Index) :-
 % Output the Starlog code representation of a goal with human-friendly variable names.
 % This shows how a Prolog goal would be written in Starlog notation.
 starlog_output_code(Goal) :-
-    starlog_output_code(Goal, _).
+    starlog_output_code(Goal, _, [print(true)]).
 
 % starlog_output_code(+Goal, -StarlogCode)
-% Output the Starlog code representation of a goal and return it as a term.
+% Get the Starlog code representation of a goal and return it as a term.
+% Does not print to stdout - only returns the code in the variable.
 starlog_output_code(Goal, StarlogCode) :-
-    starlog_output_code(Goal, StarlogCode, []).
+    starlog_output_code(Goal, StarlogCode, [print(false)]).
 
 % starlog_output_code(+Goal, -StarlogCode, +Options)
 % Output the Starlog code representation with options.
@@ -240,6 +241,8 @@ starlog_output_code(Goal, StarlogCode) :-
 %   output_eval(false) - Strip eval() wrappers (default)
 %   output_no_eval(true) - Keep no_eval() wrappers in output
 %   output_no_eval(false) - Strip no_eval() wrappers (default)
+%   print(true) - Print to stdout (default for /1 version)
+%   print(false) - Do not print to stdout (default for /2 version)
 starlog_output_code(Goal, StarlogCode, Options) :-
     % First, check if it's already a Starlog expression
     (is_already_starlog(Goal) ->
@@ -247,8 +250,7 @@ starlog_output_code(Goal, StarlogCode, Options) :-
         rename_variables(Goal, RenamedGoal),
         % Strip eval/no_eval based on options
         strip_eval_no_eval_based_on_options(RenamedGoal, Options, StrippedGoal),
-        StarlogCode = StrippedGoal,
-        pretty_write_body(StarlogCode, user_output, 0), nl
+        StarlogCode = StrippedGoal
     ;
         % Otherwise, convert Prolog to Starlog
         convert_prolog_to_starlog(Goal, StarlogForm),
@@ -261,8 +263,13 @@ starlog_output_code(Goal, StarlogCode, Options) :-
         rename_variables(CompressedForm, RenamedStarlog),
         % Strip eval/no_eval based on options
         strip_eval_no_eval_based_on_options(RenamedStarlog, Options, StrippedStarlog),
-        StarlogCode = StrippedStarlog,
+        StarlogCode = StrippedStarlog
+    ),
+    % Print to stdout only if print(true) option is present
+    (member(print(true), Options) ->
         pretty_write_body(StarlogCode, user_output, 0), nl
+    ;
+        true
     ).
 
 % is_already_starlog(+Goal)
@@ -951,19 +958,22 @@ is_control_like(findall(_, _, _)).
 % Convert a Starlog goal to Prolog code with maximal decompression.
 % Outputs the Prolog code with human-friendly variable names.
 starlog_to_prolog_code(StarlogGoal) :-
-    starlog_to_prolog_code(StarlogGoal, _).
+    starlog_to_prolog_code(StarlogGoal, _, [print(true)]).
 
 % starlog_to_prolog_code(+StarlogGoal, -PrologCode)
 % Convert a Starlog goal to Prolog code and return it as a term.
+% Does not print to stdout - only returns the code in the variable.
 starlog_to_prolog_code(StarlogGoal, PrologCode) :-
-    starlog_to_prolog_code(StarlogGoal, PrologCode, []).
+    starlog_to_prolog_code(StarlogGoal, PrologCode, [print(false)]).
 
 % starlog_to_prolog_code(+StarlogGoal, -PrologCode, +Options)
 % Convert a Starlog goal to Prolog code with options.
 % Options:
 %   decompress(true) - Apply maximal decompression (default)
 %   decompress(false) - Minimal decompression
-starlog_to_prolog_code(StarlogGoal, PrologCode, _Options) :-
+%   print(true) - Print to stdout (default for /1 version)
+%   print(false) - Do not print to stdout (default for /2 version)
+starlog_to_prolog_code(StarlogGoal, PrologCode, Options) :-
     % Expand Starlog to Prolog goals
     % Decompression is automatically done by expand_starlog_goal
     % which flattens nested expressions
@@ -971,8 +981,12 @@ starlog_to_prolog_code(StarlogGoal, PrologCode, _Options) :-
     % Apply human-friendly variable renaming
     rename_variables(ExpandedGoal, RenamedGoal),
     PrologCode = RenamedGoal,
-    % Output the result with pretty printing
-    pretty_write_body(PrologCode, user_output, 0), nl.
+    % Print to stdout only if print(true) option is present
+    (member(print(true), Options) ->
+        pretty_write_body(PrologCode, user_output, 0), nl
+    ;
+        true
+    ).
 
 % starlog_to_prolog_file(+FilePath)
 % Convert a Starlog file to Prolog code with maximal decompression.
