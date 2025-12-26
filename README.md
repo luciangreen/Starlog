@@ -811,6 +811,58 @@ T = bar(x, y),
 L = [bar, x, y].
 ```
 
+### Example 10: Algebraic Equation Solver
+
+The library includes an algebra solver that can solve equations by applying operations to both sides to isolate the variable:
+
+```prolog
+:- use_module(algebra_solver).
+
+% Solve the equation from the problem statement
+% (Y+5)/2 = 2
+?- solve_equation((Y+5)/2 is 2, Y, Solution).
+Y = -1,
+Solution = -1.
+
+% Simple linear equations
+?- solve_equation(3*X+5 is 20, X, Solution).
+X = 5,
+Solution = 5.
+
+% Division equations
+?- solve_equation((X-4)/2 is 3, X, Solution).
+X = 10,
+Solution = 10.
+
+% Quadratic equations (powers)
+?- solve_equation(X**2 is 25, X, Solution).
+X = 5.0,
+Solution = 5.0.
+
+% Variable on either side
+?- solve_equation(10 is 2*X, X, Solution).
+X = 5,
+Solution = 5.
+
+% Complex nested equations
+?- solve_equation(((X+2)*3-1)/2 is 7, X, Solution).
+X = 3,
+Solution = 3.
+```
+
+The solver supports:
+- Basic arithmetic operations: +, -, *, /
+- Power operations: **
+- Nested expressions
+- Variable on either side of the equation
+- Automatically applies inverse operations to isolate the variable
+
+This is useful for:
+- Solving algebraic equations programmatically
+- Educational tools for teaching algebra
+- Mathematical modeling and constraint solving
+- Automated problem solving
+
 ## Installation
 
 1. Clone this repository
@@ -834,6 +886,7 @@ swipl -s test_arithmetic_is.pl
 swipl -s test_mixed_prolog_starlog.pl
 swipl -s test_no_eval.pl
 swipl -s test_eval.pl
+swipl -s test_algebra_solver.pl
 ```
 
 ## Requirements
@@ -851,8 +904,10 @@ starlog_in_prolog/
   starlog_in_prolog.pl               # Main library module
   starlog_expand.pl                  # Expander: compile Starlog -> Prolog goals
   starlog_registry.pl                # Builtin mapping registry + extension hooks
+  algebra_solver.pl                  # Algebraic equation solver
   demo_output_feature.pl             # Demo: Prolog to Starlog conversion
   demo_starlog_to_prolog.pl          # Demo: Starlog to Prolog conversion
+  demo_algebra_solver.pl             # Demo: Algebra solver
   tests/
     test_basic.pl                    # Basic functionality tests
     test_nested.pl                   # Nested expression tests
@@ -860,6 +915,7 @@ starlog_in_prolog/
     test_mixed_prolog_starlog.pl     # Mixed Prolog/Starlog tests
     test_starlog_to_prolog.pl        # Starlog to Prolog conversion tests
     test_starlog_to_prolog_file.pl   # File conversion tests
+    test_algebra_solver.pl           # Algebra solver tests
 ```
 
 ## License
