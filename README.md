@@ -863,6 +863,45 @@ This is useful for:
 - Mathematical modeling and constraint solving
 - Automated problem solving
 
+### Example 11: Gaussian Elimination for Systems of Linear Equations
+
+The library includes a Gaussian elimination solver for systems of linear equations:
+
+```prolog
+:- use_module(gaussian_elimination).
+
+% Solve a system of equations
+% 2x + y + 3z = 10
+% 3x + 0y + 1.5z = 4.5
+% 0x + 0y + z = 1
+?- solve_system([[2, 1, 3, 10], [3, 0, 1.5, 4.5], [0, 0, 1, 1]], Solution).
+Solution = [1.0, 5.0, 1].
+
+% With solution type detection
+?- solve_system([[2, 1, 5], [1, -1, 1]], Solution, Type).
+Solution = [2.0, 1.0],
+Type = unique.
+
+% Solve in Starlog syntax
+?- Solution is solve_system([[2, 1, 5], [1, -1, 1]]).
+Solution = [2.0, 1.0].
+```
+
+The Gaussian elimination solver supports:
+- Systems with unique solutions
+- Underdetermined systems (infinite solutions)
+- Detection of inconsistent systems (no solution)
+- Partial pivoting for numerical stability
+- Integration with Starlog syntax
+
+For more details, see [GAUSSIAN_ELIMINATION.md](GAUSSIAN_ELIMINATION.md).
+
+This is useful for:
+- Solving systems of linear equations programmatically
+- Educational tools for teaching linear algebra
+- Scientific computing and numerical methods
+- Engineering and physics applications
+
 ## Installation
 
 1. Clone this repository
