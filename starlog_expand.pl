@@ -109,8 +109,7 @@ expand_goal_internal((LHS is RHS), Expanded) :-
     % Compile both sides and unify the results
     compile_starlog_expr(LHS, LHSResult, LHSGoals),
     compile_starlog_expr(RHS, RHSResult, RHSGoals),
-    append(LHSGoals, RHSGoals, AllGoals),
-    append(AllGoals, [LHSResult = RHSResult], FinalGoals),
+    append(LHSGoals, [LHSResult = RHSResult|RHSGoals], FinalGoals),
     list_to_conjunction(FinalGoals, Expanded).
 
 % Starlog is-expression: Out is Expr
