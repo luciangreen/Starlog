@@ -57,8 +57,10 @@ expand_goal_internal(Goal, Goal) :-
 % This allows A=(C is no_eval(eval(1+1))),A to work correctly
 expand_goal_internal((A, B), Expanded) :-
     nonvar(A),
-    A = (Var = RHS),
+    compound(A),
+    A = (Var = RHS),  % Check if A is a unification
     var(Var),
+    nonvar(RHS),
     contains_starlog_in_term(RHS),
     is_var_or_starts_with_var(B, Var),
     !,
@@ -164,6 +166,7 @@ contains_starlog_in_term(Term) :-
 
 % is_var_or_starts_with_var(+Goal, +Var)
 % Check if Goal is Var or starts with Var (i.e., (Var, Rest))
+% Fails if Goal doesn't match either pattern (intentional - used in pattern detection)
 is_var_or_starts_with_var(Goal, Var) :-
     Goal == Var,
     !.
@@ -173,12 +176,15 @@ is_var_or_starts_with_var((First, _Rest), Var) :-
 
 % replace_first_var_with_starlog_call(+Goal, +Var, -NewGoal)
 % Replace the first occurrence of Var in Goal with starlog_call(Var)
+% If Goal doesn't start with Var, returns Goal unchanged (fallback for non-matching cases)
 replace_first_var_with_starlog_call(Goal, Var, starlog_in_prolog:starlog_call(Var)) :-
     Goal == Var,
     !.
 replace_first_var_with_starlog_call((First, Rest), Var, (starlog_in_prolog:starlog_call(Var), Rest)) :-
     First == Var,
     !.
+% Fallback: if Goal doesn't match expected patterns, return unchanged
+% This handles edge cases where the pattern detection succeeded but replacement context differs
 replace_first_var_with_starlog_call(Goal, _Var, Goal).
 
 % is_arithmetic(+Expr)
