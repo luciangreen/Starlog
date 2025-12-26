@@ -73,6 +73,21 @@ test_identity :-
 test_identity :-
     write('  FAILED'), nl, fail.
 
+% Test 6: Parametric system from problem statement
+test_parametric_system :-
+    write('Test 6: Parametric system (x₁=1/3, x₂=t, x₃=4/9)'), nl,
+    Matrix = [[2, 0, 3, 2], [3, 0, 0, 1], [0, 0, 2.25, 1]],
+    solve_system(Matrix, Solution, SolutionType),
+    SolutionType = infinite,
+    Solution = [X1, X2, X3],
+    abs(X1 - 1/3) < 0.001,
+    var(X2),  % X2 should be a free variable
+    abs(X3 - 4/9) < 0.001,
+    write('  PASSED'), nl, !.
+
+test_parametric_system :-
+    write('  FAILED'), nl, fail.
+
 run_all_tests :-
     write('======================================'), nl,
     write('Gaussian Elimination Solver Tests'), nl,
@@ -83,6 +98,7 @@ run_all_tests :-
     catch(test_3x3_system, E3, (write('Test 3 error: '), write(E3), nl)),
     catch(test_infinite_solutions, E4, (write('Test 4 error: '), write(E4), nl)),
     catch(test_identity, E5, (write('Test 5 error: '), write(E5), nl)),
+    catch(test_parametric_system, E6, (write('Test 6 error: '), write(E6), nl)),
     
     nl,
     write('======================================'), nl,

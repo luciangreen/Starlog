@@ -166,9 +166,10 @@ detect_solution_type(Matrix, NumVars, SolutionType) :-
     (has_inconsistency(Matrix, NumVars) ->
         SolutionType = none
     ;
-        % Check if we have enough non-zero rows for unique solution
-        count_non_zero_rows(Matrix, NumVars, NonZeroRows),
-        (NonZeroRows =:= NumVars ->
+        % Check if each variable has a pivot (leading coefficient)
+        % A unique solution requires a pivot for every variable
+        count_variables_with_pivots(Matrix, NumVars, NumPivots),
+        (NumPivots =:= NumVars ->
             SolutionType = unique
         ;
             SolutionType = infinite
@@ -206,6 +207,17 @@ all_near_zero([H|T]) :-
 count_non_zero_rows(Matrix, NumVars, Count) :-
     findall(1, (member(Row, Matrix), once(has_non_zero_coeff(Row, NumVars))), Ones),
     length(Ones, Count).
+
+% count_variables_with_pivots(+Matrix, +NumVars, -Count)
+% Count how many variables have a pivot (leading coefficient) in some row
+% A variable has a pivot if it's the first non-zero coefficient in some row
+count_variables_with_pivots(Matrix, NumVars, Count) :-
+    findall(VarIdx, 
+            (between(0, NumVars, VarIdx), 
+             VarIdx < NumVars,
+             has_pivot_in_column(Matrix, VarIdx, NumVars)), 
+            VarsWithPivots),
+    length(VarsWithPivots, Count).
 
 % has_non_zero_coeff(+Row, +NumVars)
 % Check if row has at least one non-zero coefficient
