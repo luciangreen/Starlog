@@ -102,15 +102,22 @@ expand_goal_internal(\+ A, \+ EA) :-
 
 % Starlog is-expression with both sides being expressions: (Expr1 is Expr2)
 % This handles cases like ([1] & A) is (B & [2])
+% Special handling for string/atom concatenation dual expressions
 expand_goal_internal((LHS is RHS), Expanded) :-
     is_starlog_expr(LHS),
     is_starlog_expr(RHS),
     !,
-    % Compile both sides and unify the results
-    compile_starlog_expr(LHS, LHSResult, LHSGoals),
-    compile_starlog_expr(RHS, RHSResult, RHSGoals),
-    append(LHSGoals, [LHSResult = RHSResult|RHSGoals], FinalGoals),
-    list_to_conjunction(FinalGoals, Expanded).
+    % Check if this is a string/atom concat dual expression that needs special handling
+    (is_concat_dual_expr(LHS, RHS) ->
+        % Use bidirectional constraint solving for string/atom concat
+        solve_concat_dual_expr(LHS, RHS, Expanded)
+    ;
+        % Standard dual expression handling
+        compile_starlog_expr(LHS, LHSResult, LHSGoals),
+        compile_starlog_expr(RHS, RHSResult, RHSGoals),
+        append(LHSGoals, [LHSResult = RHSResult|RHSGoals], FinalGoals),
+        list_to_conjunction(FinalGoals, Expanded)
+    ).
 
 % Starlog is-expression: Out is Expr
 expand_goal_internal((Out is Expr), Expanded) :-
@@ -210,6 +217,105 @@ is_arithmetic(Expr) :-
     functor(Expr, Op, 1),
     memberchk(Op, [-, abs, sign, min, max]).
 is_arithmetic(X) :- number(X).
+
+% is_concat_dual_expr(+LHS, +RHS)
+% Check if both sides are string or atom concatenation expressions
+is_concat_dual_expr((_ : _), (_ : _)) :- !.
+is_concat_dual_expr((_ • _), (_ • _)) :- !.
+
+% solve_concat_dual_expr(+LHS, +RHS, -Goals)
+% Solve dual expressions involving string or atom concatenation
+% Pattern: (A:B) is (C:D) means string_concat(A,B) = string_concat(C,D)
+% Pattern: (A•B) is (C•D) means atom_concat(A,B) = atom_concat(C,D)
+
+% String concatenation dual expression
+solve_concat_dual_expr((A : B), (C : D), Goals) :-
+    !,
+    % Use bidirectional string concat constraint solver
+    Goals = starlog_expand:string_concat_dual(A, B, C, D).
+
+% Atom concatenation dual expression  
+solve_concat_dual_expr((A • B), (C • D), Goals) :-
+    !,
+    % Use bidirectional atom concat constraint solver
+    Goals = starlog_expand:atom_concat_dual(A, B, C, D).
+
+% string_concat_dual(+A, ?B, ?C, +D)
+% Bidirectional constraint solver for (A:B) is (C:D)
+% Meaning: string_concat(A, B, Result) and string_concat(C, D, Result)
+% So: A + B = C + D where + is string concatenation
+string_concat_dual(A, B, C, D) :-
+    % If all are bound, just check equality
+    (ground(A), ground(B), ground(C), ground(D)) ->
+        (string_concat(A, B, R1),
+         string_concat(C, D, R2),
+         R1 = R2)
+    ;
+    % Special case: A and D are bound, B and C are variables
+    % Solution: A + B = C + D means B = D and C = A, giving result = A + D
+    ( (nonvar(A), var(B), var(C), nonvar(D)) ->
+        B = D,
+        C = A
+    ;
+    % Special case: B and C are bound, A and D are variables  
+    % Solution: A + B = C + D means A = C and D = B, giving result = C + B
+    (var(A), nonvar(B), nonvar(C), var(D)) ->
+        A = C,
+        D = B
+    ;
+    % If A and D bound but B or C also bound, solve using string operations
+    ( (nonvar(A), nonvar(D)) ->
+        % Convert atoms to strings for manipulation
+        atom_string(A, AS),
+        atom_string(D, DS),
+        % Build result from known parts
+        string_concat(AS, DS, Result),
+        % Now solve for the unknowns
+        string_concat(AS, BS, Result),
+        string_concat(CS, DS, Result),
+        atom_string(B, BS),
+        atom_string(C, CS)
+    ;
+    % Other cases - fall back to standard concat (may fail if not sufficiently instantiated)
+        string_concat(A, B, Result),
+        string_concat(C, D, Result)
+    )).
+
+% atom_concat_dual(+A, ?B, ?C, +D)
+% Bidirectional constraint solver for (A•B) is (C•D)
+% Meaning: atom_concat(A, B, Result) and atom_concat(C, D, Result)
+% So: A + B = C + D where + is atom concatenation
+atom_concat_dual(A, B, C, D) :-
+    % If all are bound, just check equality
+    (ground(A), ground(B), ground(C), ground(D)) ->
+        (atom_concat(A, B, R1),
+         atom_concat(C, D, R2),
+         R1 = R2)
+    ;
+    % Special case: A and D are bound, B and C are variables
+    % Solution: A + B = C + D means B = D and C = A, giving result = A + D
+    ( (nonvar(A), var(B), var(C), nonvar(D)) ->
+        B = D,
+        C = A
+    ;
+    % Special case: B and C are bound, A and D are variables
+    % Solution: A + B = C + D means A = C and D = B, giving result = C + B
+    (var(A), nonvar(B), nonvar(C), var(D)) ->
+        A = C,
+        D = B
+    ;
+    % If A and D bound but B or C also bound, solve using atom operations
+    ( (nonvar(A), nonvar(D)) ->
+        % Build result from known parts
+        atom_concat(A, D, Result),
+        % Now solve for the unknowns
+        atom_concat(A, B, Result),
+        atom_concat(C, D, Result)
+    ;
+    % Other cases - fall back to standard concat
+        atom_concat(A, B, Result),
+        atom_concat(C, D, Result)
+    )).
 
 % compile_starlog_expr(+Expr, +Out, -Goals)
 % Compile a Starlog expression into Prolog goal(s).
