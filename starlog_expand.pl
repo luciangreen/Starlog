@@ -263,23 +263,11 @@ string_concat_dual(A, B, C, D) :-
         A = C,
         D = B
     ;
-    % If A and D bound but B or C also bound, solve using string operations
-    ( (nonvar(A), nonvar(D)) ->
-        % Convert atoms to strings for manipulation
-        atom_string(A, AS),
-        atom_string(D, DS),
-        % Build result from known parts
-        string_concat(AS, DS, Result),
-        % Now solve for the unknowns
-        string_concat(AS, BS, Result),
-        string_concat(CS, DS, Result),
-        atom_string(B, BS),
-        atom_string(C, CS)
-    ;
-    % Other cases - fall back to standard concat (may fail if not sufficiently instantiated)
+    % Other cases - use standard constraint with both concat calls
+    % This will work for cases where append-like behavior applies
         string_concat(A, B, Result),
         string_concat(C, D, Result)
-    )).
+    ).
 
 % atom_concat_dual(+A, ?B, ?C, +D)
 % Bidirectional constraint solver for (A•B) is (C•D)
@@ -304,18 +292,11 @@ atom_concat_dual(A, B, C, D) :-
         A = C,
         D = B
     ;
-    % If A and D bound but B or C also bound, solve using atom operations
-    ( (nonvar(A), nonvar(D)) ->
-        % Build result from known parts
-        atom_concat(A, D, Result),
-        % Now solve for the unknowns
+    % Other cases - use standard constraint with both concat calls
+    % This will work for cases where append-like behavior applies
         atom_concat(A, B, Result),
         atom_concat(C, D, Result)
-    ;
-    % Other cases - fall back to standard concat
-        atom_concat(A, B, Result),
-        atom_concat(C, D, Result)
-    )).
+    ).
 
 % compile_starlog_expr(+Expr, +Out, -Goals)
 % Compile a Starlog expression into Prolog goal(s).
