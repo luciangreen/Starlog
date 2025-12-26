@@ -303,9 +303,17 @@ strip_eval_no_eval((Out is Expr), StripEval, StripNoEval, (Out is StrippedExpr))
     strip_eval_no_eval(Expr, StripEval, StripNoEval, StrippedExpr).
 
 % Strip eval() wrapper if requested
-strip_eval_no_eval(eval(Inner), true, StripNoEval, StrippedInner) :-
+% When stripping eval(), we need to actually evaluate the expression
+strip_eval_no_eval(eval(Inner), true, StripNoEval, EvaluatedResult) :-
     !,
-    strip_eval_no_eval(Inner, true, StripNoEval, StrippedInner).
+    % First evaluate the Inner expression using starlog_call
+    (catch(starlog_call(TempResult is Inner), _, fail) ->
+        % Successfully evaluated - use the result
+        EvaluatedResult = TempResult
+    ;
+        % If evaluation fails, just strip recursively without evaluation
+        strip_eval_no_eval(Inner, true, StripNoEval, EvaluatedResult)
+    ).
 
 % Keep eval() wrapper if requested
 strip_eval_no_eval(eval(Inner), false, StripNoEval, eval(StrippedInner)) :-
