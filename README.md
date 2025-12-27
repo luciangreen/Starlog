@@ -5,7 +5,7 @@
 
 ## Overview
 
-Starlog-in-Prolog is a library that allows developers to write Starlog syntax directly inside normal `.pl` files and run it immediately, without converting files. Starlog is a variant of Prolog that uses a more functional notation, particularly for built-in predicates where the output parameter is represented using an "is" operator rather than as the last argument of a predicate.
+Starlog is a library that allows developers to write Starlog syntax directly inside normal `.pl` files and run it immediately, without converting files. Starlog is a variant of Prolog that uses a more functional notation, particularly for built-in predicates where the output parameter is represented using an "is" operator rather than as the last argument of a predicate.
 
 ## What is Starlog?
 
