@@ -156,7 +156,6 @@ is_starlog_expr(Expr) :-
     \+ is_arithmetic(Expr),  % Exclude arithmetic
     contains_starlog_operator(Expr),
     !.
-is_starlog_expr(_) :- fail.
 
 % contains_starlog_operator(+Term)
 % Check if a term contains Starlog operators (: & • ..= =..) anywhere in its structure.
@@ -248,8 +247,8 @@ solve_concat_dual_expr((A • B), (C • D), Goals) :-
 concat_dual(A, B, C, D, ConcatPred) :-
     % Check if B and D are equal (same suffix) - this handles patterns like (a:A:c) is (B:b:c)
     % where both sides end with 'c'
-    (B == D, nonvar(B)) ->
-        % If B = D, then A+B = C+D simplifies to A+B = C+B, so A = C
+    (B == D, ground(B)) ->
+        % If B = D and they're bound, then A+B = C+D simplifies to A+B = C+B, so A = C
         (is_concat_expr(A, ConcatPred),
          is_concat_expr(C, ConcatPred) ->
             % Both A and C are concat expressions - solve them recursively
@@ -260,8 +259,8 @@ concat_dual(A, B, C, D, ConcatPred) :-
         )
     ;
     % Check if A and C are equal (same prefix) - this handles patterns like (a:X:Y) is (a:Z:W)
-    (A == C, nonvar(A)) ->
-        % If A = C, then A+B = C+D simplifies to A+B = A+D, so B = D
+    (A == C, ground(A)) ->
+        % If A = C and they're bound, then A+B = C+D simplifies to A+B = A+D, so B = D
         (is_concat_expr(B, ConcatPred),
          is_concat_expr(D, ConcatPred) ->
             % Both B and D are concat expressions - solve them recursively
@@ -315,7 +314,6 @@ atom_concat_dual(A, B, C, D) :-
 % Check if Expr is a concatenation expression for the given predicate
 is_concat_expr((_ : _), string_concat) :- !.
 is_concat_expr((_ • _), atom_concat) :- !.
-is_concat_expr(_, _) :- fail.
 
 % solve_nested_concat_dual(+LHS, +RHS, +ConcatPred)
 % Solve nested concatenation dual expressions
