@@ -126,10 +126,10 @@ expand_goal_internal((LHS is RHS), Expanded) :-
     is_starlog_expr(LHS),
     \+ is_starlog_expr(RHS),
     has_append_operator(LHS),
+    extract_list_append_parts(LHS, LeftList, RightList),
     !,
-    % Try constraint-based approach first if lists have concat expressions
-    (extract_list_append_parts(LHS, LeftList, RightList),
-     list_has_concat_with_vars(LeftList) ->
+    % Choose compilation strategy based on whether list has concat with variables
+    (list_has_concat_with_vars(LeftList) ->
         % Use constraint solving for lists with concat expressions and variables
         compile_list_append_constraint(LeftList, RightList, RHS, Expanded)
     ;
@@ -254,8 +254,8 @@ list_has_concat_with_vars(List) :-
 
 % is_concat_expr_with_var(+Expr)
 % Check if expression is a concat with at least one variable
-is_concat_expr_with_var(A : B) :- (var(A) ; var(B)), !.
-is_concat_expr_with_var(A • B) :- (var(A) ; var(B)), !.
+is_concat_expr_with_var(Expr) :- 
+    is_concat_with_check(Expr, has_var).
 
 % is_concat_expr_with_var_deep(+Expr)
 % Check recursively for concat expressions with variables
@@ -263,10 +263,17 @@ is_concat_expr_with_var_deep(A : _) :- var(A), !.
 is_concat_expr_with_var_deep(_ : B) :- var(B), !.
 is_concat_expr_with_var_deep(A • _) :- var(A), !.
 is_concat_expr_with_var_deep(_ • B) :- var(B), !.
-is_concat_expr_with_var_deep(A : B) :- 
+is_concat_expr_with_var_deep(Expr) :- 
+    is_concat_with_check(Expr, deep_check).
+
+% is_concat_with_check(+Expr, +CheckType)
+% Helper to check concat expressions with different check types
+is_concat_with_check(A : B, has_var) :- !, (var(A) ; var(B)).
+is_concat_with_check(A • B, has_var) :- !, (var(A) ; var(B)).
+is_concat_with_check(A : B, deep_check) :- 
     !,
     (is_concat_expr_with_var_deep(A) ; is_concat_expr_with_var_deep(B)).
-is_concat_expr_with_var_deep(A • B) :- 
+is_concat_with_check(A • B, deep_check) :- 
     !,
     (is_concat_expr_with_var_deep(A) ; is_concat_expr_with_var_deep(B)).
 
