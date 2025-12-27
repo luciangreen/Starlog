@@ -14,10 +14,10 @@ test_number_string_arithmetic :-
     ;   write(' ✗ FAIL: Expected "4"'), nl, fail
     ).
 
-% Test 2: number_string with arithmetic concatenated with string
+% Test 2: number_string with arithmetic concatenated with number literal (auto-converted to string)
 test_number_string_concat_string :-
     write('Test 2: A is number_string(2^2) : 2...'),
-    starlog_call(A is number_string(2^2) : 2),
+    starlog_call(A is number_string(2^2) : 2),  % 2 is auto-converted to string by string_concat
     write(' A = '), write(A),
     (   A = "42"
     ->  write(' ✓ PASS'), nl
@@ -54,9 +54,9 @@ test_multiple_concat_arithmetic :-
     ;   write(' ✗ FAIL: Expected "24"'), nl, fail
     ).
 
-% Test 6: Nested arithmetic in reverse
+% Test 6: Verify arithmetic does not break other builtins
 test_arithmetic_in_reverse :-
-    write('Test 6: Test arithmetic doesn\'t break other builtins...'),
+    write('Test 6: Verify arithmetic does not break other builtins...'),
     starlog_call(A is reverse([1,2,3])),
     write(' A = '), write(A),
     (   A = [3,2,1]
