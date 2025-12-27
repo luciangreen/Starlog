@@ -658,12 +658,8 @@ concat_dual(A, B, C, D, ConcatPred) :-
     (var(A), nonvar(B), nonvar(C), nonvar(D)) ->
         (call(ConcatPred, C, D, Result),
          % Now solve A + B = Result for A
-         % Use atom_concat/string_concat's reverse mode
-         (ConcatPred = atom_concat ->
-             atom_concat(A, B, Result)
-         ;
-             string_concat(A, B, Result)
-         ))
+         % Use the same predicate for reverse mode
+         call(ConcatPred, A, B, Result))
     ;
     % Fallback: use standard constraint with both concat calls
     % This handles cases where both sides need to be evaluated and unified

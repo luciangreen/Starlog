@@ -1,7 +1,7 @@
 % test_list_dual_expressions.pl
 % Comprehensive tests for list dual expressions (without &)
 % Tests the requirement: "Complete [A:...a] is [b:...B] and [A•a:c] is [b•B:c]. 
-%                         with any combination of :,• [], arithmetic expression or &"
+%                         with any combination of :,• []"
 
 :- use_module('../starlog').
 
