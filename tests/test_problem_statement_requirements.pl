@@ -148,6 +148,12 @@ test_integration_2 :-
     assertion(N = 3),
     write(' ✓ (L=[1,2,3], N=3)'), nl.
 
+test_integration_3 :-
+    write('Integration 3: Exact problem statement - [5:(2+2)]&A is ["54",3]...'),
+    ([5:(2+2)] & A) is ["54",3],
+    assertion(A = [3]),
+    write(' ✓ (A=[3])'), nl.
+
 run_tests :-
     write('==================================================================='), nl,
     write('Testing Problem Statement Requirements'), nl,
@@ -186,6 +192,7 @@ run_tests :-
     write('=== Integration Tests ==='), nl,
     catch(test_integration_1, E13, (write('✗ FAILED: '), write(E13), nl)),
     catch(test_integration_2, E14, (write('✗ FAILED: '), write(E14), nl)),
+    catch(test_integration_3, E15, (write('✗ FAILED: '), write(E15), nl)),
     nl,
     
     write('==================================================================='), nl,

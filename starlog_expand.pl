@@ -119,6 +119,18 @@ expand_goal_internal((LHS is RHS), Expanded) :-
         list_to_conjunction(FinalGoals, Expanded)
     ).
 
+% Special case: List append dual expression where RHS is a plain value
+% Pattern: ([5:(2+2)] & A) is ["54",3]
+% This compiles the LHS expression and unifies with RHS
+expand_goal_internal((LHS is RHS), Expanded) :-
+    is_starlog_expr(LHS),
+    \+ is_starlog_expr(RHS),
+    has_append_operator(LHS),
+    !,
+    compile_starlog_expr(LHS, LHSResult, LHSGoals),
+    append(LHSGoals, [LHSResult = RHS], FinalGoals),
+    list_to_conjunction(FinalGoals, Expanded).
+
 % Starlog is-expression: Out is Expr
 expand_goal_internal((Out is Expr), Expanded) :-
     is_starlog_expr(Expr),
@@ -169,6 +181,18 @@ contains_starlog_operator(Expr) :-
     Expr =.. [_|Args],
     member(Arg, Args),
     contains_starlog_operator(Arg).
+
+% has_append_operator(+Term)
+% Check if a term has the & (list append) operator
+% This is more specific than contains_starlog_operator as it only checks for &
+has_append_operator(_ & _) :- !.
+has_append_operator(Expr) :-
+    compound(Expr),
+    Expr \= (_ : _),  % Exclude other operators for efficiency
+    Expr \= (_ • _),
+    Expr =.. [_|Args],
+    member(Arg, Args),
+    has_append_operator(Arg).
 
 % contains_starlog_in_term(+Term)
 % Check if a term contains Starlog expressions (is/2 with Starlog operators or special functions)
