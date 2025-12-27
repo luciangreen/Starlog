@@ -386,6 +386,10 @@ compile_value(Expr, Value, Goals) :-
     is_starlog_expr(Expr),
     !,
     compile_starlog_expr(Expr, Value, Goals).
+% Arithmetic expressions should be evaluated when used as builtin arguments
+compile_value(Expr, Value, [Value is Expr]) :-
+    is_arithmetic(Expr),
+    !.
 compile_value(Expr, Expr, []).
 
 % compile_values(+Exprs, -Values, -Goals)
