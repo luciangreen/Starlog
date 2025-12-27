@@ -9,7 +9,7 @@ main :-
     write('  Peel Off Nested Brackets - Demonstration'), nl,
     write('══════════════════════════════════════════════════════'), nl, nl,
     
-    write('Problem: Peel off nested brackets from ["543"] is [5:(2+2):A]'), nl, nl,
+    write('Problem: Peel off nested brackets from ["543"]'), nl, nl,
     
     write('Demonstration:'), nl,
     write('  Input:  ["543"]'), nl,
@@ -18,9 +18,9 @@ main :-
     
     write('Explanation:'), nl,
     write('  The string "543" is converted to:'), nl,
-    write('    - Character \'5\' becomes 5'), nl,
-    write('    - Character \'4\' becomes (2+2)'), nl,
-    write('    - Character \'3\' becomes a variable A'), nl,
+    write('    - Character \'5\' becomes the number 5'), nl,
+    write('    - Character \'4\' becomes the expression (2+2)'), nl,
+    write('    - Character \'3\' becomes an anonymous variable'), nl,
     write('  These are joined with the : operator (string concatenation)'), nl, nl,
     
     write('Additional Examples:'), nl,

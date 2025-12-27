@@ -911,7 +911,7 @@ The library includes a utility function to convert strings with digits into nest
 
 % Peel off brackets from a string
 ?- peel_off_brackets(["543"], Result).
-Result = [5:(2+2):_A].
+Result = [5:(2+2):_].  % The last element is an anonymous variable
 
 % Single character
 ?- peel_off_brackets(["5"], Result).
@@ -923,13 +923,13 @@ Result = [5:(2+2)].
 
 % Works with atoms too
 ?- peel_off_brackets(['543'], Result).
-Result = [5:(2+2):_A].
+Result = [5:(2+2):_].  % The last element is an anonymous variable
 ```
 
 The `peel_off_brackets/2` predicate converts:
-- Character '5' stays as 5
+- Character '5' becomes the number 5
 - Character '4' becomes the expression (2+2)
-- Character '3' becomes a variable
+- Character '3' becomes an anonymous variable
 - Results are joined with the `:` operator (string concatenation)
 
 This is useful for:

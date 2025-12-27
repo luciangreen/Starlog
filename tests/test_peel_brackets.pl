@@ -4,7 +4,7 @@
 :- use_module('../peel_brackets').
 
 test_basic_peel :-
-    write('Test 1: Basic peel off - ["543"] -> [5:(2+2):A]...'),
+    write('Test 1: Basic peel off - ["543"] -> [5:(2+2):_] (anonymous variable)...'),
     peel_off_brackets(["543"], [Result]),
     % Expected: Result = 5:(2+2):_
     % We check the structure
@@ -13,7 +13,7 @@ test_basic_peel :-
     write(' ✓'), nl.
 
 test_peel_with_atom :-
-    write('Test 2: Peel with atom - [\'543\'] -> [5:(2+2):A]...'),
+    write('Test 2: Peel with atom - [\'543\'] -> [5:(2+2):_] (anonymous variable)...'),
     peel_off_brackets(['543'], [Result]),
     Result = (5 : Rest),
     Rest = ((2+2) : _),

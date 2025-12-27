@@ -34,12 +34,12 @@ chars_to_expression([Char|Rest], Result) :-
 
 % char_to_element(+Char, -Element)
 % Converts a character to its representation:
-% - '5' stays as 5 (or atom '5')
-% - '4' becomes (2+2)
-% - '3' becomes variable _A (anonymous variable that represents 'A')
+% - '5' stays as the number 5
+% - '4' becomes the expression (2+2)
+% - '3' becomes an anonymous variable
 char_to_element('5', 5) :- !.
 char_to_element('4', (2+2)) :- !.
-char_to_element('3', _A) :- !.
+char_to_element('3', _) :- !.
 % For other digits, convert to atom
 char_to_element(Char, Atom) :-
     char_code(Char, Code),
