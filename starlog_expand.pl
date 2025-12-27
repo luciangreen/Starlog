@@ -111,6 +111,10 @@ expand_goal_internal((LHS is RHS), Expanded) :-
     (is_concat_dual_expr(LHS, RHS) ->
         % Use bidirectional constraint solving for string/atom concat
         solve_concat_dual_expr(LHS, RHS, Expanded)
+    % Check if this is a list append dual expression with concat on both sides
+    ; is_list_append_dual_expr_with_concat(LHS, RHS) ->
+        % Use bidirectional constraint solving for list append with concat elements
+        solve_list_append_dual_expr(LHS, RHS, Expanded)
     ;
         % Standard dual expression handling
         compile_starlog_expr(LHS, LHSResult, LHSGoals),
@@ -362,6 +366,171 @@ is_arithmetic(X) :- number(X).
 is_concat_dual_expr((_ : _), (_ : _)) :- !.
 is_concat_dual_expr((_ • _), (_ • _)) :- !.
 
+% is_list_append_dual_expr_with_concat(+LHS, +RHS)
+% Check if both sides are list append expressions with concat operations in list elements
+% Pattern: ([A•b] & [d]) is [a•B, d] or similar
+is_list_append_dual_expr_with_concat(LHS, RHS) :-
+    % LHS has append operator
+    has_append_operator(LHS),
+    % Extract parts from LHS
+    extract_list_append_parts(LHS, LHSLeft, LHSRight),
+    % LHS has concat operations in lists
+    (list_has_concat_with_vars(LHSLeft) ; list_has_concat_with_vars(LHSRight)),
+    % RHS is a list (could be plain or have concat operations)
+    (is_list(RHS) ; has_append_operator(RHS)),
+    % Check if RHS has concat operations
+    (is_list(RHS) ->
+        list_has_concat_operations(RHS)
+    ;
+        % RHS has append operator, extract and check
+        extract_list_append_parts(RHS, RHSLeft, RHSRight),
+        (list_has_concat_operations(RHSLeft) ; list_has_concat_operations(RHSRight))
+    ).
+
+% list_has_concat_operations(+List)
+% Check if a list contains concatenation operations (not just variables)
+list_has_concat_operations(List) :-
+    is_list(List),
+    member(Elem, List),
+    is_concat_operation(Elem),
+    !.
+
+% solve_list_append_dual_expr(+LHS, +RHS, -Goals)
+% Solve dual list append expressions where both sides have concat operations
+% Pattern: ([A•b] & [d]) is [a•B, d]
+% Strategy: 
+% 1. Extract list parts from both sides
+% 2. Create variables for concat results on both sides
+% 3. Set up append constraint
+% 4. Add bidirectional concat constraints
+solve_list_append_dual_expr(LHS, RHS, Goals) :-
+    % Extract parts from LHS
+    extract_list_append_parts(LHS, LHSLeft, LHSRight),
+    % Process RHS - could be a plain list or have append operator
+    (is_list(RHS) ->
+        % RHS is a plain list - this is the common case
+        RHSList = RHS,
+        RHSAppendGoals = []
+    ;
+        % RHS has append operator
+        extract_list_append_parts(RHS, RHSLeft, RHSRight),
+        % Compile the RHS append
+        compile_value(RHSRight, RHSRightVal, RHSRightGoals),
+        RHSAppendGoals = RHSRightGoals,
+        % We'll need to append the parts together
+        RHSList = '_placeholder_'  % Will be handled differently
+    ),
+    % Create processed lists with variables for concat operations
+    create_list_with_dual_concat_vars(LHSLeft, ProcessedLHSLeft, LHSLeftConstraints, '_L'),
+    % Also process LHSRight if it's a list (it might have concat operations too)
+    (is_list(LHSRight) ->
+        create_list_with_dual_concat_vars(LHSRight, ProcessedLHSRight, LHSRightConstraints, '_L'),
+        LHSRightGoals = [],
+        LHSRightVal = ProcessedLHSRight
+    ;
+        compile_value(LHSRight, LHSRightVal, LHSRightGoals),
+        LHSRightConstraints = []
+    ),
+    % Combine all LHS constraints
+    append(LHSLeftConstraints, LHSRightConstraints, AllLHSConstraints),
+    % For RHS, we need to process it based on its structure
+    (RHSList = '_placeholder_' ->
+        % RHS has append - process both parts
+        create_list_with_dual_concat_vars(RHSLeft, ProcessedRHSLeft, RHSLeftConstraints, '_R'),
+        (is_list(RHSRight) ->
+            create_list_with_dual_concat_vars(RHSRight, ProcessedRHSRightList, RHSRightListConstraints, '_R'),
+            RHSRightGoals2 = [],
+            RHSRightVal = ProcessedRHSRightList,
+            AllRHSRightConstraints = RHSRightListConstraints
+        ;
+            compile_value(RHSRight, RHSRightVal, RHSRightGoals2),
+            AllRHSRightConstraints = []
+        ),
+        append(RHSAppendGoals, RHSRightGoals2, RHSGoals1),
+        % Build the RHS by appending
+        append(RHSGoals1, [append(ProcessedRHSLeft, RHSRightVal, RHSResult)], RHSGoals),
+        append(RHSLeftConstraints, AllRHSRightConstraints, AllRHSConstraints)
+    ;
+        % RHS is a plain list
+        create_list_with_dual_concat_vars(RHSList, ProcessedRHSList, RHSConstraints, '_R'),
+        RHSResult = ProcessedRHSList,
+        RHSGoals = [],
+        AllRHSConstraints = RHSConstraints
+    ),
+    % Build LHS by appending
+    append(LHSRightGoals, [append(ProcessedLHSLeft, LHSRightVal, LHSResult)], LHSGoals),
+    % Unify the results
+    append(LHSGoals, RHSGoals, PreGoals),
+    append(PreGoals, [LHSResult = RHSResult], UnifyGoals),
+    % Now add the bidirectional concat constraints
+    % Pair up constraints from LHS and RHS
+    create_bidirectional_constraints(AllLHSConstraints, AllRHSConstraints, BidiConstraints),
+    % Combine all goals
+    append(UnifyGoals, BidiConstraints, AllGoals),
+    list_to_conjunction(AllGoals, Goals).
+
+% create_list_with_dual_concat_vars(+InputList, -OutputList, -Constraints, +Prefix)
+% Similar to create_list_with_concat_vars but returns constraints as a list for pairing
+% Prefix helps distinguish variables from LHS and RHS
+create_list_with_dual_concat_vars([], [], [], _).
+create_list_with_dual_concat_vars([Elem|Rest], [ResultVar|ProcessedRest], AllConstraints, Prefix) :-
+    (is_concat_operation(Elem) ->
+        % Element is a concat expression - create constraint info
+        create_dual_concat_constraint_info(Elem, ResultVar, ElemConstraint, Prefix),
+        create_list_with_dual_concat_vars(Rest, ProcessedRest, RestConstraints, Prefix),
+        AllConstraints = [ElemConstraint|RestConstraints]
+    ;
+        % Element is not a concat expression
+        ResultVar = Elem,
+        create_list_with_dual_concat_vars(Rest, ProcessedRest, AllConstraints, Prefix)
+    ).
+
+% create_dual_concat_constraint_info(+ConcatExpr, -ResultVar, -ConstraintInfo, +Prefix)
+% Create constraint information for a concat expression (not yet executable goals)
+% ConstraintInfo is concat_constraint(Op, A, B, ResultVar) where Op is ':' or '•'
+create_dual_concat_constraint_info((A : B), ResultVar, concat_constraint(':', A, B, ResultVar), _Prefix) :- !.
+create_dual_concat_constraint_info((A • B), ResultVar, concat_constraint('•', A, B, ResultVar), _Prefix) :- !.
+
+% create_bidirectional_constraints(+LHSConstraints, +RHSConstraints, -Goals)
+% Pair up constraints from LHS and RHS and create bidirectional solving goals
+% If lists have same length, pair them up and solve bidirectionally
+% Pattern: [concat_constraint('•', A, b, R1)] and [concat_constraint('•', a, B, R2)]
+%   should create: atom_concat(A, b, R1), atom_concat(a, B, R2), R1 = R2
+create_bidirectional_constraints([], [], []) :- !.
+create_bidirectional_constraints([LHSConstr|LHSRest], [RHSConstr|RHSRest], Goals) :-
+    !,
+    % Process this pair
+    create_constraint_pair_goals(LHSConstr, RHSConstr, PairGoals),
+    % Process rest
+    create_bidirectional_constraints(LHSRest, RHSRest, RestGoals),
+    % Combine
+    append(PairGoals, RestGoals, Goals).
+create_bidirectional_constraints(_, _, []).  % Fallback if lists don't match
+
+% create_constraint_pair_goals(+LHSConstr, +RHSConstr, -Goals)
+% Create executable goals for a pair of concat constraints
+% This uses bidirectional constraint solving
+create_constraint_pair_goals(
+    concat_constraint(':', LHS_A, LHS_B, LHS_R),
+    concat_constraint(':', RHS_A, RHS_B, RHS_R),
+    [starlog_expand:string_concat_dual(LHS_A, LHS_B, RHS_A, RHS_B), LHS_R = RHS_R]
+) :- !.
+create_constraint_pair_goals(
+    concat_constraint('•', LHS_A, LHS_B, LHS_R),
+    concat_constraint('•', RHS_A, RHS_B, RHS_R),
+    [starlog_expand:atom_concat_dual(LHS_A, LHS_B, RHS_A, RHS_B), LHS_R = RHS_R]
+) :- !.
+% If operations don't match or other cases, just execute each independently
+create_constraint_pair_goals(LHSConstr, RHSConstr, Goals) :-
+    constraint_to_goals(LHSConstr, LHSGoals),
+    constraint_to_goals(RHSConstr, RHSGoals),
+    append(LHSGoals, RHSGoals, Goals).
+
+% constraint_to_goals(+Constraint, -Goals)
+% Convert a constraint info to executable goals
+constraint_to_goals(concat_constraint(':', A, B, R), [string_concat(A, B, R)]) :- !.
+constraint_to_goals(concat_constraint('•', A, B, R), [atom_concat(A, B, R)]) :- !.
+
 % solve_concat_dual_expr(+LHS, +RHS, -Goals)
 % Solve dual expressions involving string or atom concatenation
 % Pattern: (A:B) is (C:D) means string_concat(A,B) = string_concat(C,D)
@@ -415,6 +584,13 @@ concat_dual(A, B, C, D, ConcatPred) :-
         (call(ConcatPred, A, B, R1),
          call(ConcatPred, C, D, R2),
          R1 = R2)
+    ;
+    % Special case: A and B are bound, C and D are variables
+    % Constraint: A + B = C + D. Solution: C = A and D = B
+    % This handles patterns like (c•d) is (C•D) where we want C=c, D=d
+    (nonvar(A), nonvar(B), var(C), var(D)) ->
+        (C = A,
+         D = B)
     ;
     % Special case: A and D are bound, B and C are variables
     % Constraint: A + B = C + D. Solution: B = D and C = A
