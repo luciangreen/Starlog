@@ -68,13 +68,27 @@ demo_more_examples :-
     
     write('Example 3: List dual expression ([1,2] & A) is (B & [3])'), nl,
     ([1,2] & A2) is (B2 & [3]),
-    format('  A = ~w, B = ~w~n', [A2, B2]), nl.
+    format('  A = ~w, B = ~w~n', [A2, B2]), nl,
+    
+    write('Example 4: Triple string concat (a : A : c) is (B : b : c)'), nl,
+    (a : A3 : c) is (B3 : b : c),
+    format('  A = ~w, B = ~w~n', [A3, B3]), nl,
+    
+    write('Example 5: Triple atom concat (a • A • c) is (B • b • c)'), nl,
+    (a • A4 • c) is (B4 • b • c),
+    format('  A = ~w, B = ~w~n', [A4, B4]), nl,
+    
+    write('Example 6: Quadruple concat (a : A : c : d) is (B : b : c : d)'), nl,
+    (a : A5 : c : d) is (B5 : b : c : d),
+    format('  A = ~w, B = ~w~n', [A5, B5]), nl.
 
 main :-
     write(''), nl,
     write('╔════════════════════════════════════════════════════════╗'), nl,
     write('║  Problem Statement Completion Demonstration           ║'), nl,
-    write('║  Complete a:A is B:b and a•A is B•b                    ║'), nl,
+    write('║  Complete a:A:c is B:b:c and a•A•c is B•b•c           ║'), nl,
+    write('║  (or any atom, string, list or variable in any        ║'), nl,
+    write('║   position of any configuration)                      ║'), nl,
     write('╚════════════════════════════════════════════════════════╝'), nl, nl,
     
     demo_string_concat,

@@ -156,7 +156,6 @@ is_starlog_expr(Expr) :-
     \+ is_arithmetic(Expr),  % Exclude arithmetic
     contains_starlog_operator(Expr),
     !.
-is_starlog_expr(_) :- fail.
 
 % contains_starlog_operator(+Term)
 % Check if a term contains Starlog operators (: & • ..= =..) anywhere in its structure.
@@ -227,6 +226,7 @@ is_concat_dual_expr((_ • _), (_ • _)) :- !.
 % Solve dual expressions involving string or atom concatenation
 % Pattern: (A:B) is (C:D) means string_concat(A,B) = string_concat(C,D)
 % Pattern: (A•B) is (C•D) means atom_concat(A,B) = atom_concat(C,D)
+% Also handles nested patterns like (a:A:c) is (B:b:c)
 
 % String concatenation dual expression
 solve_concat_dual_expr((A : B), (C : D), Goals) :-
@@ -243,7 +243,33 @@ solve_concat_dual_expr((A • B), (C • D), Goals) :-
 % concat_dual(?A, ?B, ?C, ?D, +ConcatPred)
 % Generic bidirectional constraint solver for concat operations
 % ConcatPred should be string_concat or atom_concat
+% Handles both simple binary and nested concatenation expressions
 concat_dual(A, B, C, D, ConcatPred) :-
+    % Check if B and D are equal (same suffix) - this handles patterns like (a:A:c) is (B:b:c)
+    % where both sides end with 'c'
+    (B == D, ground(B)) ->
+        % If B = D and they're bound, then A+B = C+D simplifies to A+B = C+B, so A = C
+        (is_concat_expr(A, ConcatPred),
+         is_concat_expr(C, ConcatPred) ->
+            % Both A and C are concat expressions - solve them recursively
+            solve_nested_concat_dual(A, C, ConcatPred)
+        ;
+            % Simple case: A = C
+            A = C
+        )
+    ;
+    % Check if A and C are equal (same prefix) - this handles patterns like (a:X:Y) is (a:Z:W)
+    (A == C, ground(A)) ->
+        % If A = C and they're bound, then A+B = C+D simplifies to A+B = A+D, so B = D
+        (is_concat_expr(B, ConcatPred),
+         is_concat_expr(D, ConcatPred) ->
+            % Both B and D are concat expressions - solve them recursively
+            solve_nested_concat_dual(B, D, ConcatPred)
+        ;
+            % Simple case: B = D
+            B = D
+        )
+    ;
     % If all are bound, just check equality
     (ground(A), ground(B), ground(C), ground(D)) ->
         (call(ConcatPred, A, B, R1),
@@ -264,8 +290,9 @@ concat_dual(A, B, C, D, ConcatPred) :-
         (A = C,
          D = B)
     ;
-    % Other cases - use standard constraint with both concat calls
-    % This will work for cases where append-like behavior applies
+    % Fallback: use standard constraint with both concat calls
+    % This handles cases where both sides need to be evaluated and unified
+    % Works when there are enough bound values to constrain the solution
         (call(ConcatPred, A, B, Result),
          call(ConcatPred, C, D, Result)).
 
@@ -281,6 +308,22 @@ string_concat_dual(A, B, C, D) :-
 % Meaning: atom_concat(A, B, Result) and atom_concat(C, D, Result)
 % So: A + B = C + D where + is atom concatenation
 atom_concat_dual(A, B, C, D) :-
+    concat_dual(A, B, C, D, atom_concat).
+
+% is_concat_expr(+Expr, +ConcatPred)
+% Check if Expr is a concatenation expression for the given predicate
+is_concat_expr((_ : _), string_concat) :- !.
+is_concat_expr((_ • _), atom_concat) :- !.
+
+% solve_nested_concat_dual(+LHS, +RHS, +ConcatPred)
+% Solve nested concatenation dual expressions
+% For string_concat: solve (A:B) is (C:D) where A,B,C,D may be concat exprs
+% For atom_concat: solve (A•B) is (C•D) where A,B,C,D may be concat exprs
+solve_nested_concat_dual((A : B), (C : D), string_concat) :-
+    !,
+    concat_dual(A, B, C, D, string_concat).
+solve_nested_concat_dual((A • B), (C • D), atom_concat) :-
+    !,
     concat_dual(A, B, C, D, atom_concat).
 
 % compile_starlog_expr(+Expr, +Out, -Goals)
