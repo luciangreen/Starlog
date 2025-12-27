@@ -11,7 +11,7 @@ Starlog is a library that allows developers to write Starlog syntax directly ins
 
 Starlog is a Prolog variant that uses the notation `Result is function(Args)` instead of Prolog's `function(Args, Result)`. This makes code more readable when working with transformations and operations that produce a result, as the output variable appears first in the expression rather than at the end of a parameter list.
 
-With Starlog-in-Prolog, you can write Starlog syntax directly in your Prolog source files, and the library will automatically expand it into equivalent Prolog goals at load-time using goal_expansion and term_expansion hooks.
+With Starlog, you can write Starlog syntax directly in your Prolog source files, and the library will automatically expand it into equivalent Prolog goals at load-time using goal_expansion and term_expansion hooks.
 
 ## Quick Start
 
