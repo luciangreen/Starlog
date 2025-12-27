@@ -48,6 +48,34 @@ test_req1_atom_var_solve :-
     assertion(B = a),
     write(' ✓ (A=b, B=a)'), nl.
 
+test_req1_string_triple :-
+    write('Req 1.7: String triple concat - (a : A : c) is (B : b : c)...'),
+    (a : A : c) is (B : b : c),
+    assertion(A = b),
+    assertion(B = a),
+    write(' ✓ (A=b, B=a)'), nl.
+
+test_req1_atom_triple :-
+    write('Req 1.8: Atom triple concat - (a • A • c) is (B • b • c)...'),
+    (a • A • c) is (B • b • c),
+    assertion(A = b),
+    assertion(B = a),
+    write(' ✓ (A=b, B=a)'), nl.
+
+test_req1_string_quadruple :-
+    write('Req 1.9: String quadruple concat - (a : A : c : d) is (B : b : c : d)...'),
+    (a : A : c : d) is (B : b : c : d),
+    assertion(A = b),
+    assertion(B = a),
+    write(' ✓ (A=b, B=a)'), nl.
+
+test_req1_mixed_nested :-
+    write('Req 1.10: Mixed nested - (hello : World : !) is (Greeting : world : !)...'),
+    (hello : World : !) is (Greeting : world : !),
+    assertion(World = world),
+    assertion(Greeting = hello),
+    write(' ✓ (World=world, Greeting=hello)'), nl.
+
 % Requirement 2: Arithmetic operator selection with disjunction
 % Pattern: 3 is 1(A is +;-;/)2
 % Find the operator A that makes 3 = 1 A 2 true
@@ -134,6 +162,10 @@ run_tests :-
     catch(test_req1_nested, E4, (write('✗ FAILED: '), write(E4), nl)),
     catch(test_req1_string_var_solve, E5, (write('✗ FAILED: '), write(E5), nl)),
     catch(test_req1_atom_var_solve, E6, (write('✗ FAILED: '), write(E6), nl)),
+    catch(test_req1_string_triple, E7a, (write('✗ FAILED: '), write(E7a), nl)),
+    catch(test_req1_atom_triple, E7b, (write('✗ FAILED: '), write(E7b), nl)),
+    catch(test_req1_string_quadruple, E7c, (write('✗ FAILED: '), write(E7c), nl)),
+    catch(test_req1_mixed_nested, E7d, (write('✗ FAILED: '), write(E7d), nl)),
     nl,
     
     write('=== Requirement 2: Operator Selection ==='), nl,
