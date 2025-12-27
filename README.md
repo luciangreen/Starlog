@@ -902,6 +902,41 @@ This is useful for:
 - Scientific computing and numerical methods
 - Engineering and physics applications
 
+### Example 12: Peel Off Nested Brackets
+
+The library includes a utility function to convert strings with digits into nested Starlog expressions:
+
+```prolog
+:- use_module(starlog).
+
+% Peel off brackets from a string
+?- peel_off_brackets(["543"], Result).
+Result = [5:(2+2):_A].
+
+% Single character
+?- peel_off_brackets(["5"], Result).
+Result = [5].
+
+% Two characters
+?- peel_off_brackets(["54"], Result).
+Result = [5:(2+2)].
+
+% Works with atoms too
+?- peel_off_brackets(['543'], Result).
+Result = [5:(2+2):_A].
+```
+
+The `peel_off_brackets/2` predicate converts:
+- Character '5' stays as 5
+- Character '4' becomes the expression (2+2)
+- Character '3' becomes a variable
+- Results are joined with the `:` operator (string concatenation)
+
+This is useful for:
+- Educational demonstrations of Starlog syntax
+- Converting numeric strings into expressions
+- Teaching pattern matching and transformation
+
 ## Installation
 
 1. Clone this repository
@@ -926,6 +961,7 @@ swipl -s test_mixed_prolog_starlog.pl
 swipl -s test_no_eval.pl
 swipl -s test_eval.pl
 swipl -s test_algebra_solver.pl
+swipl -s test_peel_brackets.pl
 ```
 
 ## Requirements
@@ -940,21 +976,24 @@ starlog/
   LICENSE                             # BSD-3 license
   Requirements.txt                    # Original specification
   Requirements.md                     # Additional requirements
-  starlog.pl               # Main library module
-  starlog_expand.pl                  # Expander: compile Starlog -> Prolog goals
-  starlog_registry.pl                # Builtin mapping registry + extension hooks
-  algebra_solver.pl                  # Algebraic equation solver
-  demo_output_feature.pl             # Demo: Prolog to Starlog conversion
-  demo_starlog_to_prolog.pl          # Demo: Starlog to Prolog conversion
-  demo_algebra_solver.pl             # Demo: Algebra solver
+  starlog.pl                          # Main library module
+  starlog_expand.pl                   # Expander: compile Starlog -> Prolog goals
+  starlog_registry.pl                 # Builtin mapping registry + extension hooks
+  algebra_solver.pl                   # Algebraic equation solver
+  peel_brackets.pl                    # Peel off nested brackets utility
+  demo_output_feature.pl              # Demo: Prolog to Starlog conversion
+  demo_starlog_to_prolog.pl           # Demo: Starlog to Prolog conversion
+  demo_algebra_solver.pl              # Demo: Algebra solver
+  demo_peel_brackets.pl               # Demo: Peel off nested brackets
   tests/
-    test_basic.pl                    # Basic functionality tests
-    test_nested.pl                   # Nested expression tests
-    test_arithmetic_is.pl            # Arithmetic preservation tests
-    test_mixed_prolog_starlog.pl     # Mixed Prolog/Starlog tests
-    test_starlog_to_prolog.pl        # Starlog to Prolog conversion tests
-    test_starlog_to_prolog_file.pl   # File conversion tests
-    test_algebra_solver.pl           # Algebra solver tests
+    test_basic.pl                     # Basic functionality tests
+    test_nested.pl                    # Nested expression tests
+    test_arithmetic_is.pl             # Arithmetic preservation tests
+    test_mixed_prolog_starlog.pl      # Mixed Prolog/Starlog tests
+    test_starlog_to_prolog.pl         # Starlog to Prolog conversion tests
+    test_starlog_to_prolog_file.pl    # File conversion tests
+    test_algebra_solver.pl            # Algebra solver tests
+    test_peel_brackets.pl             # Peel off brackets tests
 ```
 
 ## License

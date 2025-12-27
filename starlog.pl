@@ -29,13 +29,15 @@
     solve_system/2,
     solve_system/3,
     gaussian_elimination/2,
-    gaussian_elimination/3
+    gaussian_elimination/3,
+    peel_off_brackets/2
 ]).
 
 :- use_module(starlog_expand).
 :- use_module(starlog_registry).
 :- use_module(algebra_solver).
 :- use_module(gaussian_elimination).
+:- use_module(peel_brackets).
 
 % Define helper predicates in user module
 :- multifile user:string_number/2.
