@@ -183,10 +183,13 @@ contains_starlog_operator(Expr) :-
     contains_starlog_operator(Arg).
 
 % has_append_operator(+Term)
-% Check if a term has the & operator at the top level or contains it
+% Check if a term has the & (list append) operator
+% This is more specific than contains_starlog_operator as it only checks for &
 has_append_operator(_ & _) :- !.
 has_append_operator(Expr) :-
     compound(Expr),
+    Expr \= (_ : _),  % Exclude other operators for efficiency
+    Expr \= (_ • _),
     Expr =.. [_|Args],
     member(Arg, Args),
     has_append_operator(Arg).
