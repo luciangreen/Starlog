@@ -22,7 +22,7 @@ Implemented a complete algebra solver that:
    - Implements recursive inverse operation algorithm
    - Exports: `solve_equation/2`, `solve_equation/3`
 
-2. **starlog_in_prolog.pl** (modified)
+2. **starlog.pl** (modified)
    - Added exports for algebra solver predicates
    - Integrated algebra_solver module
 
@@ -35,7 +35,7 @@ Implemented a complete algebra solver that:
 
 4. **tests/test_integrated_algebra.pl** (1.3 KB)
    - 2 integration tests
-   - Tests integration with starlog_in_prolog module
+   - Tests integration with starlog module
    - All tests pass ✓
 
 ### Demos (4 files)
@@ -139,7 +139,7 @@ Recursive inverse operation application:
 - ✓ Power equations (Y**2 = 16)
 - ✓ Variable on right side (2 = Y/3)
 - ✓ Subtraction from constant (10-Y = 3)
-- ✓ Integration with starlog_in_prolog
+- ✓ Integration with starlog
 
 ### Existing Tests: No Regressions
 All existing tests continue to pass:
@@ -153,7 +153,7 @@ All existing tests continue to pass:
 
 ### Basic Usage
 ```prolog
-:- use_module(starlog_in_prolog).
+:- use_module(starlog).
 
 % Problem statement
 ?- solve_equation((Y+5)/2 is 2, Y, Solution).
@@ -202,7 +202,7 @@ Solution = 5.
 
 ### With Starlog Module
 ```prolog
-:- module(starlog_in_prolog, [
+:- module(starlog, [
     ...,
     solve_equation/2,
     solve_equation/3

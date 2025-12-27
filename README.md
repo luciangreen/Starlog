@@ -18,7 +18,7 @@ With Starlog-in-Prolog, you can write Starlog syntax directly in your Prolog sou
 ### Basic Usage in a File
 
 ```prolog
-:- use_module(starlog_in_prolog).
+:- use_module(starlog).
 
 % Write Starlog syntax directly in your code
 test(Result) :- 
@@ -35,7 +35,7 @@ test(Result) :-
 For direct typing in the REPL, use `starlog_call/1`:
 
 ```prolog
-?- use_module(starlog_in_prolog).
+?- use_module(starlog).
 ?- starlog_call(A is "x":"y").
 A = "xy".
 
@@ -48,7 +48,7 @@ L = [1, 2].
 The library automatically detects and handles variable-bound Starlog goals, allowing you to bind a goal to a variable and execute it later:
 
 ```prolog
-?- use_module(starlog_in_prolog).
+?- use_module(starlog).
 ?- A = (C is no_eval(eval(1+1))), A.
 C = 2.
 
@@ -589,7 +589,7 @@ A = "xy".
 ### Example 1: String Processing
 
 ```prolog
-:- use_module(starlog_in_prolog).
+:- use_module(starlog).
 
 process_name(First, Last, Full) :-
     Full is First : " " : Last.
@@ -601,7 +601,7 @@ Name = "John Doe".
 ### Example 2: List Manipulation
 
 ```prolog
-:- use_module(starlog_in_prolog).
+:- use_module(starlog).
 
 combine_and_reverse(A, B, Result) :-
     Combined is A & B,
@@ -614,7 +614,7 @@ R = [4, 3, 2, 1].
 ### Example 3: Nested Expressions
 
 ```prolog
-:- use_module(starlog_in_prolog).
+:- use_module(starlog).
 
 complex_concat(A, B, C, Result) :-
     Result is (A:B) : C.
@@ -626,7 +626,7 @@ R = "Hello World".
 ### Example 4: Expression Preservation with no_eval
 
 ```prolog
-:- use_module(starlog_in_prolog).
+:- use_module(starlog).
 
 % Store a formula without evaluating it
 store_formula(Formula) :-
@@ -648,7 +648,7 @@ B = "hello":"world".  % Not concatenated
 ### Example 5: Selective Evaluation with eval inside no_eval
 
 ```prolog
-:- use_module(starlog_in_prolog).
+:- use_module(starlog).
 
 % Evaluate is the default behavior
 ?- A is 1+1.
@@ -678,7 +678,7 @@ F = [1, 2].  % List append is evaluated
 ### Example 6: Variable-Bound Starlog Goals
 
 ```prolog
-:- use_module(starlog_in_prolog).
+:- use_module(starlog).
 
 % Basic pattern: bind a goal to a variable and execute it
 ?- A = (C is no_eval(eval(1+1))), A.
@@ -717,7 +717,7 @@ This feature enables:
 ### Example 7: Dual Starlog Expressions for Equation Solving
 
 ```prolog
-:- use_module(starlog_in_prolog).
+:- use_module(starlog).
 
 % Solve for variables in list append equations
 solve_list_equation :-
@@ -753,7 +753,7 @@ This feature is particularly useful for:
 ### Example 8: Operator and Value Selection with Disjunction
 
 ```prolog
-:- use_module(starlog_in_prolog).
+:- use_module(starlog).
 
 % Find operator Op where 3 = 1 Op 2
 find_operator :-
@@ -789,7 +789,7 @@ This pattern (from the problem statement "3 is 1(A is +;-;/)2") demonstrates:
 ### Example 9: Term Manipulation with Univ Operators
 
 ```prolog
-:- use_module(starlog_in_prolog).
+:- use_module(starlog).
 
 % Convert list to term
 create_term(List, Term) :-
@@ -908,7 +908,7 @@ This is useful for:
 2. Load the library in your Prolog code:
 
 ```prolog
-:- use_module('/path/to/starlog_in_prolog').
+:- use_module('/path/to/starlog').
 ```
 
 Or add it to your SWI-Prolog library path.
@@ -935,12 +935,12 @@ swipl -s test_algebra_solver.pl
 ## Repository Structure
 
 ```
-starlog_in_prolog/
+starlog/
   README.md                           # This file
   LICENSE                             # BSD-3 license
   Requirements.txt                    # Original specification
   Requirements.md                     # Additional requirements
-  starlog_in_prolog.pl               # Main library module
+  starlog.pl               # Main library module
   starlog_expand.pl                  # Expander: compile Starlog -> Prolog goals
   starlog_registry.pl                # Builtin mapping registry + extension hooks
   algebra_solver.pl                  # Algebraic equation solver

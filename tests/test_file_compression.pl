@@ -1,7 +1,7 @@
 % test_file_compression.pl
 % Tests for file-level Starlog compression
 
-:- use_module('../starlog_in_prolog').
+:- use_module('../starlog').
 
 % Test 1: File output with compression
 test_file_compression :-

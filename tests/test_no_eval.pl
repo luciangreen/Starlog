@@ -1,7 +1,7 @@
 % test_no_eval.pl
 % Tests for no_eval functionality in Starlog
 
-:- use_module('../starlog_in_prolog').
+:- use_module('../starlog').
 
 % Test no_eval with arithmetic
 test_no_eval_arithmetic :-

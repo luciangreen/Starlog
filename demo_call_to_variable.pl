@@ -1,7 +1,7 @@
 % demo_call_to_variable.pl
 % Demonstration of saving Prolog and Starlog calls to variables
 
-:- use_module(starlog_in_prolog).
+:- use_module(starlog).
 
 % Example 1: Using starlog_call/2 to save results
 demo_starlog_call_2 :-

@@ -4,7 +4,7 @@
 % 1. A is number(string_number(1:1)). A = number(11). should be true
 % 2. A is number(string_number(a:a)). A = number(11). should be false
 
-:- use_module('../starlog_in_prolog').
+:- use_module('../starlog').
 
 % Test 1: number(string_number(1:1)) should result in number(11)
 test_number_string_number_numeric :-

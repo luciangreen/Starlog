@@ -1,10 +1,10 @@
 % test_integrated_algebra.pl
-% Test algebra solver through the main starlog_in_prolog module
+% Test algebra solver through the main starlog module
 
-:- use_module('../starlog_in_prolog').
+:- use_module('../starlog').
 
 test_integrated_solve :-
-    write('Test: Integrated algebra solver through starlog_in_prolog...'),
+    write('Test: Integrated algebra solver through starlog...'),
     solve_equation((Y+5)/2 is 2, Y, Solution),
     assertion(Solution =:= -1),
     write(' ✓ (Y = -1)'), nl.

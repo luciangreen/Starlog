@@ -1,7 +1,7 @@
 % test_eval.pl
 % Tests for eval functionality in Starlog
 
-:- use_module('../starlog_in_prolog').
+:- use_module('../starlog').
 
 % Test 1: Basic eval with arithmetic (should evaluate like normal)
 test_eval_arithmetic :-

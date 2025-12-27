@@ -6,7 +6,7 @@ This implementation adds a feature that converts Starlog files or calls to Prolo
 
 ## Changes Made
 
-### 1. Core Functionality (starlog_in_prolog.pl)
+### 1. Core Functionality (starlog.pl)
 
 Added six new predicates for Starlog to Prolog conversion:
 

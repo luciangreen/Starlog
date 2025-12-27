@@ -1,7 +1,7 @@
 % test_output_to_file.pl
 % Test writing starlog output to a file
 
-:- use_module('../starlog_in_prolog').
+:- use_module('../starlog').
 
 test_output_to_file :-
     working_directory(CWD, CWD),

@@ -1,7 +1,7 @@
 % test_call_to_variable.pl
 % Tests for saving Prolog and Starlog calls to variables
 
-:- use_module('../starlog_in_prolog').
+:- use_module('../starlog').
 
 % Test 1: starlog_call/2 with string concatenation
 test_call_2_string_concat :-

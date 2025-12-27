@@ -286,7 +286,7 @@ This will show various examples of Starlog to Prolog conversion with maximal dec
 
 ## Implementation Details
 
-The conversion is implemented in `starlog_in_prolog.pl` using:
+The conversion is implemented in `starlog.pl` using:
 
 - **`starlog_expand:expand_starlog_goal/2`**: Expands Starlog expressions to Prolog goals (handles decompression)
 - **`rename_variables/2`**: Applies human-friendly variable names

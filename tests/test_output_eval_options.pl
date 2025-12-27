@@ -1,7 +1,7 @@
 % test_output_eval_options.pl
 % Tests for output_eval and output_no_eval options in starlog_output_code
 
-:- use_module('../starlog_in_prolog').
+:- use_module('../starlog').
 
 % Test 1: Default behavior - strip both eval and no_eval
 test_default_strip_both :-

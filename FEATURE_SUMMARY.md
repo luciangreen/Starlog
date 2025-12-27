@@ -187,7 +187,7 @@ contains_starlog_op(+Expr)
 ## Files Modified/Added
 
 ### Modified
-- `starlog_in_prolog.pl`: Added new predicates (175 lines added)
+- `starlog.pl`: Added new predicates (175 lines added)
 - `README.md`: Added "Outputting Starlog Code" section
 
 ### Added

@@ -126,7 +126,7 @@ Comprehensive tests cover:
 
 ## Files Modified
 
-1. `starlog_in_prolog.pl` - Core implementation
+1. `starlog.pl` - Core implementation
 2. `README.md` - Documentation
 3. `tests/test_output_eval_options.pl` - Tests (new)
 4. `demo_output_eval_options.pl` - Demo (new)

@@ -1,7 +1,7 @@
 % test_nested.pl
 % Tests for nested Starlog expressions
 
-:- use_module('../starlog_in_prolog').
+:- use_module('../starlog').
 
 % Test nested expression decompression
 test_nested_string_concat :-

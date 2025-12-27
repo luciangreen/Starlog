@@ -1,7 +1,7 @@
 % test_output_file.pl
 % Tests for starlog_output_file functionality
 
-:- use_module('../starlog_in_prolog').
+:- use_module('../starlog').
 
 test_file_output :-
     working_directory(CWD, CWD),

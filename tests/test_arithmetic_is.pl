@@ -1,7 +1,7 @@
 % test_arithmetic_is.pl
 % Tests to ensure arithmetic is/2 is preserved
 
-:- use_module('../starlog_in_prolog').
+:- use_module('../starlog').
 
 % Test basic arithmetic
 test_addition :-

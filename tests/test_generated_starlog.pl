@@ -1,7 +1,7 @@
 % test_generated_starlog.pl
 % Test that the generated Starlog code works correctly
 
-:- use_module('../starlog_in_prolog').
+:- use_module('../starlog').
 
 test_generated :-
     write('Testing generated Starlog code...'), nl, nl,

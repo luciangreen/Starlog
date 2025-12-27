@@ -1,7 +1,7 @@
 % test_starlog_to_prolog_file.pl
 % Tests for starlog_to_prolog_file functionality
 
-:- use_module('../starlog_in_prolog').
+:- use_module('../starlog').
 
 test_file_conversion :-
     write('=== Testing Starlog to Prolog File Conversion ==='), nl, nl,

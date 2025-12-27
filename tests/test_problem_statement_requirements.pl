@@ -2,7 +2,7 @@
 % Comprehensive tests for the problem statement requirements
 % Problem: "Please complete [1]&A is B&[2]. 3 is 1(A is +;-;/)2. 3 is 1+(A is 1;2;3). and A is (B is 1)+B."
 
-:- use_module('../starlog_in_prolog').
+:- use_module('../starlog').
 
 % Requirement 1: Support for dual Starlog expressions with is/2
 % Pattern: [1]&A is B&[2]

@@ -1,7 +1,7 @@
 % test_compression.pl
 % Tests for Starlog maximal compression feature
 
-:- use_module('../starlog_in_prolog').
+:- use_module('../starlog').
 
 % Helper to capture output
 capture_output(Goal, Output) :-

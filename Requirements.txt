@@ -131,10 +131,10 @@ Allow users to opt-in/out of operators (especially if : conflicts with other cod
 
 10. Repository Layout Requirements
 
-starlog_in_prolog/
+starlog/
   README.md
   LICENSE (BSD-3)
-  starlog_in_prolog.pl          % main library module
+  starlog.pl          % main library module
   starlog_expand.pl             % expander: compile Starlog -> list of Prolog goals
   starlog_registry.pl           % builtin mapping registry + user extension hooks
   tests/

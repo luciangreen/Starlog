@@ -2,7 +2,7 @@
 % Demonstration of Gaussian elimination solver
 
 :- use_module(gaussian_elimination).
-:- use_module(starlog_in_prolog).
+:- use_module(starlog).
 
 % Example from problem statement:
 % Gaussian elimination

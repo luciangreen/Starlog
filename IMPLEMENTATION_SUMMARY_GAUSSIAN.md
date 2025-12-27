@@ -28,7 +28,7 @@ The implementation provides a complete Gaussian elimination solver with:
 
 The solver is integrated with Starlog syntax through:
 
-1. **Module exports** in `starlog_in_prolog.pl`:
+1. **Module exports** in `starlog.pl`:
    - `solve_system/2` - solve and return solution
    - `solve_system/3` - solve and return solution with type
    - `gaussian_elimination/2` - perform elimination
@@ -53,7 +53,7 @@ Solution = [2.0, 1.0].
 #### Starlog Syntax
 
 ```prolog
-:- use_module(starlog_in_prolog).
+:- use_module(starlog).
 
 % Using "is" syntax
 ?- Solution is solve_system([[2, 1, 5], [1, -1, 1]]).

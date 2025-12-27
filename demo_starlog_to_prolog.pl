@@ -1,7 +1,7 @@
 % demo_starlog_to_prolog.pl
 % Comprehensive demonstration of the Starlog to Prolog conversion feature
 
-:- use_module(starlog_in_prolog).
+:- use_module(starlog).
 
 main :-
     write('╔════════════════════════════════════════════════════════════╗'), nl,

@@ -37,7 +37,7 @@ The solution implements automatic pattern detection during goal expansion:
   - `is_var_or_starts_with_var/2`: Check if a goal starts with a specific variable
   - `replace_first_var_with_starlog_call/3`: Replace variable execution with `starlog_call/1`
 
-#### Changes to `starlog_in_prolog.pl`:
+#### Changes to `starlog.pl`:
 - Added `prolog:call_hook/2` for runtime goal expansion support
 - Added `might_be_starlog_goal/1` for performance optimization
 
@@ -66,14 +66,14 @@ All existing tests pass:
 
 ### At Interactive REPL
 ```prolog
-?- use_module(starlog_in_prolog).
+?- use_module(starlog).
 ?- A=(C is no_eval(eval(1+1))),A.
 C = 2.
 ```
 
 ### In Prolog Files
 ```prolog
-:- use_module(starlog_in_prolog).
+:- use_module(starlog).
 
 test :-
     A=(C is no_eval(eval(1+1))),A,
@@ -93,7 +93,7 @@ X = "ab".
 
 1. **Command-line `-g` goals**: The pattern detection does NOT work with `-g` command-line goals because they bypass goal expansion. Use `starlog_call/1` instead:
    ```bash
-   swipl -g "use_module(starlog_in_prolog), starlog_call(C is no_eval(eval(1+1))), write(C), nl." -t halt
+   swipl -g "use_module(starlog), starlog_call(C is no_eval(eval(1+1))), write(C), nl." -t halt
    ```
 
 2. **Non-immediate execution**: If the variable is not executed immediately after binding, use `starlog_call/1` explicitly.

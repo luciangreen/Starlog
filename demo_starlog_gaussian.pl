@@ -1,7 +1,7 @@
 % demo_starlog_gaussian.pl
 % Demonstration of Gaussian elimination using Starlog syntax
 
-:- use_module(starlog_in_prolog).
+:- use_module(starlog).
 
 % Example 1: Using Starlog syntax to solve a system
 demo_starlog_syntax :-

@@ -1,7 +1,7 @@
 % interactive_algebra_demo.pl
 % Interactive demonstration of the algebra solver
 
-:- use_module(starlog_in_prolog).
+:- use_module(starlog).
 
 demo :-
     write('╔════════════════════════════════════════════════════════════════╗'), nl,

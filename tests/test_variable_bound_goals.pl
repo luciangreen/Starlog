@@ -2,7 +2,7 @@
 % Tests for variable-bound Starlog goals
 % This tests the feature that allows: A=(C is no_eval(eval(1+1))),A
 
-:- use_module('../starlog_in_prolog').
+:- use_module('../starlog').
 
 % Test 1: Variable-bound goal with no_eval and eval
 test_variable_bound_no_eval_eval :-

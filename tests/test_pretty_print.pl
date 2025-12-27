@@ -1,7 +1,7 @@
 % test_pretty_print.pl
 % Tests for pretty printing functionality
 
-:- use_module('../starlog_in_prolog').
+:- use_module('../starlog').
 
 % Test 1: Simple conjunction
 test_conjunction :-

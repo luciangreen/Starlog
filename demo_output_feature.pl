@@ -1,7 +1,7 @@
 % demo_output_feature.pl
 % Comprehensive demonstration of the Starlog code output feature
 
-:- use_module(starlog_in_prolog).
+:- use_module(starlog).
 
 main :-
     write('╔════════════════════════════════════════════════════════════╗'), nl,

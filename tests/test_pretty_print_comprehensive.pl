@@ -1,7 +1,7 @@
 % test_pretty_print_comprehensive.pl
 % Comprehensive tests to verify that pretty printing works for all cases
 
-:- use_module('../starlog_in_prolog').
+:- use_module('../starlog').
 
 test_all :-
     write('╔══════════════════════════════════════════════════════════════╗'), nl,

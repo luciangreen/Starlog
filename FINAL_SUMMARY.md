@@ -30,7 +30,7 @@ Solution = -1.  ✓ CORRECT
 
 #### Source Code (3 files)
 1. `algebra_solver.pl` - Core solver module (3.6 KB)
-2. `starlog_in_prolog.pl` - Updated with exports (modified)
+2. `starlog.pl` - Updated with exports (modified)
 3. `demo_problem_statement.pl` - Problem demo (1.3 KB)
 
 #### Demos (3 files)
@@ -93,7 +93,7 @@ Solution = -1.  ✓ CORRECT
 
 ### Main Module Integration
 ```prolog
-:- module(starlog_in_prolog, [
+:- module(starlog, [
     ...,
     solve_equation/2,
     solve_equation/3
@@ -104,7 +104,7 @@ Solution = -1.  ✓ CORRECT
 
 ### Usage
 ```prolog
-:- use_module(starlog_in_prolog).
+:- use_module(starlog).
 
 ?- solve_equation((Y+5)/2 is 2, Y, Solution).
 Solution = -1.

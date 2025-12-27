@@ -2,7 +2,7 @@
 % Demonstration of the new dual Starlog expression is/2 feature
 % This file shows practical examples of using dual expressions
 
-:- use_module(starlog_in_prolog).
+:- use_module(starlog).
 
 % Demo 1: Solving list equations
 demo_list_equations :-

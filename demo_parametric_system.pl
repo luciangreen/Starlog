@@ -3,7 +3,7 @@
 % Problem: Solve the system where x2 is a free parameter
 
 :- use_module(gaussian_elimination).
-:- use_module(starlog_in_prolog).
+:- use_module(starlog).
 
 % The system from the problem statement:
 % 2x₁ + 0x₂ + 3x₃ = 2

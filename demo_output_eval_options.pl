@@ -1,7 +1,7 @@
 % demo_output_eval_options.pl
 % Demonstration of the eval/no_eval output control options
 
-:- use_module(starlog_in_prolog).
+:- use_module(starlog).
 
 demo_default_behavior :-
     write('=== Default Behavior (strips both eval and no_eval) ==='), nl, nl,

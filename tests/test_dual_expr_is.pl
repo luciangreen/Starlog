@@ -2,7 +2,7 @@
 % Tests for dual expression is patterns: (Expr1 is Expr2)
 % This tests the new functionality where both LHS and RHS are Starlog expressions
 
-:- use_module('../starlog_in_prolog').
+:- use_module('../starlog').
 
 test_list_append_dual :-
     write('Testing dual list append: ([1] & A) is (B & [2])...'),

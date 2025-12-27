@@ -1,7 +1,7 @@
 % test_output_to_variable.pl
 % Test that starlog_output_code and starlog_to_prolog_code can output to variables without printing
 
-:- use_module(starlog_in_prolog).
+:- use_module(starlog).
 
 test_starlog_output_code_to_variable :-
     write('Test 1: starlog_output_code/2 should return code without printing'), nl,

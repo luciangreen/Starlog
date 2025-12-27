@@ -2,7 +2,7 @@
 % Demonstration of variable-bound Starlog goals
 % This feature allows you to bind a Starlog goal to a variable and execute it later
 
-:- use_module(starlog_in_prolog).
+:- use_module(starlog).
 
 % Example 1: Basic variable-bound goal with eval inside no_eval
 demo_eval_in_no_eval :-

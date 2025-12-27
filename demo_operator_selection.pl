@@ -2,7 +2,7 @@
 % Demonstration of the operator selection pattern: 3 is 1(A is +;-;/)2
 % This demonstrates solving "3 is 1 Op 2" where Op is selected from {+, -, /}
 
-:- use_module(starlog_in_prolog).
+:- use_module(starlog).
 
 % Example 1: Find operator where 3 = 1 Op 2
 demo_operator_selection_1 :-

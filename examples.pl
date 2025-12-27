@@ -2,7 +2,7 @@
 % Examples demonstrating Starlog-in-Prolog functionality
 % Based on Requirements.txt acceptance tests
 
-:- use_module(starlog_in_prolog).
+:- use_module(starlog).
 
 % Example 1: Direct Starlog concat (Acceptance Test 1)
 % Input: t(A) :- A is "x":"y".

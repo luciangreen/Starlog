@@ -3,7 +3,7 @@
 ## Quick Start
 
 ```prolog
-:- use_module(starlog_in_prolog).
+:- use_module(starlog).
 
 % Solve equation
 ?- solve_equation((Y+5)/2 is 2, Y, Solution).

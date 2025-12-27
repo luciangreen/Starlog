@@ -1,7 +1,7 @@
 % test_univ_conversion.pl
 % Test conversion of univ operators between Prolog and Starlog
 
-:- use_module('../starlog_in_prolog').
+:- use_module('../starlog').
 
 % Test Prolog to Starlog conversion for term to list
 test_prolog_to_starlog_term_to_list :-

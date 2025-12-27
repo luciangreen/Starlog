@@ -1,9 +1,9 @@
-% starlog_in_prolog.pl
+% starlog.pl
 % Main library for Starlog-in-Prolog
 % Allows developers to write Starlog syntax directly in Prolog files
 % and have it expanded automatically at load-time.
 
-:- module(starlog_in_prolog, [
+:- module(starlog, [
     starlog_call/1,
     starlog_call/2,
     starlog_eval/2,

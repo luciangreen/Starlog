@@ -1,7 +1,7 @@
 % test_starlog_to_prolog.pl
 % Tests for starlog_to_prolog_code functionality
 
-:- use_module('../starlog_in_prolog').
+:- use_module('../starlog').
 
 % Test 1: Simple string concatenation
 test_simple_concat :-

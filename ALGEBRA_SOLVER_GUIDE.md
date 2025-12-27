@@ -36,7 +36,7 @@ Solution = -1.
 ### Through Starlog Module
 
 ```prolog
-:- use_module(starlog_in_prolog).
+:- use_module(starlog).
 
 % The algebra solver is integrated
 ?- solve_equation((Y+5)/2 is 2, Y, Solution).
@@ -182,7 +182,7 @@ Result = 2.  % ✓ Correct!
 The algebra solver is fully integrated with the Starlog module and can be used alongside other Starlog features:
 
 ```prolog
-:- use_module(starlog_in_prolog).
+:- use_module(starlog).
 
 % Combine with Starlog operations
 demo :-

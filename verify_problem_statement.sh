@@ -16,7 +16,7 @@ echo "────────────────────────�
 echo ""
 
 # Run the solver
-swipl -g "use_module(starlog_in_prolog), solve_equation((Y+5)/2 is 2, Y, Solution), format('Solution: Y = ~w~n', [Solution]), halt" 2>&1 | grep "Solution:"
+swipl -g "use_module(starlog), solve_equation((Y+5)/2 is 2, Y, Solution), format('Solution: Y = ~w~n', [Solution]), halt" 2>&1 | grep "Solution:"
 
 echo ""
 echo "────────────────────────────────────────────────────────"

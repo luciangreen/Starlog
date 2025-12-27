@@ -50,7 +50,7 @@ Step 3: Y = -1               [Subtract 5 from both sides]
 
 ### Tests
 - **`tests/test_algebra_solver.pl`** - Comprehensive test suite (13 tests)
-- **`tests/test_integrated_algebra.pl`** - Integration tests with starlog_in_prolog
+- **`tests/test_integrated_algebra.pl`** - Integration tests with starlog
 
 ### Demos
 - **`demo_algebra_solver.pl`** - Demonstration of various equation types
@@ -61,7 +61,7 @@ Step 3: Y = -1               [Subtract 5 from both sides]
 - **`README.md`** - Updated with algebra solver section
 
 ### Integration
-- **`starlog_in_prolog.pl`** - Updated to export algebra solver predicates
+- **`starlog.pl`** - Updated to export algebra solver predicates
 
 ## Test Results
 
@@ -81,7 +81,7 @@ Solution = -1.  ✓
 - ✓ Subtraction from constant (10-Y)
 - ✓ Power equations (Y**2)
 - ✓ Variable on right side
-- ✓ Integration with starlog_in_prolog module
+- ✓ Integration with starlog module
 
 ## Key Features
 
@@ -90,12 +90,12 @@ Solution = -1.  ✓
 3. **Multi-step Solving**: Handles complex nested expressions
 4. **Commutative Operations**: Correctly handles both `Y+3` and `3+Y`
 5. **Non-commutative Operations**: Properly handles `10-Y` vs `Y-10`
-6. **Full Integration**: Exported through main starlog_in_prolog module
+6. **Full Integration**: Exported through main starlog module
 
 ## Usage Example
 
 ```prolog
-:- use_module(starlog_in_prolog).
+:- use_module(starlog).
 
 % Direct usage
 ?- solve_equation((Y+5)/2 is 2, Y, Solution).

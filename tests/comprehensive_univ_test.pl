@@ -1,7 +1,7 @@
 % comprehensive_univ_test.pl
 % Comprehensive test demonstrating all aspects of univ operator support
 
-:- use_module('../starlog_in_prolog').
+:- use_module('../starlog').
 
 % Test 1: Basic list to term
 test1 :-

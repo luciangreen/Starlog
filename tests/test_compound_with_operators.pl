@@ -3,7 +3,7 @@
 % This addresses the issue where compound terms with operators were
 % being passed to arithmetic is/2 instead of being recognized as Starlog
 
-:- use_module('../starlog_in_prolog').
+:- use_module('../starlog').
 
 % Helper predicates for testing
 :- dynamic user:wrap/2.

@@ -68,7 +68,7 @@ B is no_eval("x":eval("y":"z"))  % ← Both kept
 ## 📦 Files Modified/Added
 
 ### Modified Files
-1. **`starlog_in_prolog.pl`** (+105 lines)
+1. **`starlog.pl`** (+105 lines)
    - Core stripping logic
    - Option handling
    - Integration with output functions
@@ -195,7 +195,7 @@ The implementation is **complete and ready for testing**. All code has been:
 
 1. **Review the changes**:
    ```bash
-   git diff HEAD~5 starlog_in_prolog.pl
+   git diff HEAD~5 starlog.pl
    git diff HEAD~5 README.md
    ```
 
@@ -226,7 +226,7 @@ The implementation is **complete and ready for testing**. All code has been:
 
 All documentation is complete:
 - ✅ README.md updated with new section
-- ✅ Code comments in starlog_in_prolog.pl
+- ✅ Code comments in starlog.pl
 - ✅ IMPLEMENTATION_SUMMARY_EVAL_OUTPUT.md
 - ✅ CHANGES_SUMMARY.md
 - ✅ This FEATURE_COMPLETE.md

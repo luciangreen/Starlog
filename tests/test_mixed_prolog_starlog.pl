@@ -1,7 +1,7 @@
 % test_mixed_prolog_starlog.pl
 % Tests for mixing Prolog and Starlog code in the same file
 
-:- use_module('../starlog_in_prolog').
+:- use_module('../starlog').
 
 % Standard Prolog predicate
 is_even(N) :- 0 is N mod 2.

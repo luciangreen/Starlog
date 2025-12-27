@@ -8,7 +8,7 @@ Successfully implemented a maximal compression feature for Prolog to Starlog con
 
 ### 1. Core Implementation
 
-**File**: `starlog_in_prolog.pl`
+**File**: `starlog.pl`
 
 **New Predicates**:
 - `compress_starlog/2` - Main entry point for compression
@@ -175,7 +175,7 @@ Potential improvements for future versions:
 ## Files Changed
 
 ```
-starlog_in_prolog.pl                    (+169 lines)
+starlog.pl                    (+169 lines)
 README.md                               (+69 lines)
 COMPRESSION_FEATURE.md                  (+198 lines, new file)
 tests/test_compression.pl               (+146 lines, new file)

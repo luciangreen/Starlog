@@ -2,7 +2,7 @@
 % Demonstration of the completed problem statement requirements:
 % "Complete a:A is B:b and a•A is B•b"
 
-:- use_module(starlog_in_prolog).
+:- use_module(starlog).
 
 % Helper to ensure a value is a string
 ensure_string(Val, Str) :-

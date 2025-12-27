@@ -1,7 +1,7 @@
 % demo_univ.pl
 % Demo script showcasing the univ operator support in Starlog
 
-:- use_module(starlog_in_prolog).
+:- use_module(starlog).
 
 demo :-
     write('=============================================='), nl,

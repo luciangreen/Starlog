@@ -20,7 +20,7 @@ Implement two new Starlog operators:
      - `compile_starlog_expr(..=(List), Out, Goals)` - expands to `Out =.. ListVal`
      - `compile_starlog_expr(=..(Term), Out, Goals)` - expands to `TermVal =.. Out`
 
-2. **starlog_in_prolog.pl**
+2. **starlog.pl**
    - Added operator declarations in the user module
    - Updated `contains_starlog_op/1` to recognize the new operators
    - Added conversion rules for Prolog to Starlog:
@@ -125,7 +125,7 @@ Total: 17 test files, all passing
 
 ### Basic Usage
 ```prolog
-?- use_module(starlog_in_prolog).
+?- use_module(starlog).
 
 % Create a term from a list
 ?- starlog_call((T is ..=([foo,a,b,c]))).

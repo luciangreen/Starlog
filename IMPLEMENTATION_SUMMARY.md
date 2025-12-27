@@ -15,7 +15,7 @@ Successfully implemented a new Starlog-in-Prolog library that allows developers 
 ### Created (New In-Prolog Approach)
 
 #### Core Library Files
-1. **starlog_in_prolog.pl** - Main library module
+1. **starlog.pl** - Main library module
    - Defines Starlog operators (`:`, `&`, `•`)
    - Installs goal_expansion/2 and term_expansion/2 hooks
    - Exports user API: `starlog_call/1`, `starlog_register_value_builtin/3`, `starlog_set_debug/1`
@@ -56,7 +56,7 @@ swipl -q -g main -s ../starlog_to_prolog_cli.pl
 ### After (In-Prolog Expansion)
 ```prolog
 % New workflow: Write and run directly
-:- use_module(starlog_in_prolog).
+:- use_module(starlog).
 
 % Write Starlog syntax in your Prolog file
 greet(First, Last, Greeting) :-
@@ -183,7 +183,7 @@ All requirements from Requirements.txt have been met:
 
 The old CLI conversion workflow (`prolog_to_starlog_cli.pl` and `starlog_to_prolog_cli.pl`) has been completely replaced with the new in-Prolog expansion approach. Users who relied on the CLI tools will need to:
 
-1. Load the `starlog_in_prolog` library instead of using CLI tools
+1. Load the `starlog` library instead of using CLI tools
 2. Write Starlog syntax directly in their `.pl` files
 3. Use `starlog_call/1` for interactive queries
 
@@ -192,7 +192,7 @@ This is a more powerful and convenient approach that eliminates the need for fil
 ## Installation
 
 ```prolog
-:- use_module('/path/to/starlog_in_prolog').
+:- use_module('/path/to/starlog').
 ```
 
 Or add to your SWI-Prolog library path.

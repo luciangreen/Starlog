@@ -138,7 +138,7 @@ Updated documentation in:
 
 ## Files Modified
 
-1. `starlog_in_prolog.pl` - Core implementation (8 lines changed)
+1. `starlog.pl` - Core implementation (8 lines changed)
 2. `FEATURE_SUMMARY.md` - Documentation update
 3. `IMPLEMENTATION_SUMMARY_STARLOG_TO_PROLOG.md` - Documentation update
 

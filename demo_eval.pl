@@ -3,7 +3,7 @@
 % This shows how eval is the default behavior and how it can be used
 % to force evaluation inside no_eval contexts
 
-:- use_module(starlog_in_prolog).
+:- use_module(starlog).
 
 % Example 1: Default evaluation (eval is implicit)
 demo_default_eval :-

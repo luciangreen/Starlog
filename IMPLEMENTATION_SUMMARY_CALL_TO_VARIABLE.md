@@ -154,7 +154,7 @@ These additions are fully backward compatible:
 
 ## Files Modified
 
-1. `starlog_in_prolog.pl`: Added three new predicates and updated module exports
+1. `starlog.pl`: Added three new predicates and updated module exports
 2. `README.md`: Added documentation for the new predicates
 3. `tests/test_call_to_variable.pl`: Comprehensive test suite (new file)
 4. `demo_call_to_variable.pl`: Demonstration examples (new file)

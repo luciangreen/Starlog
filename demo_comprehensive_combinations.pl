@@ -2,7 +2,7 @@
 % Comprehensive demonstration of dual expressions with all operator combinations
 % Implements: "Complete A:...a is b:...B and A•a is b•B. with any combination of :,• [], arithmetic expression or &"
 
-:- use_module(starlog_in_prolog).
+:- use_module(starlog).
 
 % =====================================================================
 % STRING CONCATENATION OPERATOR (:) COMBINATIONS

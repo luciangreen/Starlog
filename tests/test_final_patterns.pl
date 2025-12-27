@@ -1,4 +1,4 @@
-:- use_module(starlog_in_prolog).
+:- use_module(starlog).
 
 % Test all patterns from the problem statement:
 % 1. [1]&A is B&[2]

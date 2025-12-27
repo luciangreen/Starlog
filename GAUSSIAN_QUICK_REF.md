@@ -3,7 +3,7 @@
 ## Quick Start
 
 ```prolog
-:- use_module(starlog_in_prolog).
+:- use_module(starlog).
 
 % Solve a system: 2x + y = 5, x - y = 1
 ?- Solution is solve_system([[2, 1, 5], [1, -1, 1]]).

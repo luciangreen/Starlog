@@ -8,7 +8,7 @@ Added configurable options to control whether `eval()` and `no_eval()` wrappers 
 
 ## Changes Made
 
-### 1. Core Implementation (`starlog_in_prolog.pl`)
+### 1. Core Implementation (`starlog.pl`)
 - Modified `starlog_output_code/3` to support new options
 - Modified `starlog_output_file/3` to support new options  
 - Added `strip_eval_no_eval_based_on_options/3` predicate
@@ -109,7 +109,7 @@ C is no_eval(eval(1+1))
 - **Documentation**: Complete with examples and rationale
 
 ## Files Modified/Added
-1. ✏️ `starlog_in_prolog.pl` (modified)
+1. ✏️ `starlog.pl` (modified)
 2. ✏️ `README.md` (modified)
 3. ➕ `tests/test_output_eval_options.pl` (new)
 4. ➕ `demo_output_eval_options.pl` (new)

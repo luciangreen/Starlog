@@ -3,7 +3,7 @@
 % Shows how starlog_output_code/2 and starlog_to_prolog_code/2
 % can return code in variables without printing to stdout
 
-:- use_module(starlog_in_prolog).
+:- use_module(starlog).
 
 main :-
     write('╔════════════════════════════════════════════════════════════╗'), nl,

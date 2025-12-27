@@ -196,10 +196,10 @@ is_var_or_starts_with_var((First, _Rest), Var) :-
 % replace_first_var_with_starlog_call(+Goal, +Var, -NewGoal)
 % Replace the first occurrence of Var in Goal with starlog_call(Var)
 % If Goal doesn't start with Var, returns Goal unchanged (fallback for non-matching cases)
-replace_first_var_with_starlog_call(Goal, Var, starlog_in_prolog:starlog_call(Var)) :-
+replace_first_var_with_starlog_call(Goal, Var, starlog:starlog_call(Var)) :-
     Goal == Var,
     !.
-replace_first_var_with_starlog_call((First, Rest), Var, (starlog_in_prolog:starlog_call(Var), Rest)) :-
+replace_first_var_with_starlog_call((First, Rest), Var, (starlog:starlog_call(Var), Rest)) :-
     First == Var,
     !.
 % Fallback: if Goal doesn't match expected patterns, return unchanged

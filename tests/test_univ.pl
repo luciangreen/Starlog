@@ -1,7 +1,7 @@
 % test_univ.pl
 % Tests for univ operator (=..) support in Starlog
 
-:- use_module('../starlog_in_prolog').
+:- use_module('../starlog').
 
 % Test list to term conversion: A is ..=([f,0,1])
 test_list_to_term :-

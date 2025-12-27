@@ -1,7 +1,7 @@
 % test_output_code.pl
 % Tests for starlog_output_code functionality
 
-:- use_module('../starlog_in_prolog').
+:- use_module('../starlog').
 
 % Test 1: Output simple string concatenation
 test_output_simple_concat :-

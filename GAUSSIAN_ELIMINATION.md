@@ -26,7 +26,7 @@ Solution = [1.0, 5.0, 1].
 The solver can be used with Starlog syntax:
 
 ```prolog
-:- use_module(starlog_in_prolog).
+:- use_module(starlog).
 
 ?- Solution is solve_system([[2, 1, 5], [1, -1, 1]]).
 Solution = [2.0, 1.0].
@@ -220,7 +220,7 @@ For systems with infinite solutions, the solution may contain unbound Prolog var
 
 ## Related Modules
 
-- `starlog_in_prolog`: Main Starlog library that exports these predicates
+- `starlog`: Main Starlog library that exports these predicates
 - `algebra_solver`: Algebraic equation solver for single-variable equations
 
 ## Testing

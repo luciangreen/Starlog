@@ -1,7 +1,7 @@
 % demo_no_eval.pl
 % Demonstration of the no_eval feature in Starlog
 
-:- use_module(starlog_in_prolog).
+:- use_module(starlog).
 
 % Example 1: Preserving arithmetic expressions
 demo_arithmetic :-
