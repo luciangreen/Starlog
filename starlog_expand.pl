@@ -120,16 +120,24 @@ expand_goal_internal((LHS is RHS), Expanded) :-
     ).
 
 % Special case: List append dual expression where RHS is a plain value
-% Pattern: ([5:(2+2)] & A) is ["54",3]
-% This compiles the LHS expression and unifies with RHS
+% Pattern: ([5:(2+2)] & A) is ["54",3] or ([A:4] & [3]) is ["54",3]
+% This uses constraint solving when list elements contain concat operations with variables
 expand_goal_internal((LHS is RHS), Expanded) :-
     is_starlog_expr(LHS),
     \+ is_starlog_expr(RHS),
     has_append_operator(LHS),
     !,
-    compile_starlog_expr(LHS, LHSResult, LHSGoals),
-    append(LHSGoals, [LHSResult = RHS], FinalGoals),
-    list_to_conjunction(FinalGoals, Expanded).
+    % Try constraint-based approach first if lists have concat expressions
+    (extract_list_append_parts(LHS, LeftList, RightList),
+     list_has_concat_with_vars(LeftList) ->
+        % Use constraint solving for lists with concat expressions and variables
+        compile_list_append_constraint(LeftList, RightList, RHS, Expanded)
+    ;
+        % Standard compilation
+        compile_starlog_expr(LHS, LHSResult, LHSGoals),
+        append(LHSGoals, [LHSResult = RHS], FinalGoals),
+        list_to_conjunction(FinalGoals, Expanded)
+    ).
 
 % Starlog is-expression: Out is Expr
 expand_goal_internal((Out is Expr), Expanded) :-
@@ -228,6 +236,107 @@ replace_first_var_with_starlog_call((First, Rest), Var, (starlog:starlog_call(Va
 % Fallback: if Goal doesn't match expected patterns, return unchanged
 % This handles edge cases where the pattern detection succeeded but replacement context differs
 replace_first_var_with_starlog_call(Goal, _Var, Goal).
+
+% extract_list_append_parts(+Expr, -LeftList, -RightList)
+% Extract the two parts of a list append expression
+% Handles: ([A:4] & [3]) -> LeftList = [A:4], RightList = [3]
+%          (A & [3]) -> LeftList = A, RightList = [3]
+extract_list_append_parts(LeftList & RightList, LeftList, RightList) :- !.
+
+% list_has_concat_with_vars(+List)
+% Check if a list contains concatenation expressions with variables
+% This includes checking list elements that are concat expressions
+list_has_concat_with_vars(List) :-
+    is_list(List),
+    member(Elem, List),
+    (is_concat_expr_with_var(Elem) ; is_concat_expr_with_var_deep(Elem)),
+    !.
+
+% is_concat_expr_with_var(+Expr)
+% Check if expression is a concat with at least one variable
+is_concat_expr_with_var(A : B) :- (var(A) ; var(B)), !.
+is_concat_expr_with_var(A • B) :- (var(A) ; var(B)), !.
+
+% is_concat_expr_with_var_deep(+Expr)
+% Check recursively for concat expressions with variables
+is_concat_expr_with_var_deep(A : _) :- var(A), !.
+is_concat_expr_with_var_deep(_ : B) :- var(B), !.
+is_concat_expr_with_var_deep(A • _) :- var(A), !.
+is_concat_expr_with_var_deep(_ • B) :- var(B), !.
+is_concat_expr_with_var_deep(A : B) :- 
+    !,
+    (is_concat_expr_with_var_deep(A) ; is_concat_expr_with_var_deep(B)).
+is_concat_expr_with_var_deep(A • B) :- 
+    !,
+    (is_concat_expr_with_var_deep(A) ; is_concat_expr_with_var_deep(B)).
+
+% compile_list_append_constraint(+LeftList, +RightList, +RHS, -Goals)
+% Compile a list append expression with constraint solving for concat operations
+% Pattern: ([A:4] & [3]) is ["54",3]
+% Strategy: Create variables for concat results, do append, then add constraints
+compile_list_append_constraint(LeftList, RightList, RHS, Goals) :-
+    (is_list(LeftList) ->
+        % LeftList is a concrete list with potential concat expressions
+        % Create result variables for each concat expression
+        create_list_with_concat_vars(LeftList, ProcessedLeft, Constraints),
+        compile_value(RightList, RightVal, RightGoals),
+        % First do the append to unify the structure
+        append(RightGoals, [append(ProcessedLeft, RightVal, RHS)], PreGoals),
+        % Then add the concat constraints
+        append(PreGoals, Constraints, AllGoals),
+        list_to_conjunction(AllGoals, Goals)
+    ;
+        % LeftList is a variable or expression, use standard append
+        compile_value(LeftList, LeftVal, LeftGoals),
+        compile_value(RightList, RightVal, RightGoals),
+        append(LeftGoals, RightGoals, PreGoals),
+        append(PreGoals, [append(LeftVal, RightVal, RHS)], AllGoals),
+        list_to_conjunction(AllGoals, Goals)
+    ).
+
+% create_list_with_concat_vars(+InputList, -OutputList, -Constraints)
+% For each concat expression, create a fresh variable and a constraint
+% Example: [A:4, B] -> [_G1, B], [string_concat(A, 4, _G1)]
+create_list_with_concat_vars([], [], []).
+create_list_with_concat_vars([Elem|Rest], [ResultVar|ProcessedRest], AllConstraints) :-
+    (is_concat_operation(Elem) ->
+        % Element is a concat expression - create constraint
+        create_concat_constraint(Elem, ResultVar, ElemConstraints),
+        create_list_with_concat_vars(Rest, ProcessedRest, RestConstraints),
+        append(ElemConstraints, RestConstraints, AllConstraints)
+    ;
+        % Element is not a concat expression, process it normally
+        (is_starlog_expr(Elem) ->
+            compile_starlog_expr(Elem, ResultVar, ElemGoals),
+            create_list_with_concat_vars(Rest, ProcessedRest, RestConstraints),
+            append(ElemGoals, RestConstraints, AllConstraints)
+        ;
+            % Plain value
+            ResultVar = Elem,
+            create_list_with_concat_vars(Rest, ProcessedRest, AllConstraints)
+        )
+    ).
+
+% is_concat_operation(+Expr)
+% Check if expression is a concatenation operation
+is_concat_operation(_ : _) :- !.
+is_concat_operation(_ • _) :- !.
+
+% create_concat_constraint(+ConcatExpr, -ResultVar, -Constraints)
+% Create a constraint for a concat expression
+% The ResultVar will be unified by append, and the constraint will solve the concat
+create_concat_constraint((A : B), ResultVar, Constraints) :-
+    !,
+    compile_value(A, AVal, AGoals),
+    compile_value(B, BVal, BGoals),
+    append(AGoals, BGoals, PreGoals),
+    append(PreGoals, [string_concat(AVal, BVal, ResultVar)], Constraints).
+create_concat_constraint((A • B), ResultVar, Constraints) :-
+    !,
+    compile_value(A, AVal, AGoals),
+    compile_value(B, BVal, BGoals),
+    append(AGoals, BGoals, PreGoals),
+    append(PreGoals, [atom_concat(AVal, BVal, ResultVar)], Constraints).
 
 % is_arithmetic(+Expr)
 % Check if expression is arithmetic (should use Prolog is/2).
