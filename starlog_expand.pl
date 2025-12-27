@@ -139,8 +139,9 @@ expand_goal_internal((LHS is RHS), Expanded) :-
     ;
         % Standard compilation
         compile_starlog_expr(LHS, LHSResult, LHSGoals),
-        % Put the unification before the append to prevent infinite backtracking
-        % when RHS is ground. This ensures append is called with a bound third argument.
+        % Put the unification before list append operations to prevent infinite backtracking
+        % when RHS is ground. This ensures append is called with a bound third argument,
+        % which constrains the search space and prevents the generation of infinite solutions.
         append([LHSResult = RHS], LHSGoals, FinalGoals),
         list_to_conjunction(FinalGoals, Expanded)
     ).
