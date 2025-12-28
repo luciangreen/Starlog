@@ -54,6 +54,27 @@ user:string_number(String, Number) :-
 :- op(600, fx, user:('..=')).  % List to term conversion
 :- op(600, fx, user:('=..')).  % Term to list conversion (unary prefix)
 
+% Install portray hook for proper 'is' operator display
+% This ensures that expressions like (X is Y) are displayed with proper spacing
+% even when X is a quoted string or atom
+:- multifile user:portray/1.
+
+user:portray(is(Left, Right)) :-
+    % Only portray if Left is a string or atom that needs quoting
+    (string(Left); atom(Left)),
+    % Write the term with explicit spacing using print for proper operator display
+    (string(Left) -> 
+        % Strings are always quoted with double quotes
+        (write('"'), write(Left), write('"'))
+    ; 
+        % Atoms may need quoting with single quotes if they contain special characters
+        % Use writeq to handle proper atom quoting
+        writeq(Left)
+    ),
+    write(' is '),
+    print(Right),
+    !.
+
 % Install goal expansion hook
 :- multifile user:goal_expansion/2.
 :- dynamic user:goal_expansion/2.
