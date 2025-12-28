@@ -123,7 +123,24 @@ expand_goal_internal((LHS is RHS), Expanded) :-
         % Standard dual expression handling
         compile_starlog_expr(LHS, LHSResult, LHSGoals),
         compile_starlog_expr(RHS, RHSResult, RHSGoals),
-        append(LHSGoals, [LHSResult = RHSResult|RHSGoals], FinalGoals),
+        % To prevent infinite backtracking, execute the more ground side first.
+        % If RHS is more ground (has fewer variables or is fully ground),
+        % execute RHS pre-goals, then both result assignments, then unification,
+        % then LHS pre-goals IN REVERSE ORDER. Reversing the LHS pre-goals ensures
+        % that when we have a chain like append(A,[x],B), append(B,[y],C), append(C,[z],Result),
+        % and Result is already bound, we execute from Result backwards to constrain
+        % all intermediate variables before trying to generate solutions.
+        (is_more_ground(RHS, LHS) ->
+            % Split goals into pre-goals and result goal
+            split_result_goal(LHSGoals, LHSPreGoals, LHSResultGoal),
+            split_result_goal(RHSGoals, RHSPreGoals, RHSResultGoal),
+            % Reverse LHS pre-goals to execute from most constrained to least
+            reverse(LHSPreGoals, ReversedLHSPreGoals),
+            % Order: RHS pre-goals, RHS result, unification, LHS result, LHS pre-goals (reversed)
+            append(RHSPreGoals, [RHSResultGoal, LHSResult = RHSResult, LHSResultGoal | ReversedLHSPreGoals], FinalGoals)
+        ;
+            append(LHSGoals, [LHSResult = RHSResult|RHSGoals], FinalGoals)
+        ),
         list_to_conjunction(FinalGoals, Expanded)
     ).
 
@@ -854,3 +871,27 @@ process_eval_in_args([Arg|Args], [ProcessedArg|ProcessedArgs], Goals) :-
     process_eval_in_no_eval(Arg, ProcessedArg, ArgGoals),
     process_eval_in_args(Args, ProcessedArgs, RestGoals),
     append(ArgGoals, RestGoals, Goals).
+
+% is_more_ground(+Expr1, +Expr2)
+% Check if Expr1 is more ground than Expr2.
+% An expression is more ground if it has fewer unbound variables.
+% This is used to determine execution order in dual expressions to prevent
+% infinite backtracking.
+is_more_ground(Expr1, Expr2) :-
+    % Count variables in each expression
+    term_variables(Expr1, Vars1),
+    term_variables(Expr2, Vars2),
+    length(Vars1, Count1),
+    length(Vars2, Count2),
+    % Expr1 is more ground if it has fewer variables
+    Count1 < Count2.
+
+% split_result_goal(+Goals, -PreGoals, -ResultGoal)
+% Split a list of goals into pre-goals and the final result goal.
+% The result goal is typically a unification like Out = Result.
+% If Goals is empty or has only one goal, PreGoals is empty and ResultGoal is the single goal.
+split_result_goal([], [], true) :- !.
+split_result_goal([Goal], [], Goal) :- !.
+split_result_goal(Goals, PreGoals, ResultGoal) :-
+    append(PreGoals, [ResultGoal], Goals),
+    !.
