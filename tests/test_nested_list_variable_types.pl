@@ -2,7 +2,7 @@
 % Tests for variable types in nested vs. non-nested lists with concat operators
 % This tests the requirement that:
 %   - In [A:a] is [a:a], A should be atom 'a'
-%   - In [[A:a]] is [[a:a]], A should be string "a"
+%   - In [[A:a]] is [[a:a]], A should be atom 'a' (consistent with single-level behavior)
 
 :- use_module('../starlog').
 
@@ -14,12 +14,12 @@ test_single_level_atom :-
     assertion(A = a),
     write(' ✓'), nl.
 
-% Test 2: Nested list with colon operator produces string
+% Test 2: Nested list with colon operator produces atom (consistent with single-level)
 test_nested_level_string :-
-    write('Test 2: [[A:a]] is [[a:a]] should produce A = "a" (string)...'),
+    write('Test 2: [[A:a]] is [[a:a]] should produce A = a (atom)...'),
     starlog_call([[A:a]] is [[a:a]]),
-    assertion(string(A)),
-    assertion(A = "a"),
+    assertion(atom(A)),
+    assertion(A = a),
     write(' ✓'), nl.
 
 % Test 3: Single-level list with atom concat operator produces atom
@@ -38,12 +38,12 @@ test_nested_level_atom_concat :-
     assertion(A = a),
     write(' ✓'), nl.
 
-% Test 5: Triple-nested list with colon operator produces string
+% Test 5: Triple-nested list with colon operator produces atom (consistent with other levels)
 test_triple_nested_string :-
-    write('Test 5: [[[A:a]]] is [[[a:a]]] should produce A = "a" (string)...'),
+    write('Test 5: [[[A:a]]] is [[[a:a]]] should produce A = a (atom)...'),
     starlog_call([[[A:a]]] is [[[a:a]]]),
-    assertion(string(A)),
-    assertion(A = "a"),
+    assertion(atom(A)),
+    assertion(A = a),
     write(' ✓'), nl.
 
 % Test 6: Multiple elements in single-level list
@@ -56,14 +56,14 @@ test_multiple_elements_single_level :-
     assertion(B = b),
     write(' ✓'), nl.
 
-% Test 7: Multiple elements in nested list
+% Test 7: Multiple elements in nested list - produces atoms (consistent with single-level)
 test_multiple_elements_nested :-
-    write('Test 7: [[A:a], [B:b]] is [[a:a], [b:b]] should produce strings...'),
+    write('Test 7: [[A:a], [B:b]] is [[a:a], [b:b]] should produce atoms...'),
     starlog_call([[A:a], [B:b]] is [[a:a], [b:b]]),
-    assertion(string(A)),
-    assertion(string(B)),
-    assertion(A = "a"),
-    assertion(B = "b"),
+    assertion(atom(A)),
+    assertion(atom(B)),
+    assertion(A = a),
+    assertion(B = b),
     write(' ✓'), nl.
 
 % Test 8: Mixed nesting levels
