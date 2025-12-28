@@ -1,5 +1,6 @@
 # Generated files
 tests/sample_starlog.pl
+sample_starlog.pl
 *.swp
 *.swo
 *~
