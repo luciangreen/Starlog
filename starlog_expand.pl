@@ -111,6 +111,10 @@ expand_goal_internal((LHS is RHS), Expanded) :-
     (is_concat_dual_expr(LHS, RHS) ->
         % Use bidirectional constraint solving for string/atom concat
         solve_concat_dual_expr(LHS, RHS, Expanded)
+    % Check if this is a list dual expression (without &) with concat on both sides
+    ; is_list_dual_expr_with_concat(LHS, RHS) ->
+        % Use bidirectional constraint solving for list-to-list with concat elements
+        solve_list_dual_expr(LHS, RHS, Expanded)
     % Check if this is a list append dual expression with concat on both sides
     ; is_list_append_dual_expr_with_concat(LHS, RHS) ->
         % Use bidirectional constraint solving for list append with concat elements
@@ -369,6 +373,17 @@ is_arithmetic(X) :- number(X).
 is_concat_dual_expr((_ : _), (_ : _)) :- !.
 is_concat_dual_expr((_ • _), (_ • _)) :- !.
 
+% is_list_dual_expr_with_concat(+LHS, +RHS)
+% Check if both sides are lists (not with &) with concat operations
+% Pattern: [A:a] is [b:B] or [(A•a):c] is [(b•B):c]
+is_list_dual_expr_with_concat(LHS, RHS) :-
+    % Both sides must be lists
+    is_list(LHS),
+    is_list(RHS),
+    % Both lists must have concat operations
+    list_has_concat_operations(LHS),
+    list_has_concat_operations(RHS).
+
 % is_list_append_dual_expr_with_concat(+LHS, +RHS)
 % Check if both sides are list append expressions with concat operations in list elements
 % Pattern: ([A•b] & [d]) is [a•B, d] or similar
@@ -471,6 +486,26 @@ solve_list_append_dual_expr(LHS, RHS, Goals) :-
     create_bidirectional_constraints(AllLHSConstraints, AllRHSConstraints, BidiConstraints),
     % Combine all goals
     append(UnifyGoals, BidiConstraints, AllGoals),
+    list_to_conjunction(AllGoals, Goals).
+
+% solve_list_dual_expr(+LHS, +RHS, -Goals)
+% Solve list dual expressions (without &) where both sides have concat operations
+% Pattern: [A:a] is [b:B] or [(A•a):c] is [(b•B):c]
+% Strategy:
+% 1. Process both lists to extract concat constraints
+% 2. Create result variables for concat operations
+% 3. Pair up constraints from LHS and RHS
+% 4. Add bidirectional concat constraints
+% 5. Unify the processed lists
+solve_list_dual_expr(LHS, RHS, Goals) :-
+    % Both are lists - process them
+    create_list_with_dual_concat_vars(LHS, ProcessedLHS, LHSConstraints, '_L'),
+    create_list_with_dual_concat_vars(RHS, ProcessedRHS, RHSConstraints, '_R'),
+    % Pair up the concat constraints
+    create_bidirectional_constraints(LHSConstraints, RHSConstraints, BidiConstraints),
+    % Combine goals: bidirectional constraints first, then unification
+    % This ensures concat operations are executed before we try to unify results
+    append(BidiConstraints, [ProcessedLHS = ProcessedRHS], AllGoals),
     list_to_conjunction(AllGoals, Goals).
 
 % create_list_with_dual_concat_vars(+InputList, -OutputList, -Constraints, +Prefix)
@@ -616,6 +651,15 @@ concat_dual(A, B, C, D, ConcatPred) :-
     (var(A), nonvar(B), nonvar(C), var(D)) ->
         (A = C,
          D = B)
+    ;
+    % Special case: Only A is variable, B, C, D are all bound
+    % Constraint: A + B = C + D. We need to solve for A.
+    % Strategy: Compute result on RHS, then extract A from LHS
+    (var(A), nonvar(B), nonvar(C), nonvar(D)) ->
+        (call(ConcatPred, C, D, Result),
+         % Now solve A + B = Result for A
+         % Use the same predicate for reverse mode
+         call(ConcatPred, A, B, Result))
     ;
     % Fallback: use standard constraint with both concat calls
     % This handles cases where both sides need to be evaluated and unified
