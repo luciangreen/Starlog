@@ -428,13 +428,7 @@ is_list_append_dual_expr_with_concat(LHS, RHS) :-
 list_has_concat_operations(List) :-
     is_list(List),
     member(Elem, List),
-    (is_concat_operation(Elem) ->
-        true
-    ; is_list(Elem) ->
-        list_has_concat_operations(Elem)
-    ;
-        fail
-    ),
+    (is_concat_operation(Elem) ; (is_list(Elem), list_has_concat_operations(Elem))),
     !.
 
 % solve_list_append_dual_expr(+LHS, +RHS, -Goals)
