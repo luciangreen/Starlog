@@ -512,12 +512,12 @@ The conversion automatically decompresses nested expressions into sequential goa
 
 ```prolog
 % Nested Starlog expression
-?- starlog_to_prolog_code(A is "hello":" ":"world").
-string_concat("hello"," ",A),string_concat(A,"world",B)
+?- starlog_to_prolog_code(A is "hello":" ":"world",D).
+D = (string_concat("hello", " ", A), string_concat(A, "world", B)).
 
 % Deeply nested expression
-?- starlog_to_prolog_code(Result is reverse([1]&[2]&[3])).
-append([1],[2],A),append(A,[3],B),reverse(B,C)
+?- starlog_to_prolog_code(Result is reverse([1]&[2]&[3]),D).
+D = (append([1], [2], A), append(A, [3], B), reverse(B, C)).
 ```
 
 The decompression algorithm:
@@ -561,15 +561,15 @@ The library supports bidirectional conversion between Prolog and Starlog:
 ```prolog
 % Prolog → Starlog (with compression)
 ?- starlog_output_code((string_concat("hello"," ",T1), 
-                        string_concat(T1,"world",T2)), _, [compress(true)]).
-A is "hello":" ":"world"
+                        string_concat(T1,"world",T2)), D, [compress(true)]).
+D is (A is "hello":" ":"world")
 
 ?- starlog_output_code(string_concat(A, B, C), Code).
 Code = (A is B:C).
 
 % Starlog → Prolog (with decompression)
-?- starlog_to_prolog_code(A is "hello":" ":"world").
-string_concat("hello"," ",A),string_concat(A,"world",B)
+?- starlog_to_prolog_code(A is "hello":" ":"world",D).
+D is (string_concat("hello"," ",A),string_concat(A,"world",B))
 ```
 
 ## Debugging
