@@ -61,12 +61,15 @@ user:string_number(String, Number) :-
 
 user:portray(is(Left, Right)) :-
     % Only portray if Left is a string or atom that needs quoting
-    (string(Left) ; atom(Left)),
+    (string(Left); atom(Left)),
     % Write the term with explicit spacing using print for proper operator display
     (string(Left) -> 
+        % Strings are always quoted with double quotes
         (write('"'), write(Left), write('"'))
     ; 
-        write(Left)
+        % Atoms may need quoting with single quotes if they contain special characters
+        % Use writeq to handle proper atom quoting
+        writeq(Left)
     ),
     write(' is '),
     print(Right),
