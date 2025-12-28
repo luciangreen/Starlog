@@ -424,10 +424,11 @@ is_list_append_dual_expr_with_concat(LHS, RHS) :-
 
 % list_has_concat_operations(+List)
 % Check if a list contains concatenation operations (not just variables)
+% This recursively checks nested lists to support patterns like [[A:a]] is [[a:a]]
 list_has_concat_operations(List) :-
     is_list(List),
     member(Elem, List),
-    is_concat_operation(Elem),
+    (is_concat_operation(Elem) ; (is_list(Elem), list_has_concat_operations(Elem))),
     !.
 
 % solve_list_append_dual_expr(+LHS, +RHS, -Goals)
