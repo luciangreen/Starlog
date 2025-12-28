@@ -344,14 +344,14 @@ A is
 Use `starlog_output_code/1` to convert a Prolog goal to Starlog notation:
 
 ```prolog
-?- starlog_output_code(string_concat("x", "y", C)).
-A is "x":"y"
+?- starlog_output_code(string_concat("x", "y", C),D).
+D = (A is "x":"y").
 
-?- starlog_output_code(append([1,2], [3,4], L)).
-A is [1,2]&[3,4]
+?- starlog_output_code(append([1,2], [3,4], L),D).
+D = (A is [1, 2]&[3, 4]).
 
-?- starlog_output_code(reverse([1,2,3], R)).
-A is reverse([1,2,3])
+?- starlog_output_code(reverse([1,2,3], R),D).
+D = (A is reverse([1, 2, 3])).
 ```
 
 This is useful for:
@@ -365,11 +365,11 @@ Use `starlog_output_code/3` or `starlog_output_file/3` with the `compress(true)`
 
 ```prolog
 ?- starlog_output_code((string_concat("hello", " ", T1), 
-                        string_concat(T1, "world", T2)), _, [compress(true)]).
-A is "hello":" ":"world"
+                        string_concat(T1, "world", T2)), D, [compress(true)]).
+D = (A is "hello":" ":"world").
 
-?- starlog_output_code((append([1],[2],L1), reverse(L1,L2)), _, [compress(true)]).
-A is reverse([1]&[2])
+?- starlog_output_code((append([1],[2],L1), reverse(L1,L2)), D, [compress(true)]).
+D = (A is reverse([1]&[2])).
 ```
 
 The compression algorithm:
@@ -384,14 +384,14 @@ Example comparison:
 % Without compression (default)
 ?- starlog_output_code((string_concat("a","b",T1), 
                         string_concat("c","d",T2), 
-                        string_concat(T1,T2,T3)), _).
-A is "a":"b",B is "c":"d",C is A:B
+                        string_concat(T1,T2,T3)), D).
+D is (A is "a":"b",B is "c":"d",C is A:B)
 
 % With compression
 ?- starlog_output_code((string_concat("a","b",T1), 
                         string_concat("c","d",T2), 
-                        string_concat(T1,T2,T3)), _, [compress(true)]).
-A is "a":"b":("c":"d")
+                        string_concat(T1,T2,T3)), D, [compress(true)]).
+D is (A is "a":"b":("c":"d"))
 ```
 
 ### Output Code for a File
