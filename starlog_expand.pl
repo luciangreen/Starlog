@@ -200,6 +200,18 @@ expand_goal_internal((LHS is RHS), Expanded) :-
         list_to_conjunction(FinalGoals, Expanded)
     ).
 
+% Starlog is-expression with LHS being a Starlog expression: Expr is Out
+% This handles cases like reverse(reverse([1,2,3])) is X
+% The cut prevents backtracking to less specific clauses below (e.g., the RHS-only clause)
+% and ensures this more general LHS pattern is matched after specific LHS patterns above.
+expand_goal_internal((LHS is RHS), Expanded) :-
+    is_starlog_expr(LHS),
+    \+ is_starlog_expr(RHS),
+    !,
+    compile_starlog_expr(LHS, LHSResult, LHSGoals),
+    append(LHSGoals, [LHSResult = RHS], FinalGoals),
+    list_to_conjunction(FinalGoals, Expanded).
+
 % Starlog is-expression: Out is Expr
 expand_goal_internal((Out is Expr), Expanded) :-
     is_starlog_expr(Expr),
