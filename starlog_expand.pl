@@ -640,6 +640,26 @@ concat_dual(A, B, C, D, ConcatPred) :-
             B = D
         )
     ;
+    % New case: Both B and D are concat expressions (not necessarily identical)
+    % Pattern: (A:a:C) is (b:a:c) which becomes (A:(a:C)) is (b:(a:c))
+    % This handles nested concatenation on the right side
+    (is_concat_expr(B, ConcatPred), is_concat_expr(D, ConcatPred)) ->
+        % Recursively solve B is D, which constrains variables in B and D
+        solve_nested_concat_dual(B, D, ConcatPred),
+        % Then solve A and C: A+B = C+D, and we know B and D from above
+        % Since B and D are now constrained to be equal (from the recursive solve),
+        % we have A+B = C+B, so A = C
+        A = C
+    ;
+    % New case: Both A and C are concat expressions (not necessarily identical)
+    % Pattern: (a:A:b) is (a:C:b) which doesn't simplify by prefix/suffix
+    % This handles nested concatenation on the left side
+    (is_concat_expr(A, ConcatPred), is_concat_expr(C, ConcatPred)) ->
+        % Recursively solve A is C, which constrains variables in A and C
+        solve_nested_concat_dual(A, C, ConcatPred),
+        % Then B = D since A+B = C+D and A = C
+        B = D
+    ;
     % If all are bound, just check equality
     (ground(A), ground(B), ground(C), ground(D)) ->
         (call(ConcatPred, A, B, R1),
