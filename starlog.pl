@@ -180,7 +180,10 @@ find(A, B, C) :-
     findall(A, (B, !), [Collected]),
     % Try to evaluate the template as a Starlog expression
     % If it succeeds, use the evaluated result; otherwise use the original
-    (catch(starlog_eval(Collected, Evaluated), _, fail) ->
+    % Only catch specific exceptions that indicate evaluation isn't applicable
+    (catch(starlog_eval(Collected, Evaluated), 
+           error(E, _),  % Catch specific error terms
+           (member(E, [type_error(_,_), instantiation_error]), fail)) ->
         C = Evaluated
     ;
         C = Collected
