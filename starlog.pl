@@ -171,11 +171,20 @@ starlog_no_eval(Expr, Result) :-
 
 % find(+Template, +Goal, -Result)
 % Execute a goal with a cut and collect the first solution.
-% This is equivalent to: findall(Template, (Goal, !), [Result])
+% If the template is a Starlog expression, it will be evaluated.
+% This is equivalent to: findall(Template, (Goal, !), [Collected]), then evaluate if needed
 % Example: find(A, [A:a] is [a:a], Result) binds Result to atom 'a'
 % Example: find(X, member(X, [1,2,3]), Result) binds Result to 1
+% Example: find(A:C, starlog_call([A:d:a:C] is [a:d:a:c]), Result) binds Result to "ac"
 find(A, B, C) :- 
-    findall(A, (B, !), [C]).
+    findall(A, (B, !), [Collected]),
+    % Try to evaluate the template as a Starlog expression
+    % If it succeeds, use the evaluated result; otherwise use the original
+    (catch(starlog_eval(Collected, Evaluated), _, fail) ->
+        C = Evaluated
+    ;
+        C = Collected
+    ).
 
 % starlog_register_value_builtin(+Name, +Arity, +PrologPred)
 % Register a new value-returning builtin.
