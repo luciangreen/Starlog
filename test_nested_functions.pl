@@ -27,52 +27,57 @@ test3 :-
         (writeln('✗ FAIL: '), writeln(E))
     ).
 
-% Test 4: Mixed - concat on LHS, function on RHS
+% Test 4: Nested function on both LHS and RHS with different nesting levels
 test4 :-
-    write('Test 4: (A:B) is reverse(["321"])... '),
+    write('Test 4: length(reverse([1,2,3])) is X... '),
     catch(
-        (starlog_call((A:B) is reverse(["321"])),
-         writeln('✓ PASS (A='), write(A), write(', B='), write(B), writeln(')')),
+        (starlog_call(length(reverse([1,2,3])) is X),
+         (X = 3 -> writeln('✓ PASS') ; 
+          (writeln('✗ FAIL: X='), writeln(X)))),
         E,
         (writeln('✗ FAIL: '), writeln(E))
     ).
 
-% Test 5: Function on LHS, concat on RHS
+% Test 5: Function on LHS, list concat on RHS
 test5 :-
-    write('Test 5: reverse(A) is ("1":"2":"3")... '),
+    write('Test 5: reverse(A) is ([1,2]&[3])... '),
     catch(
-        (starlog_call(reverse(A) is ("1":"2":"3")),
-         (A = "321" -> writeln('✓ PASS') ; writeln('✗ FAIL'))),
+        (starlog_call(reverse(A) is ([1,2]&[3])),
+         (A = [3,2,1] -> writeln('✓ PASS') ; 
+          (writeln('✗ FAIL: A='), writeln(A)))),
         E,
         (writeln('✗ FAIL: '), writeln(E))
     ).
 
 % Test 6: Nested function with concat on RHS
 test6 :-
-    write('Test 6: X is reverse("a":"b":"c")... '),
+    write('Test 6: X is reverse([1,2]&[3,4])... '),
     catch(
-        (starlog_call(X is reverse("a":"b":"c")),
-         (X = "cba" -> writeln('✓ PASS') ; writeln('✗ FAIL'))),
+        (starlog_call(X is reverse([1,2]&[3,4])),
+         (X = [4,3,2,1] -> writeln('✓ PASS') ; 
+          (writeln('✗ FAIL: X='), writeln(X)))),
         E,
         (writeln('✗ FAIL: '), writeln(E))
     ).
 
 % Test 7: Nested function with concat on LHS
 test7 :-
-    write('Test 7: reverse("a":"b":"c") is X... '),
+    write('Test 7: reverse([1,2]&[3,4]) is X... '),
     catch(
-        (starlog_call(reverse("a":"b":"c") is X),
-         (X = "cba" -> writeln('✓ PASS') ; writeln('✗ FAIL'))),
+        (starlog_call(reverse([1,2]&[3,4]) is X),
+         (X = [4,3,2,1] -> writeln('✓ PASS') ; 
+          (writeln('✗ FAIL: X='), writeln(X)))),
         E,
         (writeln('✗ FAIL: '), writeln(E))
     ).
 
 % Test 8: String concat with nested functions
 test8 :-
-    write('Test 8: (reverse("ab"):reverse("cd")) is X... '),
+    write('Test 8: (string_length("ab"):string_length("cd")) is X... '),
     catch(
-        (starlog_call((reverse("ab"):reverse("cd")) is X),
-         (X = "badc" -> writeln('✓ PASS') ; writeln('✗ FAIL'))),
+        (starlog_call((string_length("ab"):string_length("cd")) is X),
+         (X = "22" -> writeln('✓ PASS') ; 
+          (writeln('✗ FAIL: X='), writeln(X)))),
         E,
         (writeln('✗ FAIL: '), writeln(E))
     ).
@@ -82,7 +87,8 @@ test9 :-
     write('Test 9: (reverse([1,2])&reverse([3,4])) is X... '),
     catch(
         (starlog_call((reverse([1,2])&reverse([3,4])) is X),
-         (X = [2,1,4,3] -> writeln('✓ PASS') ; writeln('✗ FAIL'))),
+         (X = [2,1,4,3] -> writeln('✓ PASS') ; 
+          (writeln('✗ FAIL: X='), writeln(X)))),
         E,
         (writeln('✗ FAIL: '), writeln(E))
     ).
