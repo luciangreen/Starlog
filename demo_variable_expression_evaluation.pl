@@ -122,7 +122,7 @@ demo_conditional_usage :-
 % =====================================================================
 
 main :-
-    write(''), nl,
+    nl,
     write('╔════════════════════════════════════════════════════════════════╗'), nl,
     write('║  Variable Expression Evaluation Demo                          ║'), nl,
     write('║  Pattern: A = (StarlogExpr), B is A                           ║'), nl,
