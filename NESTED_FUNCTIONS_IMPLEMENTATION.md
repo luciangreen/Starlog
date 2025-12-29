@@ -48,10 +48,16 @@ This clause:
 
 ### Placement
 
-The new clause is positioned after the more specific clause that handles list append expressions with concat operations (line 183-201) but before the general clause that handles RHS Starlog expressions (line 213-218). This ensures:
+The new clause is positioned strategically within the clause ordering:
+- **After** the more specific clause that handles list append expressions with concat operations
+- **Before** the general clause that handles RHS Starlog expressions
+
+This ensures:
 - More specific patterns are matched first
 - General patterns work for all remaining cases
 - No ambiguity in clause selection
+
+The cut (`!`) prevents backtracking to less specific clauses and ensures deterministic behavior.
 
 ## Examples
 

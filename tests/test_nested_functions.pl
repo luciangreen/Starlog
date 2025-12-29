@@ -7,9 +7,9 @@
 run_test(Name, Goal) :-
     write('Test: '), write(Name), write('... '),
     catch(
-        (call(Goal) -> writeln('✓ PASS') ; writeln('✗ FAIL')),
+        (call(Goal) -> writeln('PASS') ; writeln('FAIL')),
         E,
-        (writeln('✗ FAIL: '), writeln(E))
+        (writeln('FAIL: '), writeln(E))
     ).
 
 % ============================================================
