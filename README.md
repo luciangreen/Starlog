@@ -256,6 +256,16 @@ B = [1, 2].
 % String concatenation dual expressions
 ?- ("hello" : "world") is ("hello" : "world").
 true.
+
+% Nested concatenation with multiple variables
+?- (A : a : C) is (b : a : c).
+A = b,
+C = c.
+
+% List with nested concatenation
+?- [A:a:C] is [x:a:y].
+A = x,
+C = y.
 ```
 
 This feature is particularly useful for:
@@ -263,6 +273,7 @@ This feature is particularly useful for:
 - Pattern matching with variable substitution
 - Constraint-based programming with Starlog syntax
 - Verifying equivalence of complex expressions
+- Extracting multiple variables from nested concatenation patterns
 
 ## Supported Built-in Predicates
 
@@ -326,11 +337,34 @@ Result = "helloworld".
 Result = [1, 2, 3, 4].
 ```
 
+#### Solving for Multiple Variables with Nested Concatenation
+
+The `find/3` predicate can solve for multiple variables simultaneously in nested concatenation patterns:
+
+```prolog
+% Find two variables in a three-way concatenation
+?- find([A,C], starlog_call([A:a:C] is [a:a:c]), Result).
+Result = [a, c].
+
+% Find two variables with a separator
+?- find([A,C], starlog_call([A:"_":C] is ["hello":"_":"world"]), Result).
+Result = ["hello", "world"].
+
+% Find three variables in a five-way pattern
+?- find([A,C,E], starlog_call([A:"-":C:"-":E] is ["x":"-":"y":"-":"z"]), Result).
+Result = ["x", "y", "z"].
+
+% Works with atom concatenation too
+?- find([A,C], starlog_call([A•x•C] is [y•x•z]), Result).
+Result = [y, z].
+```
+
 This is useful for:
 - Finding the first solution to a goal
 - Executing Starlog expressions and capturing the result
 - Solving equations with only the first solution
 - Pattern matching with automatic cut behavior
+- Extracting multiple values from concatenation patterns
 
 ## Extending Starlog
 
