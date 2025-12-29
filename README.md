@@ -206,10 +206,29 @@ Many Prolog predicates can be written in Starlog syntax:
 
 ### Nested Expressions
 
-Nested expressions are automatically decomposed into sequential goals:
+Nested expressions are automatically decomposed into sequential goals. **Functions can now be nested on both the left-hand side (LHS) and right-hand side (RHS) of `is`:**
 
 ```prolog
-% Starlog:
+% Nested functions on RHS (original support)
+X is reverse(reverse([1,2,3]))      % X = [1,2,3]
+X is length(reverse([1,2,3]))       % X = 3
+
+% Nested functions on LHS (new support)
+reverse(reverse([1,2,3])) is X      % X = [1,2,3]
+length(reverse([1,2,3])) is X       % X = 3
+
+% Nested functions on both sides
+reverse(A) is reverse([1,2,3])      % A = [1,2,3]
+
+% Mixed with concat operators
+reverse([1,2]&[3,4]) is X           % X = [4,3,2,1]
+(reverse([1,2])&reverse([3,4])) is X   % X = [2,1,4,3]
+
+% Deep nesting
+reverse(reverse(reverse([1,2,3]))) is X   % X = [3,2,1]
+reverse(reverse([1]&[2])&reverse([3]&[4])) is X   % X = [3,4,1,2]
+
+% Traditional nested string/atom concat
 E is (A:(B:(D • F))) • C
 
 % Expands to:
@@ -218,6 +237,8 @@ string_concat(B, _G1, _G2),
 string_concat(A, _G2, _G3),
 atom_concat(_G3, C, E).
 ```
+
+All combinations and configurations of nested functions with Starlog operators are supported.
 
 ### Arithmetic is Preserved
 
