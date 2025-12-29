@@ -294,12 +294,43 @@ The library supports automatic expansion for many built-in predicates. Here are 
 
 ### Other Operations
 - `findall/2`
+- `find/3` - Execute a goal with cut and collect first solution
 - `term_variables/1`
 - `split_string/3`
 - `date/0`, `get_time/0` (nullary operations)
 - And more...
 
 For a complete list, see `starlog_registry.pl`.
+
+## Helper Predicates
+
+### find/3 - Find First Solution
+
+The `find/3` predicate executes a goal with a cut to get only the first solution:
+
+```prolog
+% Signature: find(+Template, +Goal, -Result)
+% Equivalent to: findall(Template, (Goal, !), [Result])
+
+?- use_module(starlog).
+?- find(A, starlog_call([A:a] is [a:a]), Result).
+Result = a.
+
+?- find(X, member(X, [1,2,3]), Result).
+Result = 1.  % Only first solution due to cut
+
+?- find(R, starlog_call(R is "hello":"world"), Result).
+Result = "helloworld".
+
+?- find(L, starlog_call(L is [1,2]&[3,4]), Result).
+Result = [1, 2, 3, 4].
+```
+
+This is useful for:
+- Finding the first solution to a goal
+- Executing Starlog expressions and capturing the result
+- Solving equations with only the first solution
+- Pattern matching with automatic cut behavior
 
 ## Extending Starlog
 

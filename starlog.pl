@@ -29,7 +29,8 @@
     solve_system/2,
     solve_system/3,
     gaussian_elimination/2,
-    gaussian_elimination/3
+    gaussian_elimination/3,
+    find/3
 ]).
 
 :- use_module(starlog_expand).
@@ -167,6 +168,14 @@ starlog_eval(Expr, Result) :-
 % Example: starlog_no_eval(1+1, Result) binds Result to 1+1 (not 2)
 starlog_no_eval(Expr, Result) :-
     starlog_call((Result is no_eval(Expr)), Result).
+
+% find(+Template, +Goal, -Result)
+% Execute a goal with a cut and collect the first solution.
+% This is equivalent to: findall(Template, (Goal, !), [Result])
+% Example: find(A, [A:a] is [a:a], Result) binds Result to atom 'a'
+% Example: find(X, member(X, [1,2,3]), Result) binds Result to 1
+find(A, B, C) :- 
+    findall(A, (B, !), [C]).
 
 % starlog_register_value_builtin(+Name, +Arity, +PrologPred)
 % Register a new value-returning builtin.
