@@ -359,12 +359,35 @@ Result = ["x", "y", "z"].
 Result = [y, z].
 ```
 
+#### Template Evaluation
+
+**New Feature**: When the template contains Starlog operators like `:`, `•`, or `&`, `find/3` automatically evaluates the template after the goal succeeds:
+
+```prolog
+% Template with string concatenation - automatically evaluated
+?- find(A:C, starlog_call([A:d:a:C] is [a:d:a:c]), Result).
+Result = "ac".  % Concatenated result, not [a, c]
+
+% Template with atom concatenation - automatically evaluated
+?- find(A•C, starlog_call([A•x•C] is [y•x•z]), Result).
+Result = yz.  % Concatenated atom, not [y, z]
+
+% Multiple variables in template
+?- find(A:"-":C, starlog_call([A:"-":C] is ["x":"-":"y"]), Result).
+Result = "x-y".  % Fully evaluated concatenation
+
+% List template - NOT evaluated (backward compatible)
+?- find([A,C], starlog_call([A:a:C] is [a:a:c]), Result).
+Result = [a, c].  % List of values, not concatenated
+```
+
 This is useful for:
 - Finding the first solution to a goal
 - Executing Starlog expressions and capturing the result
 - Solving equations with only the first solution
 - Pattern matching with automatic cut behavior
 - Extracting multiple values from concatenation patterns
+- **Collecting computed results directly from templates**
 
 ## Extending Starlog
 
