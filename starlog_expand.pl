@@ -70,6 +70,39 @@ expand_goal_internal((A, B), Expanded) :-
     expand_goal_internal(NewB, EB),
     Expanded = (EA, EB).
 
+% Special pattern: Var1=(StarlogExpr),(Var2 is Var1) -> Var1=(StarlogExpr),starlog_eval(Var1,Var2)
+% This allows A=([a]&[c]),B is A to work correctly
+% StarlogExpr is a bare Starlog expression (not wrapped in 'is')
+% Handles both: Var1=(Expr),(Var2 is Var1) and Var1=(Expr),(Var2 is Var1, Rest)
+expand_goal_internal((A, B), Expanded) :-
+    nonvar(A),
+    compound(A),
+    A = (Var1 = RHS),  % Check if A is a unification
+    var(Var1),
+    nonvar(RHS),
+    contains_starlog_operator(RHS),  % RHS contains Starlog operators
+    \+ contains_starlog_in_term(RHS),  % But is not a complete Starlog goal
+    nonvar(B),
+    % B could be (Var2 is Var1) or ((Var2 is Var1), Rest)
+    ( compound(B), B = (IsGoal, Rest) -> 
+        FirstGoal = IsGoal
+    ; 
+        FirstGoal = B,
+        Rest = true
+    ),
+    compound(FirstGoal),
+    FirstGoal = (Var2 is VarRef),  % First goal is of the form (Var2 is VarRef)
+    Var1 == VarRef,  % Ensure VarRef is the same variable as Var1
+    !,
+    % Transform to: Var1=(StarlogExpr), (starlog_eval(Var1, Var2), Rest)
+    expand_goal_internal(A, EA),
+    (Rest = true ->
+        Expanded = (EA, starlog:starlog_eval(Var1, Var2))
+    ;
+        expand_goal_internal(Rest, ER),
+        Expanded = (EA, (starlog:starlog_eval(Var1, Var2), ER))
+    ).
+
 % Handle conjunctions
 expand_goal_internal((A, B), (EA, EB)) :-
     !,
