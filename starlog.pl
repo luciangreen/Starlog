@@ -323,13 +323,18 @@ starlog_output_code(Goal, StarlogCode) :-
 %   output_no_eval(false) - Strip no_eval() wrappers (default)
 %   print(true) - Print to stdout (default for /1 version)
 %   print(false) - Do not print to stdout (default for /2 version)
+%   rename(true) - Rename variables to A, B, C, etc. (default for print)
+%   rename(false) - Keep original variables (default for no print)
 starlog_output_code(Goal, StarlogCode, Options) :-
+    % Determine if we should rename variables
+    % Default: rename when printing, don't rename otherwise
+    determine_rename_option(Options, Rename),
     % First, check if it's already a Starlog expression
     (is_already_starlog(Goal) ->
-        % If it's already Starlog, just rename variables and output
-        rename_variables(Goal, RenamedGoal),
+        % If it's already Starlog, optionally rename variables and output
+        apply_rename(Goal, Rename, ProcessedGoal),
         % Strip eval/no_eval based on options
-        strip_eval_no_eval_based_on_options(RenamedGoal, Options, StrippedGoal),
+        strip_eval_no_eval_based_on_options(ProcessedGoal, Options, StrippedGoal),
         StarlogCode = StrippedGoal
     ;
         % Otherwise, convert Prolog to Starlog
@@ -340,9 +345,10 @@ starlog_output_code(Goal, StarlogCode, Options) :-
         ;
             CompressedForm = StarlogForm
         ),
-        rename_variables(CompressedForm, RenamedStarlog),
+        % Optionally rename variables
+        apply_rename(CompressedForm, Rename, ProcessedStarlog),
         % Strip eval/no_eval based on options
-        strip_eval_no_eval_based_on_options(RenamedStarlog, Options, StrippedStarlog),
+        strip_eval_no_eval_based_on_options(ProcessedStarlog, Options, StrippedStarlog),
         StarlogCode = StrippedStarlog
     ),
     % Print to stdout only if print(true) option is present
@@ -351,6 +357,24 @@ starlog_output_code(Goal, StarlogCode, Options) :-
     ;
         true
     ).
+
+% determine_rename_option(+Options, -Rename)
+% Determine whether to rename variables based on options
+determine_rename_option(Options, Rename) :-
+    (member(rename(Rename), Options) ->
+        true  % Use explicit rename option
+    ; member(print(true), Options) ->
+        Rename = true  % Default to rename when printing
+    ;
+        Rename = false  % Default to not rename otherwise
+    ).
+
+% apply_rename(+Term, +Rename, -RenamedTerm)
+% Apply variable renaming if Rename is true
+apply_rename(Term, true, RenamedTerm) :-
+    !,
+    rename_variables(Term, RenamedTerm).
+apply_rename(Term, false, Term).
 
 % is_already_starlog(+Goal)
 % Check if a goal is already in Starlog form (contains 'is' with operators)
@@ -386,6 +410,11 @@ strip_eval_no_eval_based_on_options(Term, Options, StrippedTerm) :-
 % Strip eval() and/or no_eval() wrappers from a term.
 % StripEval: true to remove eval() wrappers, false to keep them
 % StripNoEval: true to remove no_eval() wrappers, false to keep them
+
+% Handle variables - return as-is
+strip_eval_no_eval(Term, _StripEval, _StripNoEval, Term) :-
+    var(Term),
+    !.
 
 % Handle conjunction
 strip_eval_no_eval((A, B), StripEval, StripNoEval, (StrippedA, StrippedB)) :-
