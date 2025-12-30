@@ -328,21 +328,11 @@ starlog_output_code(Goal, StarlogCode) :-
 starlog_output_code(Goal, StarlogCode, Options) :-
     % Determine if we should rename variables
     % Default: rename when printing, don't rename otherwise
-    (member(rename(Rename), Options) ->
-        true
-    ; member(print(true), Options) ->
-        Rename = true
-    ;
-        Rename = false
-    ),
+    determine_rename_option(Options, Rename),
     % First, check if it's already a Starlog expression
     (is_already_starlog(Goal) ->
         % If it's already Starlog, optionally rename variables and output
-        (Rename = true ->
-            rename_variables(Goal, ProcessedGoal)
-        ;
-            ProcessedGoal = Goal
-        ),
+        apply_rename(Goal, Rename, ProcessedGoal),
         % Strip eval/no_eval based on options
         strip_eval_no_eval_based_on_options(ProcessedGoal, Options, StrippedGoal),
         StarlogCode = StrippedGoal
@@ -356,11 +346,7 @@ starlog_output_code(Goal, StarlogCode, Options) :-
             CompressedForm = StarlogForm
         ),
         % Optionally rename variables
-        (Rename = true ->
-            rename_variables(CompressedForm, ProcessedStarlog)
-        ;
-            ProcessedStarlog = CompressedForm
-        ),
+        apply_rename(CompressedForm, Rename, ProcessedStarlog),
         % Strip eval/no_eval based on options
         strip_eval_no_eval_based_on_options(ProcessedStarlog, Options, StrippedStarlog),
         StarlogCode = StrippedStarlog
@@ -371,6 +357,24 @@ starlog_output_code(Goal, StarlogCode, Options) :-
     ;
         true
     ).
+
+% determine_rename_option(+Options, -Rename)
+% Determine whether to rename variables based on options
+determine_rename_option(Options, Rename) :-
+    (member(rename(Rename), Options) ->
+        true  % Use explicit rename option
+    ; member(print(true), Options) ->
+        Rename = true  % Default to rename when printing
+    ;
+        Rename = false  % Default to not rename otherwise
+    ).
+
+% apply_rename(+Term, +Rename, -RenamedTerm)
+% Apply variable renaming if Rename is true
+apply_rename(Term, true, RenamedTerm) :-
+    !,
+    rename_variables(Term, RenamedTerm).
+apply_rename(Term, false, Term).
 
 % is_already_starlog(+Goal)
 % Check if a goal is already in Starlog form (contains 'is' with operators)

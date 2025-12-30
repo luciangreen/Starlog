@@ -845,6 +845,10 @@ compile_starlog_expr(eval(Expr), Out, Goals) :-
 % The Template and Goal should not be compiled as values - they are meta-arguments
 % Template can be any term (including variables)
 % Goal should have its Starlog expressions expanded but not be treated as a value
+% 
+% Note: This handles the Starlog form with 2 args: findall(Template, Goal)
+% When compiled, this becomes the Prolog form: findall(Template, Goal, Out)
+% The 3-argument Prolog form is handled during conversion to Starlog (see convert_prolog_to_starlog)
 compile_starlog_expr(findall(Template, Goal), Out, Goals) :-
     !,
     % Expand Starlog expressions within the Goal
