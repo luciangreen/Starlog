@@ -841,6 +841,17 @@ compile_starlog_expr(eval(Expr), Out, Goals) :-
     !,
     compile_starlog_expr(Expr, Out, Goals).
 
+% Special case for findall: Out is findall(Template, Goal)
+% The Template and Goal should not be compiled as values - they are meta-arguments
+% Template can be any term (including variables)
+% Goal should have its Starlog expressions expanded but not be treated as a value
+compile_starlog_expr(findall(Template, Goal), Out, Goals) :-
+    !,
+    % Expand Starlog expressions within the Goal
+    expand_goal_internal(Goal, ExpandedGoal),
+    % Create the findall/3 call with expanded goal
+    Goals = [findall(Template, ExpandedGoal, Out)].
+
 % Value-returning builtin: Out is func(Args...)
 compile_starlog_expr(Expr, Out, Goals) :-
     compound(Expr),
