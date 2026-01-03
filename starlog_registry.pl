@@ -112,6 +112,7 @@ default_value_builtin(gaussian_elimination, 2).
 
 % Other operations
 default_value_builtin(findall, 2).
+default_value_builtin(find, 2).
 default_value_builtin(string_from_file, 1).
 default_value_builtin(read_string, 4).
 default_value_builtin(term_variables, 1).

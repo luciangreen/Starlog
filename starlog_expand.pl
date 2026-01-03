@@ -856,6 +856,30 @@ compile_starlog_expr(findall(Template, Goal), Out, Goals) :-
     % Create the findall/3 call with expanded goal
     Goals = [findall(Template, ExpandedGoal, Out)].
 
+% Special case for find: Out is find(Template, Goal)
+% Similar to findall but with cut behavior to get only first solution
+% The Template and Goal should not be compiled as values - they are meta-arguments
+% 
+% Note: This handles the Starlog form with 2 args: find(Template, Goal)
+% When compiled, this becomes: findall(Template, (Goal, !), [Out]), then evaluate if needed
+% The evaluation step handles Starlog expressions in the template
+compile_starlog_expr(find(Template, Goal), Out, Goals) :-
+    !,
+    % Expand Starlog expressions within the Goal
+    expand_goal_internal(Goal, ExpandedGoal),
+    % Create the find implementation: findall with cut, extract from single-element list
+    % Then try to evaluate the template as a Starlog expression
+    Goals = [
+        findall(Template, (ExpandedGoal, !), [Collected]),
+        (catch(starlog:starlog_eval(Collected, Evaluated), 
+               error(E, _),
+               (member(E, [type_error(_,_), instantiation_error]), fail)) ->
+            Out = Evaluated
+        ;
+            Out = Collected
+        )
+    ].
+
 % Value-returning builtin: Out is func(Args...)
 compile_starlog_expr(Expr, Out, Goals) :-
     compound(Expr),

@@ -326,7 +326,7 @@ The library supports automatic expansion for many built-in predicates. Here are 
 
 ### Other Operations
 - `findall/2`
-- `find/3` - Execute a goal with cut and collect first solution
+- `find/2` - Execute a goal with cut and collect first solution
 - `term_variables/1`
 - `split_string/3`
 - `date/0`, `get_time/0` (nullary operations)
@@ -336,69 +336,74 @@ For a complete list, see `starlog_registry.pl`.
 
 ## Helper Predicates
 
-### find/3 - Find First Solution
+### find/2 - Find First Solution
 
-The `find/3` predicate executes a goal with a cut to get only the first solution:
+The `find/2` predicate executes a goal with a cut to get only the first solution. It follows the Starlog pattern of using `is` for value-returning operations:
 
 ```prolog
-% Signature: find(+Template, +Goal, -Result)
+% Starlog syntax (recommended):
+Result is find(Template, Goal)
+
 % Equivalent to: findall(Template, (Goal, !), [Result])
+% with automatic evaluation of Starlog expressions in Template
 
 ?- use_module(starlog).
-?- find(A, starlog_call([A:a] is [a:a]), Result).
+?- starlog_call(Result is find(A, starlog_call([A:a] is [a:a]))).
 Result = a.
 
-?- find(X, member(X, [1,2,3]), Result).
+?- starlog_call(Result is find(X, member(X, [1,2,3]))).
 Result = 1.  % Only first solution due to cut
 
-?- find(R, starlog_call(R is "hello":"world"), Result).
+?- starlog_call(Result is find(R, starlog_call(R is "hello":"world"))).
 Result = "helloworld".
 
-?- find(L, starlog_call(L is [1,2]&[3,4]), Result).
+?- starlog_call(Result is find(L, starlog_call(L is [1,2]&[3,4]))).
 Result = [1, 2, 3, 4].
 ```
 
+**Note**: The old 3-argument form `find(Template, Goal, Result)` is still supported for backward compatibility.
+
 #### Solving for Multiple Variables with Nested Concatenation
 
-The `find/3` predicate can solve for multiple variables simultaneously in nested concatenation patterns:
+The `find/2` predicate can solve for multiple variables simultaneously in nested concatenation patterns:
 
 ```prolog
 % Find two variables in a three-way concatenation
-?- find([A,C], starlog_call([A:a:C] is [a:a:c]), Result).
+?- starlog_call(Result is find([A,C], starlog_call([A:a:C] is [a:a:c]))).
 Result = [a, c].
 
 % Find two variables with a separator
-?- find([A,C], starlog_call([A:"_":C] is ["hello":"_":"world"]), Result).
+?- starlog_call(Result is find([A,C], starlog_call([A:"_":C] is ["hello":"_":"world"]))).
 Result = ["hello", "world"].
 
 % Find three variables in a five-way pattern
-?- find([A,C,E], starlog_call([A:"-":C:"-":E] is ["x":"-":"y":"-":"z"]), Result).
+?- starlog_call(Result is find([A,C,E], starlog_call([A:"-":C:"-":E] is ["x":"-":"y":"-":"z"]))).
 Result = ["x", "y", "z"].
 
 % Works with atom concatenation too
-?- find([A,C], starlog_call([A•x•C] is [y•x•z]), Result).
+?- starlog_call(Result is find([A,C], starlog_call([A•x•C] is [y•x•z]))).
 Result = [y, z].
 ```
 
 #### Template Evaluation
 
-**New Feature**: When the template contains Starlog operators like `:`, `•`, or `&`, `find/3` automatically evaluates the template after the goal succeeds:
+**Feature**: When the template contains Starlog operators like `:`, `•`, or `&`, `find/2` automatically evaluates the template after the goal succeeds:
 
 ```prolog
 % Template with string concatenation - automatically evaluated
-?- find(A:C, starlog_call([A:d:a:C] is [a:d:a:c]), Result).
+?- starlog_call(Result is find(A:C, starlog_call([A:d:a:C] is [a:d:a:c]))).
 Result = "ac".  % Concatenated result, not [a, c]
 
 % Template with atom concatenation - automatically evaluated
-?- find(A•C, starlog_call([A•x•C] is [y•x•z]), Result).
+?- starlog_call(Result is find(A•C, starlog_call([A•x•C] is [y•x•z]))).
 Result = yz.  % Concatenated atom, not [y, z]
 
 % Multiple variables in template
-?- find(A:"-":C, starlog_call([A:"-":C] is ["x":"-":"y"]), Result).
+?- starlog_call(Result is find(A:"-":C, starlog_call([A:"-":C] is ["x":"-":"y"]))).
 Result = "x-y".  % Fully evaluated concatenation
 
 % List template - NOT evaluated (backward compatible)
-?- find([A,C], starlog_call([A:a:C] is [a:a:c]), Result).
+?- starlog_call(Result is find([A,C], starlog_call([A:a:C] is [a:a:c]))).
 Result = [a, c].  % List of values, not concatenated
 ```
 
