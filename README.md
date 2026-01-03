@@ -555,6 +555,7 @@ A is 1+1
 
 ?- starlog_output_code(B is eval("x":"y")).
 B is "xy"
+% Note: eval without outputting eval evaluates the expression.
 
 % Keep no_eval() wrappers
 ?- starlog_output_code(A is no_eval(1+1), _, [output_no_eval(true)]).
@@ -563,6 +564,7 @@ A is no_eval(1+1)
 % Keep eval() wrappers
 ?- starlog_output_code(B is eval("x":"y"), _, [output_eval(true)]).
 B is eval("x":"y")
+% Note: eval with outputting eval doesn't evaluate the expression.
 
 % Keep both wrappers
 ?- starlog_output_code(C is no_eval(eval(1+1)), _, [output_eval(true), output_no_eval(true)]).
