@@ -51,8 +51,12 @@ user:string_number(String, Number) :-
 % Fold a list from right to left using the given binary operation.
 % The operation can be a predicate name (atom) or a callable term.
 % For value-returning operations in Starlog, use the predicate name.
-% Example: foldr(string_concat, ["a", "b", "c"], "", Result) -> Result = "abc"
+% Example: foldr(string_concat, [c, b, a], "", Result) -> Result = "cba"
+%   (processes 'a' first, then 'b', then 'c': concat('c', concat('b', concat('a', ""))))
 % Example: foldr(append, [[1], [2], [3]], [], Result) -> Result = [1,2,3]
+%   (processes [3] first, then [2], then [1]: append([1], append([2], append([3], []))))
+% Note: This implementation uses structural recursion which is appropriate for foldr semantics.
+% For very large lists (10,000+ elements), consider using foldl instead if order doesn't matter.
 :- multifile user:foldr/4.
 :- dynamic user:foldr/4.
 

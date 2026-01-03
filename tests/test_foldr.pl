@@ -69,13 +69,23 @@ test_foldr_empty :-
 % Run all tests
 run_tests :-
     write('=== Running foldr tests ==='), nl, nl,
-    catch(test_foldr_basic_prolog, E1, (write('✗ Test 1 failed: '), write(E1), nl, nl)),
-    catch(test_foldr_problem_statement_prolog, E2, (write('✗ Test 2 failed: '), write(E2), nl, nl)),
-    catch(test_foldr_nested_prolog, E3, (write('✗ Test 3 failed: '), write(E3), nl, nl)),
-    catch(test_foldr_starlog, E4, (write('✗ Test 4 failed: '), write(E4), nl, nl)),
-    catch(test_foldr_different, E5, (write('✗ Test 5 failed: '), write(E5), nl, nl)),
-    catch(test_foldr_append, E6, (write('✗ Test 6 failed: '), write(E6), nl, nl)),
-    catch(test_foldr_empty, E7, (write('✗ Test 7 failed: '), write(E7), nl, nl)),
+    Tests = [
+        test_foldr_basic_prolog,
+        test_foldr_problem_statement_prolog,
+        test_foldr_nested_prolog,
+        test_foldr_starlog,
+        test_foldr_different,
+        test_foldr_append,
+        test_foldr_empty
+    ],
+    run_test_list(Tests, 1),
     write('=== All foldr tests complete ==='), nl.
+
+% Helper to run a list of tests
+run_test_list([], _).
+run_test_list([Test|Rest], N) :-
+    (catch(call(Test), E, (format('✗ Test ~w failed: ~w~n~n', [N, E]))) ; true),
+    N1 is N + 1,
+    run_test_list(Rest, N1).
 
 :- initialization(run_tests, main).
