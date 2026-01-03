@@ -79,6 +79,7 @@ default_value_builtin(subtract, 2).
 default_value_builtin(select, 2).
 default_value_builtin(permutation, 1).
 default_value_builtin(member, 1).
+default_value_builtin(foldr, 3).
 
 % Math operations
 default_value_builtin(ceiling, 1).
