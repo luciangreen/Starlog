@@ -1040,6 +1040,40 @@ pretty_write_goal(Out is findall(Template, Goal), OutputStream, IndentLevel) :-
     write_indent(OutputStream, NextLevel),
     write(OutputStream, ')').
 
+% Handle 'is' expressions with find (2 args in Starlog form)
+pretty_write_goal(Out is find(Template, Goal), OutputStream, IndentLevel) :-
+    !,
+    write_term(OutputStream, Out, [numbervars(true), quoted(true)]),
+    write(OutputStream, ' is '),
+    nl(OutputStream),
+    NextLevel is IndentLevel + 1,
+    write_indent(OutputStream, NextLevel),
+    write(OutputStream, 'find('),
+    nl(OutputStream),
+    NextNextLevel is NextLevel + 1,
+    write_indent(OutputStream, NextNextLevel),
+    write_term(OutputStream, Template, [numbervars(true), quoted(true)]),
+    write(OutputStream, ','),
+    nl(OutputStream),
+    write_indent(OutputStream, NextNextLevel),
+    % Check if goal is complex - if so, wrap in parens and indent
+    (is_complex_control_goal(Goal) ->
+        % Complex goal - format with indentation and wrap in parens
+        write(OutputStream, '('),
+        nl(OutputStream),
+        NextNextNextLevel is NextNextLevel + 1,
+        pretty_write_body(Goal, OutputStream, NextNextNextLevel),
+        nl(OutputStream),
+        write_indent(OutputStream, NextNextLevel),
+        write(OutputStream, ')')
+    ;
+        % Simple goal - write inline
+        write_term(OutputStream, Goal, [numbervars(true), quoted(true)])
+    ),
+    nl(OutputStream),
+    write_indent(OutputStream, NextLevel),
+    write(OutputStream, ')').
+
 % Handle 'is' expressions that might have complex RHS (but not findall)
 pretty_write_goal(Out is Expr, OutputStream, IndentLevel) :-
     \+ is_simple_expr(Expr),

@@ -1,18 +1,30 @@
-# find/3 Predicate - Quick Reference
+# find/2 Predicate - Quick Reference
 
 ## Specification
 
 ```prolog
-find(A, B, C) :- findall(A, (B, !), [C]).
+% Starlog syntax (2 arguments):
+Result is find(Template, Goal)
+
+% Equivalent to:
+findall(Template, (Goal, !), [Result])
+% with automatic evaluation of Starlog expressions in Template
+
+% Backward compatible 3-argument form:
+find(Template, Goal, Result)  % Still available for compatibility
 ```
 
 ## Description
 
-The `find/3` predicate executes a goal with a cut and collects the first solution. It's equivalent to using `findall/3` with a cut inside the goal to ensure only one solution is found.
+The `find/2` predicate executes a goal with a cut and collects the first solution. It follows the Starlog pattern of using `is` for value-returning operations, similar to `findall/2`.
 
 ## Signature
 
 ```prolog
+% Starlog syntax (recommended):
+Result is find(+Template, +Goal)
+
+% Traditional Prolog syntax (backward compatible):
 find(+Template, +Goal, -Result)
 ```
 
@@ -25,37 +37,37 @@ find(+Template, +Goal, -Result)
 
 ### Basic Starlog Pattern
 ```prolog
-?- find(A, starlog_call([A:a] is [a:a]), Result).
+?- starlog_call(Result is find(A, starlog_call([A:a] is [a:a]))).
 Result = a.
 ```
 
 ### Member Query
 ```prolog
-?- find(X, member(X, [1,2,3]), Result).
+?- starlog_call(Result is find(X, member(X, [1,2,3]))).
 Result = 1.  % Only first solution
 ```
 
 ### String Concatenation
 ```prolog
-?- find(R, starlog_call(R is "hello":"world"), Result).
+?- starlog_call(Result is find(R, starlog_call(R is "hello":"world"))).
 Result = "helloworld".
 ```
 
 ### List Append
 ```prolog
-?- find(L, starlog_call(L is [1,2]&[3,4]), Result).
+?- starlog_call(Result is find(L, starlog_call(L is [1,2]&[3,4]))).
 Result = [1, 2, 3, 4].
 ```
 
 ### Dual Expression
 ```prolog
-?- find(A, starlog_call(([1]&A) is (B&[2])), Result).
+?- starlog_call(Result is find(A, starlog_call(([1]&A) is (B&[2])))).
 Result = [2].
 ```
 
 ### Arithmetic
 ```prolog
-?- find(X, X is 10+5, Result).
+?- starlog_call(Result is find(X, X is 10+5)).
 Result = 15.
 ```
 
@@ -70,19 +82,33 @@ Result = 15.
 
 - The **cut (!)** inside the findall ensures only the **first solution** is collected
 - The result is extracted from a single-element list `[C]`
-- If the goal fails, `find/3` fails
+- If the goal fails, `find/2` fails
 - If the goal has multiple solutions, only the first is returned
+- Starlog expressions in the template are automatically evaluated
 
 ## Comparison with Similar Predicates
 
-| Predicate | Returns | Solutions |
-|-----------|---------|-----------|
-| `findall/3` | List of all solutions | All |
-| `find/3` | Single result | First only (cut) |
-| `once/1` | Boolean success | First only (cut) |
+| Predicate | Syntax | Returns | Solutions |
+|-----------|--------|---------|-----------|
+| `findall/2` | `Result is findall(T, G)` | List of all solutions | All |
+| `find/2` | `Result is find(T, G)` | Single result | First only (cut) |
+| `once/1` | `once(G)` | Boolean success | First only (cut) |
+
+## Migration from find/3
+
+The old 3-argument form is still supported for backward compatibility:
+
+```prolog
+% Old syntax (still works):
+find(A, starlog_call([A:a] is [a:a]), Result).
+
+% New syntax (recommended):
+starlog_call(Result is find(A, starlog_call([A:a] is [a:a]))).
+```
 
 ## See Also
 
+- `findall/2` - Starlog form of findall for collecting all solutions
 - `findall/3` - Standard Prolog predicate for collecting all solutions
 - `once/1` - Execute goal once with cut
 - `starlog_call/1` - Execute Starlog goals
