@@ -4,7 +4,7 @@
 
 Complete all combinations and configurations of:
 ```prolog
-find([A,C], starlog_call([A:a:C] is [a:a:c]), Result).
+starlog_call(Result is find([A,C], starlog_call([A:a:C] is [a:a:c]))).
 ```
 
 ## Solution
@@ -72,7 +72,7 @@ Created comprehensive demo showing:
 
 Enhanced documentation in two sections:
 1. **Dual Starlog Expressions**: Added nested concatenation examples
-2. **find/3 Helper Predicate**: Added section on solving for multiple variables
+2. **find/2 Helper Predicate**: Added section on solving for multiple variables
 
 ## Supported Patterns
 
@@ -106,3 +106,4 @@ Total: ~300 lines of new code and documentation
 - Supports arbitrary nesting levels (tested up to 5-way)
 - Works with both string and atom concatenation operators
 - Provides clear examples and comprehensive test coverage
+- Updated to use find/2 Starlog syntax (Result is find(Template, Goal))
