@@ -1,51 +1,51 @@
 % demo_find_nested_concat.pl
-% Demonstration of find/3 with nested concatenation expressions
-% This demonstrates the solution to: find([A,C], starlog_call([A:a:C] is [a:a:c]), Result)
+% Demonstration of find/2 with nested concatenation expressions
+% This demonstrates the solution to: Result is find([A,C], starlog_call([A:a:C] is [a:a:c]))
 
 :- use_module(starlog).
 
 demo_find_nested_concat :-
     write('==================================================================='), nl,
-    write('Demonstration of find/3 with Nested Concatenation'), nl,
-    write('Problem: find([A,C], starlog_call([A:a:C] is [a:a:c]), Result)'), nl,
+    write('Demonstration of find/2 with Nested Concatenation'), nl,
+    write('Problem: Result is find([A,C], starlog_call([A:a:C] is [a:a:c]))'), nl,
     write('==================================================================='), nl, nl,
     
     % Example 1: The exact problem statement
-    write('Example 1: find([A,C], starlog_call([A:a:C] is [a:a:c]), Result)'), nl,
+    write('Example 1: Result is find([A,C], starlog_call([A:a:C] is [a:a:c]))'), nl,
     write('  Finds A and C such that A:"a":C equals "a":"a":"c"'), nl,
-    find([A1,C1], starlog_call([A1:a:C1] is [a:a:c]), Result1),
+    starlog_call(Result1 is find([A1,C1], starlog_call([A1:a:C1] is [a:a:c]))),
     format('  Result: ~w~n', [Result1]),
     format('  This means: A="~w", C="~w" such that "~w":"a":"~w" = "aac"~n', [A1, C1, A1, C1]),
     nl,
     
     % Example 2: Different values
-    write('Example 2: find([A,C], starlog_call([A:"_":C] is ["hello":"_":"world"]), Result)'), nl,
+    write('Example 2: Result is find([A,C], starlog_call([A:"_":C] is ["hello":"_":"world"]))'), nl,
     write('  Finds A and C such that A:"_":C equals "hello":"_":"world"'), nl,
-    find([A2,C2], starlog_call([A2:"_":C2] is ["hello":"_":"world"]), Result2),
+    starlog_call(Result2 is find([A2,C2], starlog_call([A2:"_":C2] is ["hello":"_":"world"]))),
     format('  Result: ~w~n', [Result2]),
     format('  This means: A="~w", C="~w"~n', [A2, C2]),
     nl,
     
     % Example 3: Four-way concatenation
-    write('Example 3: find([A,C], starlog_call([A:"|":C:"|"] is ["x":"|":"y":"|"]), Result)'), nl,
+    write('Example 3: Result is find([A,C], starlog_call([A:"|":C:"|"] is ["x":"|":"y":"|"]))'), nl,
     write('  Finds A and C in a four-part pattern'), nl,
-    find([A3,C3], starlog_call([A3:"|":C3:"|"] is ["x":"|":"y":"|"]), Result3),
+    starlog_call(Result3 is find([A3,C3], starlog_call([A3:"|":C3:"|"] is ["x":"|":"y":"|"]))),
     format('  Result: ~w~n', [Result3]),
     format('  This means: A="~w", C="~w"~n', [A3, C3]),
     nl,
     
     % Example 4: Five-way concatenation
-    write('Example 4: find([A,C,E], starlog_call([A:"-":C:"-":E] is ["a":"-":"b":"-":"c"]), Result)'), nl,
+    write('Example 4: Result is find([A,C,E], starlog_call([A:"-":C:"-":E] is ["a":"-":"b":"-":"c"]))'), nl,
     write('  Finds A, C, and E in a five-part pattern'), nl,
-    find([A4,C4,E4], starlog_call([A4:"-":C4:"-":E4] is ["a":"-":"b":"-":"c"]), Result4),
+    starlog_call(Result4 is find([A4,C4,E4], starlog_call([A4:"-":C4:"-":E4] is ["a":"-":"b":"-":"c"]))),
     format('  Result: ~w~n', [Result4]),
     format('  This means: A="~w", C="~w", E="~w"~n', [A4, C4, E4]),
     nl,
     
     % Example 5: Atom concatenation
-    write('Example 5: find([A,C], starlog_call([A•x•C] is [y•x•z]), Result)'), nl,
+    write('Example 5: Result is find([A,C], starlog_call([A•x•C] is [y•x•z]))'), nl,
     write('  Same pattern but with atom concatenation (•)'), nl,
-    find([A5,C5], starlog_call([A5•x•C5] is [y•x•z]), Result5),
+    starlog_call(Result5 is find([A5,C5], starlog_call([A5•x•C5] is [y•x•z]))),
     format('  Result: ~w~n', [Result5]),
     format('  This means: A=~w, C=~w (atoms)~n', [A5, C5]),
     nl,
@@ -70,7 +70,7 @@ demo_find_nested_concat :-
     write('- Works with any number of concatenations (3-way, 4-way, 5-way, etc.)'), nl,
     write('- Supports both string (:) and atom (•) concatenation'), nl,
     write('- Can have variables on either or both sides'), nl,
-    write('- find/3 captures the solution in a list'), nl,
+    write('- find/2 uses Starlog syntax: Result is find(Template, Goal)'), nl,
     write('==================================================================='), nl.
 
 :- initialization(demo_find_nested_concat, main).
