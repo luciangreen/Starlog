@@ -41,6 +41,10 @@ A = "xy".
 
 ?- starlog_call(L is [1] & [2]).
 L = [1, 2].
+
+% Method chains for fluent operations
+?- starlog_call(R is reverse([1,2,3]) >> length).
+R = 3.
 ```
 
 ### Variable-Bound Starlog Goals
@@ -239,6 +243,50 @@ atom_concat(_G3, C, E).
 ```
 
 All combinations and configurations of nested functions with Starlog operators are supported.
+
+### Method Chain Syntax
+
+In addition to nested function calls, Starlog supports a fluent **method chain syntax** using the `>>` operator. This allows you to chain operations in a left-to-right, more readable style:
+
+```prolog
+% Traditional nested calls
+X is d(a(b(1,c)))
+
+% Method chain syntax - reads left to right
+X is b(1,c) >> a >> d
+
+% Both produce the same result
+```
+
+The `>>` operator creates a pipeline where each operation is applied to the result of the previous operation:
+
+```prolog
+% With built-in functions
+X is reverse([1,2,3]) >> length        % X = 3
+X is sort([3,1,2]) >> reverse          % X = [3,2,1]
+
+% With Starlog operators  
+X is ([1,2]&[3,4]) >> reverse >> length    % X = 4
+X is ("hello":"world") >> string_length     % X = 10
+
+% With user-defined predicates
+% Given: wrap_a(X, a(X)), wrap_d(X, d(X))
+X is b(1,c) >> wrap_a >> wrap_d        % X = d(a(b(1,c)))
+
+% Complex chains
+X is 5 >> add_one >> double            % X = 12 (if add_one and double are defined)
+
+% Mixed with other Starlog features
+X is (reverse([1,2])&reverse([3,4])) >> flatten  % X = [2,1,4,3]
+```
+
+**Key features:**
+- **Left-to-right reading**: More natural flow compared to nested calls
+- **Composable**: Works with all value-returning builtins and user predicates
+- **Equivalent semantics**: `b(1,c) >> a >> d` is exactly equivalent to `d(a(b(1,c)))`
+- **Mixes with Starlog operators**: Can use `:`, `&`, `•` in the base expression
+
+**Note**: Due to SWI-Prolog's dictionary syntax using `.`, we use `>>` for method chaining instead of `.`
 
 ### Arithmetic is Preserved
 

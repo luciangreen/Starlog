@@ -77,6 +77,7 @@ user:foldr(Op, [H|T], Acc, Result) :-
 
 % Define Starlog operators globally (in user module)
 :- op(700, xfx, user:(is)).
+:- op(650, yfx, user:(>>)).    % Method chain operator (pipe forward)
 :- op(600, yfx, user:(':' )).
 :- op(600, yfx, user:('&')).
 :- op(600, yfx, user:('•')).
