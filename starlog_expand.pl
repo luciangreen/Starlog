@@ -14,6 +14,7 @@
 
 % Define operators locally for pattern matching
 :- op(700, xfx, is).
+:- op(650, yfx, '>>').    % Method chain operator (pipe forward)
 :- op(600, yfx, ':').
 :- op(600, yfx, '&').
 :- op(600, yfx, '•').
@@ -232,6 +233,7 @@ list_to_conjunction([], true).
 % is_starlog_expr(+Expr)
 % Check if an expression is a Starlog expression (not arithmetic).
 is_starlog_expr(Expr) :- var(Expr), !, fail.  % Variables are not expressions
+is_starlog_expr(_ >> _) :- !.  % Method chain
 is_starlog_expr(_ : _) :- !.
 is_starlog_expr(_ & _) :- !.
 is_starlog_expr(_ • _) :- !.
@@ -251,7 +253,8 @@ is_starlog_expr(Expr) :-
     !.
 
 % contains_starlog_operator(+Term)
-% Check if a term contains Starlog operators (: & • ..= =..) anywhere in its structure.
+% Check if a term contains Starlog operators (: & • ..= =.. >>) anywhere in its structure.
+contains_starlog_operator(_ >> _) :- !.  % Method chain
 contains_starlog_operator(_ : _) :- !.
 contains_starlog_operator(_ & _) :- !.
 contains_starlog_operator(_ • _) :- !.
@@ -783,6 +786,21 @@ solve_nested_concat_dual((A • B), (C • D), atom_concat) :-
 % compile_starlog_expr(+Expr, +Out, -Goals)
 % Compile a Starlog expression into Prolog goal(s).
 
+% Method chain: Out is (Base >> Method)
+% Transforms b(1,C) >> a >> d into d(a(b(1,C)))
+% The method chain is right-associative, so a >> b >> c is parsed as a >> (b >> c)
+% We need to reverse this to build the nested calls from inside out
+compile_starlog_expr((Base >> Methods), Out, Goals) :-
+    !,
+    % Collect all methods in the chain
+    collect_method_chain(Methods, MethodList),
+    % Compile the base expression
+    compile_value(Base, BaseVal, BaseGoals),
+    % Build nested calls: apply each method in sequence
+    build_nested_method_calls(MethodList, BaseVal, Out, MethodGoals),
+    % Combine base goals and method goals
+    append(BaseGoals, MethodGoals, Goals).
+
 % String concatenation: Out is (A : B)
 compile_starlog_expr((A : B), Out, Goals) :-
     !,
@@ -935,6 +953,68 @@ compile_values([E|Es], [V|Vs], Goals) :-
     compile_value(E, V, EGoals),
     compile_values(Es, Vs, EsGoals),
     append(EGoals, EsGoals, Goals).
+
+% collect_method_chain(+ChainExpr, -MethodList)
+% Collect all methods in a method chain into a list
+% Input: a >> b >> c (parsed as a >> (b >> c))
+% Output: [a, b, c]
+collect_method_chain((Method >> Rest), [Method|MoreMethods]) :-
+    !,
+    collect_method_chain(Rest, MoreMethods).
+collect_method_chain(Method, [Method]).
+
+% build_nested_method_calls(+MethodList, +CurrentVal, -FinalOut, -Goals)
+% Build nested method calls from a list of methods
+% For methods [a, b, c] and base value BaseVal:
+%   Apply a to BaseVal -> Temp1
+%   Apply b to Temp1 -> Temp2
+%   Apply c to Temp2 -> FinalOut
+build_nested_method_calls([], CurrentVal, CurrentVal, []) :- !.
+build_nested_method_calls([Method|Rest], CurrentVal, FinalOut, Goals) :-
+    % Create a goal to apply the method to the current value
+    create_method_call(Method, CurrentVal, NextVal, MethodGoal),
+    % Recursively build the rest of the chain
+    build_nested_method_calls(Rest, NextVal, FinalOut, RestGoals),
+    % Combine this goal with the rest
+    append([MethodGoal], RestGoals, Goals).
+
+% create_method_call(+Method, +Input, -Output, -Goal)
+% Create a goal that applies a method to an input to produce an output
+% Method can be:
+%   - An atom (nullary or unary method): a
+%   - A compound term with args: reverse([1,2,3])
+create_method_call(Method, Input, Output, Goal) :-
+    atom(Method),
+    !,
+    % Check if it's a value-returning builtin
+    (is_value_builtin(Method, 1, PrologPred) ->
+        % It's a unary builtin: apply Method(Input, Output)
+        Goal =.. [PrologPred, Input, Output]
+    ; is_value_builtin(Method, 0, _PrologPred) ->
+        % It's a nullary builtin but called in chain - this is an error case
+        % For now, treat it as: Output = Method
+        Goal = (Output = Method)
+    ;
+        % Not a builtin - try calling it as a binary predicate: Method(Input, Output)
+        Goal =.. [Method, Input, Output]
+    ).
+create_method_call(Method, Input, Output, Goal) :-
+    compound(Method),
+    !,
+    % Method is a compound term like reverse([1,2,3]) or foo(a,b)
+    % Extract functor and args
+    Method =.. [Functor|Args],
+    % Check if it's a value-returning builtin with Arity = length(Args)
+    length(Args, Arity),
+    (is_value_builtin(Functor, Arity, PrologPred) ->
+        % It's a builtin: apply PrologPred(Args..., Input, Output)
+        append(Args, [Input, Output], AllArgs),
+        Goal =.. [PrologPred|AllArgs]
+    ;
+        % Not a builtin: apply Functor(Args..., Input, Output)
+        append(Args, [Input, Output], AllArgs),
+        Goal =.. [Functor|AllArgs]
+    ).
 
 % contains_eval(+Expr)
 % Check if an expression contains eval() anywhere in its structure
