@@ -220,6 +220,15 @@ expand_goal_internal((Out is Expr), Expanded) :-
     compile_starlog_expr(Expr, Out, Goals),
     list_to_conjunction(Goals, Expanded).
 
+% Arithmetic expression with Starlog sub-expressions: Out is ArithExpr
+% Handle cases like: A is (1:1 >> string_number) * 2
+expand_goal_internal((Out is Expr), Expanded) :-
+    is_arithmetic(Expr),
+    contains_starlog_in_arithmetic(Expr),
+    !,
+    compile_starlog_expr(Expr, Out, Goals),
+    list_to_conjunction(Goals, Expanded).
+
 % Non-Starlog goal - pass through
 expand_goal_internal(Goal, Goal).
 
@@ -432,6 +441,46 @@ is_arithmetic(Expr) :-
     functor(Expr, Op, 1),
     memberchk(Op, [-, abs, sign, min, max]).
 is_arithmetic(X) :- number(X).
+
+% contains_starlog_in_arithmetic(+Expr)
+% Check if an arithmetic expression contains Starlog sub-expressions
+contains_starlog_in_arithmetic(Expr) :-
+    compound(Expr),
+    functor(Expr, _Op, Arity),
+    Arity > 0,
+    Expr =.. [_|Args],
+    member(Arg, Args),
+    (is_starlog_expr(Arg) ; contains_starlog_in_arithmetic(Arg)),
+    !.
+
+% compile_arithmetic_with_starlog(+ArithExpr, -CompiledArithExpr, -PreGoals)
+% Compile an arithmetic expression that contains Starlog sub-expressions
+% Pre-evaluates the Starlog parts and returns a pure arithmetic expression
+compile_arithmetic_with_starlog(Expr, Result, Goals) :-
+    compound(Expr),
+    !,
+    Expr =.. [Op|Args],
+    compile_arithmetic_args(Args, CompiledArgs, Goals),
+    Result =.. [Op|CompiledArgs].
+compile_arithmetic_with_starlog(Expr, Expr, []).
+
+% compile_arithmetic_args(+Args, -CompiledArgs, -Goals)
+% Compile arguments of an arithmetic expression
+compile_arithmetic_args([], [], []).
+compile_arithmetic_args([Arg|Rest], [CompiledArg|CompiledRest], AllGoals) :-
+    (is_starlog_expr(Arg) ->
+        % Compile Starlog expression
+        compile_starlog_expr(Arg, CompiledArg, ArgGoals)
+    ; contains_starlog_in_arithmetic(Arg) ->
+        % Recursive arithmetic with Starlog
+        compile_arithmetic_with_starlog(Arg, CompiledArg, ArgGoals)
+    ;
+        % Pure value
+        CompiledArg = Arg,
+        ArgGoals = []
+    ),
+    compile_arithmetic_args(Rest, CompiledRest, RestGoals),
+    append(ArgGoals, RestGoals, AllGoals).
 
 % is_concat_dual_expr(+LHS, +RHS)
 % Check if both sides are string or atom concatenation expressions
@@ -917,10 +966,19 @@ compile_starlog_expr(Expr, Out, [PrologGoal]) :-
     !,
     PrologGoal =.. [PrologPred, Out].
 
-% Arithmetic expression - keep as is/2
-compile_starlog_expr(Expr, Out, [Out is Expr]) :-
+% Arithmetic expression - check if it contains Starlog sub-expressions
+compile_starlog_expr(Expr, Out, Goals) :-
     is_arithmetic(Expr),
-    !.
+    !,
+    % Check if the arithmetic expression contains Starlog sub-expressions
+    (contains_starlog_in_arithmetic(Expr) ->
+        % Pre-evaluate Starlog sub-expressions
+        compile_arithmetic_with_starlog(Expr, ArithExpr, PreGoals),
+        append(PreGoals, [Out is ArithExpr], Goals)
+    ;
+        % Pure arithmetic - keep as is/2
+        Goals = [Out is Expr]
+    ).
 
 % Compound term with Starlog operators in arguments (not a registered builtin)
 compile_starlog_expr(Expr, Out, Goals) :-

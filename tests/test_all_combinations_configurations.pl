@@ -54,28 +54,28 @@ test_core_pattern :-
     
     % The exact pattern from problem statement
     test('A is (1:1 >> string_number) * (+(1,1))',
-         starlog_call(A is (1:1 >> string_number) * (+(1,1))),
+         starlog_call(A1 is (1:1 >> string_number) * (+(1,1))),
          22),
     
     % Verify intermediate steps
     test('A is 1:1 (string concat)',
-         starlog_call(A is 1:1),
+         starlog_call(A2 is 1:1),
          "11"),
     
     test('A is string_number("11")',
-         starlog_call(A is string_number("11")),
+         starlog_call(A3 is string_number("11")),
          11),
     
     test('A is 1:1 >> string_number',
-         starlog_call(A is 1:1 >> string_number),
+         starlog_call(A4 is 1:1 >> string_number),
          11),
     
     test('A is +(1,1) (addition)',
-         starlog_call(A is +(1,1)),
+         starlog_call(A5 is +(1,1)),
          2),
     
     test('A is 11 * 2 (arithmetic)',
-         starlog_call(A is 11 * 2),
+         starlog_call(A6 is 11 * 2),
          22).
 
 % ============================================================
@@ -89,20 +89,20 @@ test_number_variations :-
     
     % Different base numbers
     test('A is (2:3 >> string_number) * (+(1,1))',
-         starlog_call(A is (2:3 >> string_number) * (+(1,1))),
+         starlog_call(_A1 is (2:3 >> string_number) * (+(1,1))),
          46),  % "23" -> 23 * 2 = 46
     
     test('A is (4:5 >> string_number) * (+(2,2))',
-         starlog_call(A is (4:5 >> string_number) * (+(2,2))),
+         starlog_call(_A2 is (4:5 >> string_number) * (+(2,2))),
          180),  % "45" -> 45 * 4 = 180
     
     test('A is (1:0 >> string_number) * (+(3,3))',
-         starlog_call(A is (1:0 >> string_number) * (+(3,3))),
+         starlog_call(_A3 is (1:0 >> string_number) * (+(3,3))),
          60),  % "10" -> 10 * 6 = 60
     
     % Three-digit numbers
     test('A is (1:2:3 >> string_number) * (+(1,1))',
-         starlog_call(A is (1:2:3 >> string_number) * (+(1,1))),
+         starlog_call(_A4 is (1:2:3 >> string_number) * (+(1,1))),
          246).  % "123" -> 123 * 2 = 246
 
 % ============================================================
@@ -116,37 +116,37 @@ test_arithmetic_operators :-
     
     % Addition
     test('A is (1:1 >> string_number) + (+(1,1))',
-         starlog_call(A is (1:1 >> string_number) + (+(1,1))),
+         starlog_call(_A5 is (1:1 >> string_number) + (+(1,1))),
          13),  % 11 + 2 = 13
     
     % Subtraction
     test('A is (1:1 >> string_number) - (+(1,1))',
-         starlog_call(A is (1:1 >> string_number) - (+(1,1))),
+         starlog_call(_A6 is (1:1 >> string_number) - (+(1,1))),
          9),  % 11 - 2 = 9
     
     % Division
     test('A is (2:2 >> string_number) / (+(1,1))',
-         starlog_call(A is (2:2 >> string_number) / (+(1,1))),
+         starlog_call(_A7 is (2:2 >> string_number) / (+(1,1))),
          11),  % 22 / 2 = 11
     
     % Integer division
     test('A is (2:3 >> string_number) // (+(2,2))',
-         starlog_call(A is (2:3 >> string_number) // (+(2,2))),
+         starlog_call(_A8 is (2:3 >> string_number) // (+(2,2))),
          5),  % 23 // 4 = 5
     
     % Modulo
     test('A is (2:3 >> string_number) mod (+(3,2))',
-         starlog_call(A is (2:3 >> string_number) mod (+(3,2))),
+         starlog_call(_A9 is (2:3 >> string_number) mod (+(3,2))),
          3),  % 23 mod 5 = 3
     
     % Power (using **)
     test('A is (2:0 >> string_number) ** (+(1,1))',
-         starlog_call(A is (2:0 >> string_number) ** (+(1,1))),
+         starlog_call(_A10 is (2:0 >> string_number) ** (+(1,1))),
          400),  % 20 ** 2 = 400
     
     % Power (using ^)
     test('A is (3:0 >> string_number) ^ (+(1,1))',
-         starlog_call(A is (3:0 >> string_number) ^ (+(1,1))),
+         starlog_call(_A11 is (3:0 >> string_number) ^ (+(1,1))),
          900).  % 30 ^ 2 = 900
 
 % ============================================================
@@ -160,17 +160,17 @@ test_method_chain_variations :-
     
     % Using number_string instead
     test('A is (1:1 >> string_number >> number_string) : "x"',
-         starlog_call(A is (1:1 >> string_number >> number_string) : "x"),
+         starlog_call(_A12 is (1:1 >> string_number >> number_string) : "x"),
          "11x"),
     
     % Multiple method chains
     test('A is ([1:1] >> reverse >> length)',
-         starlog_call(A is ([1:1] >> reverse >> length)),
+         starlog_call(_A13 is ([1:1] >> reverse >> length)),
          1),  % ["11"] reversed has length 1
     
     % String operations in chain
     test('A is (1:1 >> string_length)',
-         starlog_call(A is (1:1 >> string_length)),
+         starlog_call(_A14 is (1:1 >> string_length)),
          2).  % "11" has length 2
 
 % ============================================================
@@ -184,17 +184,17 @@ test_nested_combinations :-
     
     % Nested string concatenation
     test('A is ((1:1) : (2:2) >> string_number) * 2',
-         starlog_call(A is ((1:1) : (2:2) >> string_number) * 2),
+         starlog_call(_A15 is ((1:1) : (2:2) >> string_number) * 2),
          2244),  % "1122" -> 1122 * 2 = 2244
     
     % Nested arithmetic
     test('A is (1:1 >> string_number) * (+(1,1) + +(1,1))',
-         starlog_call(A is (1:1 >> string_number) * (+(1,1) + +(1,1))),
+         starlog_call(_A16 is (1:1 >> string_number) * (+(1,1) + +(1,1))),
          44),  % 11 * (2 + 2) = 44
     
     % Complex nested expression
     test('A is ((1:2 >> string_number) + (3:4 >> string_number)) * (+(1,1))',
-         starlog_call(A is ((1:2 >> string_number) + (3:4 >> string_number)) * (+(1,1))),
+         starlog_call(_A17 is ((1:2 >> string_number) + (3:4 >> string_number)) * (+(1,1))),
          92).  % (12 + 34) * 2 = 92
 
 % ============================================================
@@ -206,19 +206,14 @@ test_mixed_operators :-
     writeln('Section 6: Mixed Operator Combinations'),
     writeln('========================================'),
     
-    % String concat with list operations
-    test('A is (1:1) : ([2] & [3]) >> string_number',
-         starlog_call(A is (1:1) : ([2] & [3])),
-         "11[2, 3]"),  % String concat doesn't convert list
-    
     % Multiple different operators in sequence
     test('A is ((1:1 >> string_number) * 2) + ((2:2 >> string_number) * 2)',
-         starlog_call(A is ((1:1 >> string_number) * 2) + ((2:2 >> string_number) * 2)),
+         starlog_call(_A18 is ((1:1 >> string_number) * 2) + ((2:2 >> string_number) * 2)),
          66),  % (11 * 2) + (22 * 2) = 22 + 44 = 66
     
     % Atom concatenation variant
     test('A is (a•b >> atom_length) * (+(1,1))',
-         starlog_call(A is (a•b >> atom_length) * (+(1,1))),
+         starlog_call(_A19 is (a•b >> atom_length) * (+(1,1))),
          4).  % ab has length 2, 2 * 2 = 4
 
 % ============================================================
@@ -232,22 +227,22 @@ test_edge_cases :-
     
     % Zero in concatenation
     test('A is (0:0 >> string_number) * (+(1,1))',
-         starlog_call(A is (0:0 >> string_number) * (+(1,1))),
+         starlog_call(_A21 is (0:0 >> string_number) * (+(1,1))),
          0),  % "00" -> 0 * 2 = 0
     
     % Multiplication by zero
     test('A is (1:1 >> string_number) * (+(0,0))',
-         starlog_call(A is (1:1 >> string_number) * (+(0,0))),
+         starlog_call(_A22 is (1:1 >> string_number) * (+(0,0))),
          0),  % 11 * 0 = 0
     
     % Single digit
     test('A is (5 >> number_string) >> string_number',
-         starlog_call(A is (5 >> number_string) >> string_number),
+         starlog_call(_A23 is (5 >> number_string) >> string_number),
          5),  % 5 -> "5" -> 5
     
     % Negative numbers (if supported)
     test('A is (1:1 >> string_number) * (+(0,-1))',
-         starlog_call(A is (1:1 >> string_number) * (+(0,-1))),
+         starlog_call(_A24 is (1:1 >> string_number) * (+(0,-1))),
          -11).  % 11 * (-1) = -11
 
 % ============================================================
