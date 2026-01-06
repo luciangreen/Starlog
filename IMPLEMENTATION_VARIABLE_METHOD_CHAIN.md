@@ -3,6 +3,8 @@
 ## Problem Statement
 Implement all combinations and configurations of: `?- B is [3,2,2], A is B>>sort>>length.`
 
+**Note**: The problem statement notation `B is [3,2,2]` is interpreted as variable assignment using unification (`B = [3,2,2]`), since `[3,2,2]` is a plain list, not a Starlog expression. The `is` operator is reserved for Starlog expressions.
+
 ## Solution Overview
 
 Successfully implemented comprehensive support for using variables in method chains. The implementation covers all possible combinations of:
