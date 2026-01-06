@@ -734,6 +734,30 @@ Code = (A is B:C).
 % Starlog → Prolog (with decompression)
 ?- starlog_to_prolog_code(A is "hello":" ":"world",D).
 D is (string_concat("hello"," ",A),string_concat(A,"world",B))
+
+% Convert chain to nested
+?- starlog_output_code(
+    (X is reverse([1,2,3]) >> length),
+    Code,
+    [output_style(nested_calls), print(true)]
+).
+% Output: A is length(reverse([1,2,3]))
+
+% Convert nested to chain
+?- starlog_output_code(
+    (X is length(reverse(sort([3,1,2])))),
+    Code,
+    [output_style(method_chaining), print(true)]
+).
+% Output: A is sort([3,1,2])>>reverse>>length
+
+% With operators
+?- starlog_output_code(
+    (X is ([1,2]&[3,4]) >> reverse >> length),
+    Code,
+    [output_style(nested_calls), print(true)]
+).
+% Output: A is length(reverse([1,2]&[3,4]))
 ```
 
 ## Debugging
