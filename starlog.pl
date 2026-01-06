@@ -708,9 +708,21 @@ transform_nested_expr_to_chain(Func, ChainExpr) :-
     Func =.. [Functor|Args],
     Args \= [],
     last(Args, LastArg),
-    % Check if the last argument is also a chainable function
-    (compound(LastArg), \+ is_list(LastArg), \+ is_operator_expr(LastArg), can_be_chain_method(LastArg) ->
-        % It's nested - recurse on the last argument
+    % Check if the last argument is also a chainable function OR an operator expression
+    (   (compound(LastArg), \+ is_list(LastArg), can_be_chain_method(LastArg)) ->
+        % It's a nested chainable function - recurse on the last argument
+        transform_nested_expr_to_chain(LastArg, ChainBase),
+        % Remove the last argument and create method
+        append(InitArgs, [_], Args),
+        (InitArgs = [] ->
+            Method = Functor
+        ;
+            Method =.. [Functor|InitArgs]
+        ),
+        ChainExpr = (ChainBase >> Method)
+    ;   (compound(LastArg), is_operator_expr(LastArg)) ->
+        % Last arg is an operator expression - make it the chain base
+        % Transform the operator expression first
         transform_nested_expr_to_chain(LastArg, ChainBase),
         % Remove the last argument and create method
         append(InitArgs, [_], Args),
