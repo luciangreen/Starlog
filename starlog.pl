@@ -1377,8 +1377,9 @@ starlog_to_prolog_file(FilePath, OutputStream) :-
 % Options:
 %   decompress(true) - Apply maximal decompression (default)
 %   decompress(false) - Minimal decompression
-%   output_style(nested_calls) - Convert method chains to nested calls (default for this function)
-%   output_style(method_chaining) - Convert nested calls to method chains
+%   output_style(nested_calls) - Apply nested call style transformation before conversion
+%   output_style(method_chaining) - Apply method chaining style transformation before conversion
+%   Note: output_style affects how Starlog code is represented before being converted to Prolog
 starlog_to_prolog_file(FilePath, OutputStream, Options) :-
     format(OutputStream, '% Prolog code output for file: ~w~n~n', [FilePath]),
     setup_call_cleanup(
