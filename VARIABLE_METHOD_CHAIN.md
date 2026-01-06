@@ -216,8 +216,10 @@ A = 1.
 A = [1,2,3].  % Already sorted
 
 ?- B = [1,1,1], starlog_call(A is B>>sort>>length).
-A = 1.  % Duplicates removed by sort
+A = 1.  % Note: Prolog's sort/2 removes duplicates
 ```
+
+**Note**: Prolog's `sort/2` predicate removes duplicate elements while sorting. This is standard Prolog behavior. For sorting without removing duplicates, use `msort/2` instead.
 
 ## Feature Integration
 

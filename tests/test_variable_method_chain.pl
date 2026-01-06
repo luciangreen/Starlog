@@ -236,6 +236,8 @@ test_edge_cases :-
     test('B = [1,1,1], A is B>>sort>>length, A = 1',
          (B = [1,1,1], starlog_call(A is B>>sort>>length), A = 1)).
 
+% Note: Prolog's sort/2 removes duplicates, so [1,1,1] becomes [1] with length 1
+
 % ============================================================
 % Main Test Runner
 % ============================================================
