@@ -350,6 +350,8 @@ starlog_output_code(Goal, StarlogCode) :-
 %   output_eval(false) - Strip eval() wrappers (default)
 %   output_no_eval(true) - Keep no_eval() wrappers in output
 %   output_no_eval(false) - Strip no_eval() wrappers (default)
+%   output_style(nested_calls) - Convert method chains to nested calls
+%   output_style(method_chaining) - Convert nested calls to method chains
 %   print(true) - Print to stdout (default for /1 version)
 %   print(false) - Do not print to stdout (default for /2 version)
 %   rename(true) - Rename variables to A, B, C, etc. (default for print)
@@ -364,7 +366,7 @@ starlog_output_code(Goal, StarlogCode, Options) :-
         apply_rename(Goal, Rename, ProcessedGoal),
         % Strip eval/no_eval based on options
         strip_eval_no_eval_based_on_options(ProcessedGoal, Options, StrippedGoal),
-        StarlogCode = StrippedGoal
+        StarlogCode0 = StrippedGoal
     ;
         % Otherwise, convert Prolog to Starlog
         convert_prolog_to_starlog(Goal, StarlogForm),
@@ -378,7 +380,13 @@ starlog_output_code(Goal, StarlogCode, Options) :-
         apply_rename(CompressedForm, Rename, ProcessedStarlog),
         % Strip eval/no_eval based on options
         strip_eval_no_eval_based_on_options(ProcessedStarlog, Options, StrippedStarlog),
-        StarlogCode = StrippedStarlog
+        StarlogCode0 = StrippedStarlog
+    ),
+    % Apply output_style transformation if specified
+    (member(output_style(Style), Options) ->
+        apply_output_style(StarlogCode0, Style, StarlogCode)
+    ;
+        StarlogCode = StarlogCode0
     ),
     % Print to stdout only if print(true) option is present
     (member(print(true), Options) ->
@@ -571,6 +579,180 @@ convert_prolog_to_starlog(Goal, (Out is Func)) :-
 convert_prolog_to_starlog(Goal, Goal).
 
 % ============================================================
+% Output Style Transformations
+% ============================================================
+% This section implements transformations between nested calls and method chaining.
+% - output_style(nested_calls): Convert method chains to nested function calls
+% - output_style(method_chaining): Convert nested function calls to method chains
+
+% apply_output_style(+StarlogCode, +Style, -TransformedCode)
+% Apply the specified output style transformation to Starlog code
+apply_output_style(Code, nested_calls, TransformedCode) :-
+    !,
+    transform_chains_to_nested(Code, TransformedCode).
+apply_output_style(Code, method_chaining, TransformedCode) :-
+    !,
+    transform_nested_to_chains(Code, TransformedCode).
+apply_output_style(Code, _, Code).  % Unknown style - no transformation
+
+% transform_chains_to_nested(+Code, -TransformedCode)
+% Convert method chains (>>) to nested function calls
+transform_chains_to_nested((Goal, Rest), (TransformedGoal, TransformedRest)) :-
+    !,
+    transform_chains_to_nested(Goal, TransformedGoal),
+    transform_chains_to_nested(Rest, TransformedRest).
+transform_chains_to_nested((Var is Expr), (Var is TransformedExpr)) :-
+    !,
+    transform_chain_expr_to_nested(Expr, TransformedExpr).
+transform_chains_to_nested(Goal, Goal).
+
+% transform_chain_expr_to_nested(+Expr, -NestedExpr)
+% Transform a chain expression to nested form
+% Example: reverse([1,2,3]) >> length  =>  length(reverse([1,2,3]))
+transform_chain_expr_to_nested((Base >> Method), NestedExpr) :-
+    !,
+    % First, transform the base (it might contain chains too)
+    transform_chain_expr_to_nested(Base, TransformedBase),
+    % Collect all methods in the chain
+    collect_chain_methods(Method, Methods),
+    % Build nested calls from inside out
+    build_nested_from_chain(Methods, TransformedBase, NestedExpr).
+% Handle operators that might contain chains
+transform_chain_expr_to_nested((A : B), (TransA : TransB)) :-
+    !,
+    transform_chain_expr_to_nested(A, TransA),
+    transform_chain_expr_to_nested(B, TransB).
+transform_chain_expr_to_nested((A & B), (TransA & TransB)) :-
+    !,
+    transform_chain_expr_to_nested(A, TransA),
+    transform_chain_expr_to_nested(B, TransB).
+transform_chain_expr_to_nested((A • B), (TransA • TransB)) :-
+    !,
+    transform_chain_expr_to_nested(A, TransA),
+    transform_chain_expr_to_nested(B, TransB).
+% Handle compound terms (function calls)
+transform_chain_expr_to_nested(Func, TransformedFunc) :-
+    compound(Func),
+    \+ is_operator_expr(Func),
+    !,
+    Func =.. [Functor|Args],
+    transform_chain_expr_list(Args, TransformedArgs),
+    TransformedFunc =.. [Functor|TransformedArgs].
+% Default: atoms, numbers, etc.
+transform_chain_expr_to_nested(Expr, Expr).
+
+% transform_chain_expr_list(+List, -TransformedList)
+transform_chain_expr_list([], []).
+transform_chain_expr_list([H|T], [TransH|TransT]) :-
+    transform_chain_expr_to_nested(H, TransH),
+    transform_chain_expr_list(T, TransT).
+
+% is_operator_expr(+Expr)
+% Check if expression is a Starlog operator
+is_operator_expr((_ : _)).
+is_operator_expr((_ & _)).
+is_operator_expr((_ • _)).
+is_operator_expr((_ >> _)).
+
+% collect_chain_methods(+ChainExpr, -Methods)
+% Collect methods from a chain expression into a list
+% Input: a >> b >> c (parsed as a >> (b >> c))
+% Output: [a, b, c]
+collect_chain_methods((Method >> Rest), [Method|MoreMethods]) :-
+    !,
+    collect_chain_methods(Rest, MoreMethods).
+collect_chain_methods(Method, [Method]).
+
+% build_nested_from_chain(+Methods, +Base, -NestedExpr)
+% Build nested function calls from a list of methods
+% [a, b, c] with base X => c(b(a(X)))
+build_nested_from_chain([], Base, Base) :- !.
+build_nested_from_chain([Method|Rest], Base, NestedExpr) :-
+    % Apply the first method to the base
+    apply_method_to_expr(Method, Base, Applied),
+    % Recursively build with remaining methods
+    build_nested_from_chain(Rest, Applied, NestedExpr).
+
+% apply_method_to_expr(+Method, +Base, -Result)
+% Apply a method to a base expression
+% Method can be an atom (like 'length') or a compound term (like 'foo(1,2)')
+apply_method_to_expr(Method, Base, Result) :-
+    atom(Method),
+    !,
+    Result =.. [Method, Base].
+apply_method_to_expr(Method, Base, Result) :-
+    compound(Method),
+    !,
+    Method =.. [Functor|Args],
+    append(Args, [Base], NewArgs),
+    Result =.. [Functor|NewArgs].
+
+% transform_nested_to_chains(+Code, -TransformedCode)
+% Convert nested function calls to method chains
+transform_nested_to_chains((Goal, Rest), (TransformedGoal, TransformedRest)) :-
+    !,
+    transform_nested_to_chains(Goal, TransformedGoal),
+    transform_nested_to_chains(Rest, TransformedRest).
+transform_nested_to_chains((Var is Expr), (Var is TransformedExpr)) :-
+    !,
+    transform_nested_expr_to_chain(Expr, TransformedExpr).
+transform_nested_to_chains(Goal, Goal).
+
+% transform_nested_expr_to_chain(+Expr, -ChainExpr)
+% Transform nested function calls to method chain form
+% Example: length(reverse([1,2,3]))  =>  reverse([1,2,3]) >> length
+transform_nested_expr_to_chain(Func, ChainExpr) :-
+    compound(Func),
+    \+ is_operator_expr(Func),
+    can_be_chain_method(Func),
+    Func =.. [Functor|Args],
+    Args \= [],
+    last(Args, LastArg),
+    % Check if the last argument is also a chainable function
+    (compound(LastArg), \+ is_list(LastArg), \+ is_operator_expr(LastArg), can_be_chain_method(LastArg) ->
+        % It's nested - recurse on the last argument
+        transform_nested_expr_to_chain(LastArg, ChainBase),
+        % Remove the last argument and create method
+        append(InitArgs, [_], Args),
+        (InitArgs = [] ->
+            Method = Functor
+        ;
+            Method =.. [Functor|InitArgs]
+        ),
+        ChainExpr = (ChainBase >> Method)
+    ;
+        % Try to transform arguments that might contain chains
+        transform_chain_expr_list(Args, TransformedArgs),
+        ChainExpr =.. [Functor|TransformedArgs]
+    ).
+% Handle operators that might contain nested calls
+transform_nested_expr_to_chain((A : B), (TransA : TransB)) :-
+    !,
+    transform_nested_expr_to_chain(A, TransA),
+    transform_nested_expr_to_chain(B, TransB).
+transform_nested_expr_to_chain((A & B), (TransA & TransB)) :-
+    !,
+    transform_nested_expr_to_chain(A, TransA),
+    transform_nested_expr_to_chain(B, TransB).
+transform_nested_expr_to_chain((A • B), (TransA • TransB)) :-
+    !,
+    transform_nested_expr_to_chain(A, TransA),
+    transform_nested_expr_to_chain(B, TransB).
+% Default: atoms, numbers, lists, etc.
+transform_nested_expr_to_chain(Expr, Expr).
+
+% can_be_chain_method(+Func)
+% Check if a function can be part of a method chain
+% Functions with 1+ arguments where the last one could be the input
+can_be_chain_method(Func) :-
+    compound(Func),
+    Func =.. [Functor|Args],
+    Args \= [],
+    atom(Functor),
+    % Check if it's a known value-returning builtin or could be one
+    (starlog_registry:is_value_builtin(Functor, _, _) -> true ; true).
+
+% ============================================================
 % Starlog Compression
 % ============================================================
 % This section implements maximal compression of Starlog expressions.
@@ -757,6 +939,8 @@ starlog_output_file(FilePath, OutputStream) :-
 %   output_eval(false) - Strip eval() wrappers (default)
 %   output_no_eval(true) - Keep no_eval() wrappers in output
 %   output_no_eval(false) - Strip no_eval() wrappers (default)
+%   output_style(nested_calls) - Convert method chains to nested calls
+%   output_style(method_chaining) - Convert nested calls to method chains
 starlog_output_file(FilePath, OutputStream, Options) :-
     format(OutputStream, '% Starlog code output for file: ~w~n~n', [FilePath]),
     setup_call_cleanup(
@@ -804,8 +988,14 @@ output_clause_as_starlog((Head :- Body), OutputStream, Options) :-
     % Strip eval/no_eval based on options
     RenamedClause = (RenamedHead :- RenamedBody),
     strip_eval_no_eval_based_on_options(RenamedBody, Options, StrippedBody),
+    % Apply output_style transformation if specified
+    (member(output_style(Style), Options) ->
+        apply_output_style(StrippedBody, Style, TransformedBody)
+    ;
+        TransformedBody = StrippedBody
+    ),
     % Use pretty printer for the clause
-    pretty_write_term_at_level((RenamedHead :- StrippedBody), OutputStream, 0),
+    pretty_write_term_at_level((RenamedHead :- TransformedBody), OutputStream, 0),
     write(OutputStream, '.'), nl(OutputStream), nl(OutputStream).
 
 output_clause_as_starlog(Fact, OutputStream, _Options) :-
@@ -1175,6 +1365,8 @@ starlog_to_prolog_file(FilePath, OutputStream) :-
 % Options:
 %   decompress(true) - Apply maximal decompression (default)
 %   decompress(false) - Minimal decompression
+%   output_style(nested_calls) - Convert method chains to nested calls (default for this function)
+%   output_style(method_chaining) - Convert nested calls to method chains
 starlog_to_prolog_file(FilePath, OutputStream, Options) :-
     format(OutputStream, '% Prolog code output for file: ~w~n~n', [FilePath]),
     setup_call_cleanup(
