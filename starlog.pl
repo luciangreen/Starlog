@@ -75,6 +75,27 @@ user:foldr(Op, [H|T], Acc, Result) :-
     ),
     call(Goal).
 
+% maplist(?Goal, ?List)
+% Apply Goal to each element of List.
+% The Goal is called with one additional argument - the current list element.
+% This is a standard Prolog list processing predicate.
+% Example: maplist(writeln, [a, b, c]) writes each element on a new line
+% Example: maplist(atom, [a, b, c]) succeeds if all elements are atoms
+:- multifile user:maplist/2.
+:- dynamic user:maplist/2.
+
+user:maplist(Goal, List) :-
+    maplist_(List, Goal).
+
+% maplist_/2 - helper predicate for maplist/2
+:- multifile user:maplist_/2.
+:- dynamic user:maplist_/2.
+
+user:maplist_([], _).
+user:maplist_([Elem|Tail], Goal) :-
+    call(Goal, Elem),
+    maplist_(Tail, Goal).
+
 % Define Starlog operators globally (in user module)
 :- op(700, xfx, user:(is)).
 :- op(650, yfx, user:(>>)).    % Method chain operator (pipe forward)
