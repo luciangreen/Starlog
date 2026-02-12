@@ -80,7 +80,7 @@ user:foldr(Op, [H|T], Acc, Result) :-
 % The Goal is called with one additional argument - the current list element.
 % This is a standard Prolog list processing predicate.
 % Example: maplist(writeln, [a, b, c]) writes each element on a new line
-% Example: maplist(atom_string, [a, b, c], Strings) converts atoms to strings
+% Example: maplist(atom, [a, b, c]) succeeds if all elements are atoms
 :- multifile user:maplist/2.
 :- dynamic user:maplist/2.
 
