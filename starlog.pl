@@ -75,6 +75,34 @@ user:foldr(Op, [H|T], Acc, Result) :-
     ),
     call(Goal).
 
+% maplist1(?Goal, ?List)
+% Apply Goal to each element of List. Similar to standard maplist/2 but with
+% elements passed as the first argument to the Goal.
+% Example: maplist1(=(1), [1,1,1]) succeeds (unifies each element with 1)
+% Example: maplist1(atom, [a,b,c]) succeeds if all elements are atoms
+:- multifile user:maplist1/2.
+:- dynamic user:maplist1/2.
+
+user:maplist1(Goal, List) :-
+    user:maplist_(List, Goal).
+
+% maplist_/2 - Helper predicate for maplist1
+:- multifile user:maplist_/2.
+:- dynamic user:maplist_/2.
+
+user:maplist_([], _).
+user:maplist_([Elem|Tail], Goal) :-
+    user:call_1(Elem, Goal),
+    user:maplist_(Tail, Goal).
+
+% call_1/2 - Helper to call a goal with an additional first argument
+% call_1(A, B) calls goal B with A as its first argument
+:- multifile user:call_1/2.
+:- dynamic user:call_1/2.
+
+user:call_1(A, B) :- 
+    call(B, A).
+
 % Define Starlog operators globally (in user module)
 :- op(700, xfx, user:(is)).
 :- op(650, yfx, user:(>>)).    % Method chain operator (pipe forward)
