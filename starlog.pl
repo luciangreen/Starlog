@@ -1,4 +1,4 @@
-% starlog.pl
+% starlog.pl 
 % Main library for Starlog-in-Prolog
 % Allows developers to write Starlog syntax directly in Prolog files
 % and have it expanded automatically at load-time.
