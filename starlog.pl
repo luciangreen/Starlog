@@ -95,8 +95,8 @@ user:maplist_([Elem|Tail], Goal) :-
     user:call_1(Elem, Goal),
     user:maplist_(Tail, Goal).
 
-% call_1/2 - Helper to call a goal with reversed argument order
-% call_1(A, B) calls B with A as its first argument
+% call_1/2 - Helper to call a goal with an additional first argument
+% call_1(A, B) calls goal B with A as its first argument
 :- multifile user:call_1/2.
 :- dynamic user:call_1/2.
 
