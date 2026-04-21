@@ -1039,7 +1039,9 @@ build_nested_method_calls([Method|Rest], CurrentVal, FinalOut, Goals) :-
 % create_method_call(+Method, +Input, -Output, -Goals)
 % Create goals that apply a method to an input to produce an output.
 % Handles atoms, compounds, and nested Starlog expressions in method arguments
-% through the shared value-compilation path.
+% through compile_values/3 (the shared value-compilation path used elsewhere),
+% so nested method arguments like append(sort([4,2])) are precompiled before
+% constructing the final method call goal.
 create_method_call(Method, Input, Output, Goals) :-
     method_signature(Method, Functor, RawArgs),
     compile_values(RawArgs, CompiledArgs, ArgGoals),
@@ -1058,7 +1060,10 @@ create_method_call(Method, Input, Output, Goals) :-
     append(ArgGoals, [CoreGoal], Goals).
 
 % method_signature(+Method, -Functor, -Args)
-% Normalize method forms so all combinations are handled in one place.
+% Normalize method forms so all combinations are handled in one place:
+%   - atom Method (e.g., reverse)        -> Functor=reverse, Args=[]
+%   - compound Method (e.g., append(X))  -> Functor=append,  Args=[X]
+% The normalized pair is then consumed by create_method_call/4.
 method_signature(Method, Method, []) :-
     atom(Method),
     !.
