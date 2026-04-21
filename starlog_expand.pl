@@ -1064,11 +1064,8 @@ create_method_call(Method, Input, Output, Goals) :-
 %   - atom Method (e.g., reverse)        -> Functor=reverse, Args=[]
 %   - compound Method (e.g., append(X))  -> Functor=append,  Args=[X]
 % The normalized pair is then consumed by create_method_call/4.
-method_signature(Method, Method, []) :-
-    atom(Method),
-    !.
 method_signature(Method, Functor, Args) :-
-    compound(Method),
+    (atom(Method) ; compound(Method)),
     Method =.. [Functor|Args].
 
 % contains_eval(+Expr)
