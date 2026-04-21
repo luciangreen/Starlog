@@ -1029,50 +1029,42 @@ collect_method_chain(Method, [Method]).
 %   Apply c to Temp2 -> FinalOut
 build_nested_method_calls([], CurrentVal, CurrentVal, []) :- !.
 build_nested_method_calls([Method|Rest], CurrentVal, FinalOut, Goals) :-
-    % Create a goal to apply the method to the current value
-    create_method_call(Method, CurrentVal, NextVal, MethodGoal),
+    % Create goals to apply the method to the current value
+    create_method_call(Method, CurrentVal, NextVal, MethodGoals),
     % Recursively build the rest of the chain
     build_nested_method_calls(Rest, NextVal, FinalOut, RestGoals),
-    % Combine this goal with the rest
-    append([MethodGoal], RestGoals, Goals).
+    % Combine method goals with the rest
+    append(MethodGoals, RestGoals, Goals).
 
-% create_method_call(+Method, +Input, -Output, -Goal)
-% Create a goal that applies a method to an input to produce an output
-% Method can be:
-%   - An atom (nullary or unary method): a
-%   - A compound term with args: reverse([1,2,3])
-create_method_call(Method, Input, Output, Goal) :-
-    atom(Method),
-    !,
-    % Check if it's a value-returning builtin
-    (is_value_builtin(Method, 1, PrologPred) ->
-        % It's a unary builtin: apply Method(Input, Output)
-        Goal =.. [PrologPred, Input, Output]
-    ; is_value_builtin(Method, 0, _PrologPred) ->
-        % It's a nullary builtin but called in chain - this is an error case
-        % For now, treat it as: Output = Method
-        Goal = (Output = Method)
-    ;
-        % Not a builtin - try calling it as a binary predicate: Method(Input, Output)
-        Goal =.. [Method, Input, Output]
-    ).
-create_method_call(Method, Input, Output, Goal) :-
-    compound(Method),
-    !,
-    % Method is a compound term like reverse([1,2,3]) or foo(a,b)
-    % Extract functor and args
-    Method =.. [Functor|Args],
-    % Check if it's a value-returning builtin with Arity = length(Args)
-    length(Args, Arity),
+% create_method_call(+Method, +Input, -Output, -Goals)
+% Create goals that apply a method to an input to produce an output.
+% Handles atoms, compounds, and nested Starlog expressions in method arguments
+% through the shared value-compilation path.
+create_method_call(Method, Input, Output, Goals) :-
+    method_signature(Method, Functor, RawArgs),
+    compile_values(RawArgs, CompiledArgs, ArgGoals),
+    length(RawArgs, Arity),
     (is_value_builtin(Functor, Arity, PrologPred) ->
-        % It's a builtin: apply PrologPred(Args..., Input, Output)
-        append(Args, [Input, Output], AllArgs),
-        Goal =.. [PrologPred|AllArgs]
+        (Arity =:= 0 ->
+            CoreGoal = (Output = Functor)
+        ;
+            append(CompiledArgs, [Input, Output], AllArgs),
+            CoreGoal =.. [PrologPred|AllArgs]
+        )
     ;
-        % Not a builtin: apply Functor(Args..., Input, Output)
-        append(Args, [Input, Output], AllArgs),
-        Goal =.. [Functor|AllArgs]
-    ).
+        append(CompiledArgs, [Input, Output], AllArgs),
+        CoreGoal =.. [Functor|AllArgs]
+    ),
+    append(ArgGoals, [CoreGoal], Goals).
+
+% method_signature(+Method, -Functor, -Args)
+% Normalize method forms so all combinations are handled in one place.
+method_signature(Method, Method, []) :-
+    atom(Method),
+    !.
+method_signature(Method, Functor, Args) :-
+    compound(Method),
+    Method =.. [Functor|Args].
 
 % contains_eval(+Expr)
 % Check if an expression contains eval() anywhere in its structure
