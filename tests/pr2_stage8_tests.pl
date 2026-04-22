@@ -62,6 +62,15 @@ test(stage8_ir_build_is_deterministic_for_unordered_inputs) :-
     starlog:npl_stage8_build_ir(flow_graph(mock, map([]), [], trace([])), [i], RelationsB, [0,1,1], [], IRB),
     assertion(IRA == IRB).
 
+test(stage8_ir_uses_i_fallback_when_independent_vars_empty) :-
+    starlog:npl_stage8_build_ir(flow_graph(mock, map([]), [], trace([])),
+                                [],
+                                [x-(4+i-1)],
+                                [1,1],
+                                [],
+                                ir_pipeline(_, Nodes, _)),
+    assertion(member(ir_provenance(_, ir_poly_eval(i, [1,1], poly_result)), Nodes)).
+
 test(stage8_ir_lowering_preserves_direct_rule_semantics) :-
     Relations = [x-(4+i-1), y-(5+i-1)],
     starlog:npl_stage8_build_ir(flow_graph(mock, map([]), [], trace([])), [i], Relations, [1,1], [], IR),
