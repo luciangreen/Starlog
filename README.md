@@ -456,6 +456,42 @@ For polynomial indexed relations, coefficient solving uses Gaussian elimination 
 - PR3 Stage 6 adds annotated source regeneration through `npl_ir_to_annotated_source_text/3` and `npl_ir_to_annotated_source_file/3`, including context comments (source, optimisation metadata, recursion classification) and IR marker annotations (memo/address-loop/source-marker) in regenerated output.
 - PR3 Stage 7 adds structured validation/error handling for annotated regeneration inputs, including explicit malformed IR shape errors, unsupported IR-node errors, and output file type validation.
 - PR3 Stage 8 adds dedicated regeneration stability/regression tests for public annotated APIs and Stage 9 integration, including deterministic repeated output checks, polynomial simplification regression coverage, loop-node rendering checks, and file text roundtrip verification.
+- PR3 Stage 9 documents the public inspection surface for Stage 9 code generation and annotated source regeneration, including recommended entry points and runnable examples.
+
+### PR3 Stage 9: Inspecting optimiser output
+
+Use the Stage 9 generation and annotated regeneration predicates to inspect transformed IR output in a readable form.
+
+```prolog
+?- use_module(starlog).
+?- IR = lowered_ir([lowered_poly_eval(n, [0,0.5,0.5], result)]),
+   npl_stage9_generate_code(IR, generated_program(Statements)).
+Statements = [assign(result, ((n*(n+1))/2))].
+```
+
+```prolog
+?- use_module(starlog).
+?- IR = lowered_ir([lowered_poly_eval(n, [0,0.5,0.5], result)]),
+   Context = [source_file('examples/generated_input.pl'),
+              optimisation_report('stage9_codegen')],
+   npl_ir_to_annotated_source_text(IR, Context, Text),
+   writeln(Text).
+```
+
+```prolog
+?- use_module(starlog).
+?- IR = lowered_ir([direct_index_rule(index_spec([i]),
+                                      [x-(i+1)],
+                                      result_collector(rows))]),
+   Context = [source_file('examples/generated_input.pl')],
+   npl_ir_to_annotated_source_file(IR, Context, 'out/annotated_stage9.pl').
+```
+
+#### Compatibility naming for generation APIs
+
+- `npl_stage9_generate_code/2` is the low-level Stage 9 code generator.
+- `npl_stage9_compile_ir/2` is the direct Stage 9 IR-to-neurocode compiler entry point.
+- `npl_ir_to_annotated_source_text/3` and `npl_ir_to_annotated_source_file/3` are the preferred user-facing APIs for readable inspection/regeneration output.
 
 Stage 11 documentation statements:
 
@@ -470,6 +506,7 @@ See:
 
 - `GAUSSIAN_RECURSION.md`
 - `OPTIMISATION_RULES.md`
+- `ARCHITECTURE.md`
 
 #### Template Evaluation
 
