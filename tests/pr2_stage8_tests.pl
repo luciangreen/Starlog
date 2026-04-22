@@ -76,4 +76,24 @@ test(stage8_ir_provenance_is_inspectable) :-
     starlog:npl_stage8_ir_provenance(IR, Provenance),
     assertion(Provenance == [stage8_trace_lineage]).
 
+test(stage8_ir_handles_empty_coefficients_without_poly_node) :-
+    starlog:npl_stage8_build_ir(flow_graph(mock, map([]), [], trace([])),
+                                [i],
+                                [x-(4+i-1)],
+                                [],
+                                [],
+                                ir_pipeline(_, Nodes, _)),
+    assertion(\+ member(ir_provenance(_, ir_poly_eval(_, _, _)), Nodes)).
+
+test(stage8_ir_keeps_zero_and_negative_coefficients_in_rational_mode) :-
+    starlog:npl_stage8_build_ir(flow_graph(mock, map([]), [], trace([])),
+                                [k],
+                                [u-(k^2-k)],
+                                [0,-1,1],
+                                [rational_coefficients(true)],
+                                ir_pipeline(_, Nodes, _)),
+    assertion(member(ir_provenance(stage8_first_principles_derivation,
+                                   ir_poly_eval(k, [rational(0),rational(-1),rational(1)], poly_result)),
+                    Nodes)).
+
 :- end_tests(pr2_stage8_ir_pipeline).

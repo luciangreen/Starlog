@@ -2045,6 +2045,7 @@ npl_stage8_pipeline_order([
 
 % npl_stage8_build_ir(+FlowGraph, +IndependentVars, +Relations, +Coefficients, +Options, -IR)
 % Build explicit Stage 8 IR containing relation, polynomial, direct-rule and provenance nodes.
+% If IndependentVars is empty, index variable fallback defaults to i.
 npl_stage8_build_ir(_FlowGraph, IndependentVars, Relations, Coefficients, Options, ir_pipeline(PassOrder, IRNodes, meta(Metadata))) :-
     npl_stage8_pipeline_order(PassOrder),
     sort(IndependentVars, SortedIndependentVars),
@@ -2104,8 +2105,7 @@ npl_stage8_ir_provenance(ir_pipeline(_, Nodes, meta(Metadata)), Provenance) :-
         sort([MetaNote|NodeNotes], Provenance)
     ;
         sort(NodeNotes, Provenance)
-    ),
-    !.
+    ).
 
 npl_stage8_collect_node_provenance([], []).
 npl_stage8_collect_node_provenance([ir_provenance(Note, _)|Nodes], [Note|Notes]) :-
