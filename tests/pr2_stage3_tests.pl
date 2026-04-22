@@ -33,6 +33,7 @@ test(stage3_predicates_exist) :-
 test(stage3_extract_numeric_samples_from_callable_goal) :-
     starlog:npl_extract_numeric_samples(triangular(N, R), N, 3, Samples),
     assertion(Samples == [1-1, 2-3, 3-6]),
+    forall(member(X-Y, Samples), triangular(X, Y)),
     var(R).
 
 test(stage3_rewrite_triangular_to_closed_form) :-

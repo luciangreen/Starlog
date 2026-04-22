@@ -1531,6 +1531,7 @@ normalize_number(Value, Normalized) :-
     ).
 
 npl_epsilon(1.0e-12).
+npl_max_sample_count(6).
 
 % npl_reconstruct_polynomial(+Var, +Coefficients, -Expr)
 % Build symbolic expression from coefficients [a0, a1, ...].
@@ -1677,7 +1678,8 @@ npl_rewrite_recurrence_to_closed_form(Goal, _Var, _Expr, rejected_impure) :-
     \+ npl_pure_goal(Goal),
     !.
 npl_rewrite_recurrence_to_closed_form(Goal, Var, Expr, accepted) :-
-    npl_extract_numeric_samples(Goal, Var, 6, Samples),
+    npl_max_sample_count(MaxSamples),
+    npl_extract_numeric_samples(Goal, Var, MaxSamples, Samples),
     npl_detect_polynomial_degree(Samples, Var, Degree),
     npl_solve_polynomial_coeffs(Samples, Degree, Coeffs),
     npl_validate_polynomial_fit(Samples, Coeffs, Var, accepted),
