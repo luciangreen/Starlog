@@ -2261,7 +2261,6 @@ npl_stage10_gaussian_canonical_repository(starlog).
 % Inspectable mapping of NeuroProlog-facing surfaces to Starlog Gaussian core.
 % If this logic is copied elsewhere, docs must state Starlog as canonical.
 npl_stage10_gaussian_alignment([
-    canonical_repository(starlog),
     canonical_module(gaussian_elimination),
     npl_gaussian_elimination_3_uses(gaussian_elimination_3),
     npl_solve_polynomial_coeffs_3_uses(npl_gaussian_elimination_3),

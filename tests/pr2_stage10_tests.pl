@@ -25,7 +25,7 @@ test(stage10_alignment_maps_neuroprolog_surface_to_starlog_gaussian_core) :-
     starlog:npl_stage10_gaussian_alignment(Alignment),
     assertion(member(canonical_module(gaussian_elimination), Alignment)),
     assertion(member(npl_gaussian_elimination_3_uses(gaussian_elimination_3), Alignment)),
-    assertion(member(npl_solve_polynomial_coeffs_3_uses(gaussian_elimination_3), Alignment)),
+    assertion(member(npl_solve_polynomial_coeffs_3_uses(npl_gaussian_elimination_3), Alignment)),
     assertion(member(stage9_codegen_uses(npl_gaussian_elimination_3), Alignment)).
 
 test(stage10_alignment_is_deterministic) :-
