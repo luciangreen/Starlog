@@ -2476,3 +2476,39 @@ npl_stage13_report_status(Invariants, Checks, pass) :-
     forall(member(check(_, CheckResult), Checks), CheckResult == pass),
     !.
 npl_stage13_report_status(_Invariants, _Checks, fail).
+
+% ============================================================
+% NeuroProlog PR2 Stage 14 helpers (GitHub Agent delivery rules)
+% ============================================================
+
+% npl_stage14_delivery_order(-Order)
+% Required execution order for Stage 14 delivery.
+npl_stage14_delivery_order([
+    audit_current_implementation,
+    add_failing_tests_first,
+    implement_gaussian_elimination_as_universal_polynomial_solver,
+    integrate_gaussian_elimination_into_recurrence_optimisation,
+    implement_general_indexed_variable_tracing_from_first_principles,
+    implement_formula_reconstruction_for_indexed_variables,
+    use_gaussian_elimination_for_indexed_polynomial_formulas,
+    add_ir_and_codegen_support,
+    update_examples_and_comments,
+    update_docs,
+    run_tests_and_self_check,
+    document_unsupported_cases
+]).
+
+% npl_stage14_additional_delivery_rules(-Rules)
+% Additional constraints that the delivery process must enforce.
+npl_stage14_additional_delivery_rules([
+    do_not_upload_files_without_meaningful_code_or_docs_changes,
+    do_not_guess_coefficients,
+    do_not_insert_hardcoded_closed_forms_as_discovery_shortcuts,
+    do_not_build_optimiser_around_named_structural_cases,
+    do_not_claim_generality_without_proving_reducibility_and_equivalence,
+    prefer_smaller_correct_passes_over_broad_unverifiable_rewrites
+]).
+
+% npl_stage14_concise_agent_prompt(-Prompt)
+% Canonical shorthand prompt text for Stage 14 delivery.
+npl_stage14_concise_agent_prompt('derive affine and polynomial formulas for indexed variables, such as x_i=4+i-1 and y_i=5+i-1, from traced variable correspondences.').
