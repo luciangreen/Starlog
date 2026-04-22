@@ -450,6 +450,21 @@ For polynomial indexed relations, coefficient solving uses Gaussian elimination 
 - Stage 8 adds explicit IR and deterministic pipeline support through `npl_stage8_pipeline_order/1`, `npl_stage8_build_ir/6`, `npl_stage8_ir_provenance/2`, and `npl_stage8_lower_ir/2`, including inspectable provenance and optional rational coefficient metadata.
 - Stage 9 adds code generation and neurocode emission through `npl_stage9_generate_code/2`, `npl_stage9_emit_neurocode/2`, and `npl_stage9_compile_ir/2`, including closed-form polynomial emission and direct indexed loop reconstruction.
 - Stage 10 documents Starlog integration through `npl_stage10_integration_option/1`, `npl_stage10_gaussian_canonical_repository/1`, and `npl_stage10_gaussian_alignment/1`, selecting Option B (port and align) with Starlog as the canonical Gaussian elimination source.
+- Stage 11 documents the rewrite requirements through `npl_stage11_documentation_scope/1`, `npl_stage11_gaussian_recursion_requirements/1`, `npl_stage11_optimisation_rule_categories/1`, `npl_stage11_example_requirements/1`, and `npl_stage11_readme_requirements/1`.
+
+Stage 11 documentation statements:
+
+- WAM works.
+- Gaussian elimination is the required polynomial coefficient discovery mechanism.
+- General indexed subterm optimisation is based on first-principles symbolic tracing.
+- Indexed-variable formulas (affine/polynomial) are reconstructed from tracing (for example `x_i=4+i-1`, `y_i=5+i-1`).
+- Named structural cases are not the hardcoded design basis.
+- Unsupported or ambiguous cases remain unchanged.
+
+See:
+
+- `GAUSSIAN_RECURSION.md`
+- `OPTIMISATION_RULES.md`
 
 #### Template Evaluation
 

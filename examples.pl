@@ -73,6 +73,22 @@ test_coexistence :-
 normal_prolog(List, Len) :- 
     length(List, Len).
 
+% Example 8: Stage 11 indexed-variable documentation pattern
+% Unoptimised form (conceptual): materialise x_i and y_i samples then consume later.
+% Optimised direct form: reconstruct formulas from traced index lineage:
+%   x_i = 4+i-1
+%   y_i = 5+i-1
+% This demonstrates first-principles index assignment/flow tracing output without
+% introducing named special-case optimisation classes.
+test_stage11_indexed_documentation :-
+    FlowGoal = flow([x-[1-4,2-5,3-6], y-[1-5,2-6,3-7]]),
+    npl_trace_index_flow(FlowGoal, map([]), FlowGraph),
+    npl_identify_independent_indices(FlowGraph, IndependentVars),
+    npl_reconstruct_index_relations(FlowGraph, IndependentVars, Relations),
+    member(x-(4+i-1), Relations),
+    member(y-(5+i-1), Relations),
+    write('✓ Example 8: Stage 11 indexed-variable documentation pattern passed'), nl.
+
 % Run all examples
 run_all_examples :-
     write('Running Starlog-in-Prolog examples...'), nl, nl,
@@ -83,6 +99,7 @@ run_all_examples :-
     catch(test_complex_nested, E5, (write('✗ Example 5 failed: '), write(E5), nl)),
     catch(test_value_builtin, E6, (write('✗ Example 6 failed: '), write(E6), nl)),
     catch(test_coexistence, E7, (write('✗ Example 7 failed: '), write(E7), nl)),
+    catch(test_stage11_indexed_documentation, E8, (write('✗ Example 8 failed: '), write(E8), nl)),
     nl,
     write('All examples complete!'), nl.
 

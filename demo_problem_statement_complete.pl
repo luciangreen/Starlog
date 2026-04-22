@@ -1,6 +1,8 @@
 % demo_problem_statement_complete.pl
 % Demonstration of the completed problem statement requirements:
 % "Complete a:A is B:b and a•A is B•b"
+% Stage 11 note: examples are documented as first-principles lineage/reconstruction
+% demonstrations, not as named structural special cases.
 
 :- use_module(starlog).
 
