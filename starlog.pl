@@ -1756,10 +1756,13 @@ npl_collect_list_symbolic_indices([Item|Rest], Index, ParentPath, Map) :-
     npl_collect_list_symbolic_indices(Rest, NextIndex, ParentPath, RestMap),
     append(ItemMap, RestMap, Map).
 
-npl_trace_index_flow(Goal, IndexMap, flow_graph(Reduced, IndexMap, Pairs, trace(pair_count(Count)))) :-
+npl_trace_index_flow(Goal, IndexMap, flow_graph(Reduced, IndexMap, Pairs, trace(Meta))) :-
     npl_reduce_predicate_to_pattern_irreducibles(Goal, Reduced),
     npl_extract_flow_pairs(Goal, Pairs),
-    length(Pairs, Count).
+    length(Pairs, Count),
+    npl_general_trace_metadata(Count, Meta).
+
+npl_general_trace_metadata(Count, [pair_count(Count), optimization_class(general_first_principles), named_special_cases(none)]).
 
 npl_extract_flow_pairs(flow(Pairs), Pairs) :-
     is_list(Pairs),

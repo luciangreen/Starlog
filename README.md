@@ -433,9 +433,9 @@ Result = ["x", "y", "z"].
 Result = [y, z].
 ```
 
-### PR2 Stage 4 Indexed Tracing Helpers
+### PR2 Stage 4/5 Indexed Tracing Helpers
 
-Starlog includes a Stage 4-compatible indexed tracing surface for first-principles optimisation experiments:
+Starlog includes a Stage 4/5-compatible indexed tracing surface for first-principles optimisation experiments:
 
 - `npl_assign_symbolic_indices/3` assigns inspectable symbolic paths to subterms.
 - `npl_reduce_predicate_to_pattern_irreducibles/2` reduces goals to pattern-matching and irreducible forms.
@@ -445,6 +445,8 @@ Starlog includes a Stage 4-compatible indexed tracing surface for first-principl
 - `npl_emit_direct_indexed_rule/4`, `npl_reconstruct_direct_indexed_rule/3`, and `npl_validate_direct_rule/3` build and validate direct indexed rules.
 
 For polynomial indexed relations, coefficient solving uses Gaussian elimination through the existing PR2 polynomial pipeline.
+
+- Stage 5 rule: named structural labels (for example diagonal/row/column style labels) are not treated as dedicated optimization classes. They are handled through the same general first-principles symbolic tracing and relation reconstruction pipeline.
 
 #### Template Evaluation
 
