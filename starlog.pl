@@ -1957,14 +1957,14 @@ npl_expression_matches_samples(Expr, [X-Y|Rest]) :-
     NV =:= NY,
     npl_expression_matches_samples(Expr, Rest).
 
-npl_eval_relation_expr(Expr, X, Value) :-
-    npl_eval_relation_expr_with_index(Expr, i, X, Value).
+npl_eval_relation_expr(Expr, IndexValue, Value) :-
+    npl_eval_relation_expr_with_index(Expr, i, IndexValue, Value).
 
-npl_eval_relation_expr_with_index(Expr, IndexAtom, X, Value) :-
-    npl_substitute_index_atom(Expr, IndexAtom, X, ExprGrounded),
+npl_eval_relation_expr_with_index(Expr, IndexAtom, IndexValue, Value) :-
+    npl_substitute_index_atom(Expr, IndexAtom, IndexValue, ExprGrounded),
     copy_term(ExprGrounded, ExprCopy),
     term_variables(ExprCopy, Vars),
-    maplist(=(X), Vars),
+    maplist(=(IndexValue), Vars),
     Value is ExprCopy.
 
 % Backward-compatible default: treat i as the independent index symbol.

@@ -32,8 +32,8 @@ test(stage6_collect_samples_from_relations) :-
     assertion(member(u-[1-2,2-6,3-12|_], SamplesByRelation)).
 
 test(stage6_polynomial_coefficients_via_gaussian_elimination) :-
-    Goal = flow([u-[1-2,2-6,3-12]]),
-    starlog:npl_collect_formula_samples(Goal, i, SamplesByRelation),
+    Relations = [u-(i^2+i)],
+    starlog:npl_collect_formula_samples(Relations, i, SamplesByRelation),
     member(u-Samples, SamplesByRelation),
     starlog:npl_detect_polynomial_degree(Samples, Degree),
     assertion(Degree =:= 2),
