@@ -433,7 +433,7 @@ Result = ["x", "y", "z"].
 Result = [y, z].
 ```
 
-### PR2 Stage 4/5 Indexed Tracing Helpers
+### PR2 Stage 4-8 Indexed Tracing, IR, and Pipeline Helpers
 
 Starlog includes a Stage 4/5-compatible indexed tracing surface for first-principles optimisation experiments:
 
@@ -447,6 +447,7 @@ Starlog includes a Stage 4/5-compatible indexed tracing surface for first-princi
 For polynomial indexed relations, coefficient solving uses Gaussian elimination through the existing PR2 polynomial pipeline.
 
 - Stage 5 rule: named structural labels (for example diagonal/row/column style labels) are not treated as dedicated optimization classes. They are handled through the same general first-principles symbolic tracing and relation reconstruction pipeline.
+- Stage 8 adds explicit IR and deterministic pipeline support through `npl_stage8_pipeline_order/1`, `npl_stage8_build_ir/6`, `npl_stage8_ir_provenance/2`, and `npl_stage8_lower_ir/2`, including inspectable provenance and optional rational coefficient metadata.
 
 #### Template Evaluation
 
