@@ -2456,13 +2456,12 @@ npl_stage13_invariant_results([Name|Rest], Checks, [invariant(Name, Result)|Inva
     npl_stage13_invariant_result(Name, Checks, Result),
     npl_stage13_invariant_results(Rest, Checks, InvariantResults).
 
-npl_stage13_invariant_result(self_check_runs_cleanly, Checks, Result) :-
-    npl_stage13_checks_pass(Checks, Result),
-    !.
-npl_stage13_invariant_result(rebuild_pipeline_operational, Checks, Result) :-
-    npl_stage13_checks_pass(Checks, Result),
-    !.
-npl_stage13_invariant_result(optimisation_metadata_parser_ir_codegen_compatible, Checks, Result) :-
+npl_stage13_invariant_result(Name, Checks, Result) :-
+    memberchk(Name, [
+        self_check_runs_cleanly,
+        rebuild_pipeline_operational,
+        optimisation_metadata_parser_ir_codegen_compatible
+    ]),
     npl_stage13_checks_pass(Checks, Result),
     !.
 npl_stage13_invariant_result(_OtherInvariant, _Checks, fail).
