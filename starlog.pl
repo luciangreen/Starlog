@@ -2266,3 +2266,61 @@ npl_stage10_gaussian_alignment([
     npl_solve_polynomial_coeffs_3_uses(npl_gaussian_elimination_3),
     stage9_codegen_uses(npl_gaussian_elimination_3)
 ]).
+
+% ============================================================
+% NeuroProlog PR2 Stage 11 helpers (documentation rewrite)
+% ============================================================
+
+% npl_stage11_documentation_scope(-Scope)
+% Stage 11 documentation surfaces that must be updated together.
+npl_stage11_documentation_scope([
+    gaussian_recursion_md('GAUSSIAN_RECURSION.md'),
+    optimisation_rules_md('OPTIMISATION_RULES.md'),
+    readme_md('README.md'),
+    example_files(['examples.pl', 'demo_problem_statement_complete.pl'])
+]).
+
+% npl_stage11_gaussian_recursion_requirements(-Requirements)
+% Mandatory statements required in GAUSSIAN_RECURSION.md.
+npl_stage11_gaussian_recursion_requirements([
+    gaussian_elimination_mandatory_for_polynomial_discovery,
+    finite_differences_only_for_degree_estimation,
+    triangular_number_worked_example_documented,
+    indexed_variable_polynomial_discovery_documented,
+    unsupported_cases_documented
+]).
+
+% npl_stage11_optimisation_rule_categories(-Categories)
+% Stage 11 categories that must be distinct in OPTIMISATION_RULES.md.
+npl_stage11_optimisation_rule_categories([
+    accumulator_rewrites,
+    polynomial_discovery_via_gaussian_elimination,
+    general_indexed_variable_tracing,
+    reduction_to_pattern_matching_plus_irreducibles,
+    formula_reconstruction_from_first_principles,
+    indexed_variable_formula_derivation,
+    direct_index_rule_generation
+]).
+
+% npl_stage11_example_requirements(-Requirements)
+% Example-file documentation requirements for Stage 11.
+npl_stage11_example_requirements([
+    show_unoptimised_and_optimised_versions,
+    comment_variable_lineage_clearly,
+    explain_index_assignment,
+    explain_formula_reconstruction,
+    include_nontrivial_indexed_case,
+    include_indexed_variable_examples([x-(4+i-1), y-(5+i-1)]),
+    avoid_named_special_case_framing
+]).
+
+% npl_stage11_readme_requirements(-Requirements)
+% Required README statements for Stage 11.
+npl_stage11_readme_requirements([
+    wam_works,
+    gaussian_elimination_used_for_polynomial_discovery,
+    first_principles_symbolic_tracing_for_indexed_subterms,
+    indexed_variable_formulas_reconstructed_from_tracing,
+    named_structural_cases_not_hardcoded_design_basis,
+    unsupported_or_ambiguous_cases_remain_unchanged
+]).
