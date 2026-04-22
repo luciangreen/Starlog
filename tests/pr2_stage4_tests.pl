@@ -26,7 +26,7 @@ test(stage4_assign_symbolic_indices_exposes_inspectable_map) :-
     assertion(member(path([3])-x(6), Map)).
 
 test(stage4_reduce_to_pattern_and_irreducibles) :-
-    Goal = (member(X, [a,b,c]), nth1(I, [a,b,c], X)),
+    Goal = (member(X, [a,b,c]), nth1(_I, [a,b,c], X)),
     starlog:npl_reduce_predicate_to_pattern_irreducibles(Goal, Reduced),
     assertion(Reduced = reduced(_)).
 

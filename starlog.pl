@@ -1726,55 +1726,247 @@ npl_impure_predicate(halt).
 npl_impure_predicate(shell).
 npl_impure_predicate(sleep).
 
-% Stage 1B interface predicates (minimal functional surface)
-% These provide the currently required optimisation-surface predicates
-% referenced by tests/pr2_stage1_failing_tests.pl.
-npl_assign_symbolic_indices(Structure, indexed(Structure), map([])).
+% Stage 4 indexed tracing helpers
 
-npl_trace_index_flow(Goal, IndexMap, flow(Goal, IndexMap)).
+npl_assign_symbolic_indices(Structure, indexed(Structure), map(Map)) :-
+    npl_collect_symbolic_indices(Structure, [], RawMap),
+    sort(RawMap, Map).
 
-npl_emit_direct_indexed_rule(FlowGraph, IndependentVars, Relations, direct_rule(FlowGraph, IndependentVars, Relations)).
+npl_collect_symbolic_indices(Var, Path, [path(Path)-Var]) :-
+    var(Var),
+    !.
+npl_collect_symbolic_indices([], _Path, []) :-
+    !.
+npl_collect_symbolic_indices(List, ParentPath, Map) :-
+    is_list(List),
+    !,
+    npl_collect_list_symbolic_indices(List, 1, ParentPath, Map).
+npl_collect_symbolic_indices(Term, ParentPath, [path(ParentPath)-Term|Map]) :-
+    compound(Term),
+    !,
+    Term =.. [_Name|Args],
+    npl_collect_list_symbolic_indices(Args, 1, ParentPath, Map).
+npl_collect_symbolic_indices(Value, Path, [path(Path)-Value]).
 
-npl_reconstruct_index_relations(flow(Pairs), [IdxVar], Relations) :-
+npl_collect_list_symbolic_indices([], _Index, _ParentPath, []).
+npl_collect_list_symbolic_indices([Item|Rest], Index, ParentPath, Map) :-
+    append(ParentPath, [Index], Path),
+    npl_collect_symbolic_indices(Item, Path, ItemMap),
+    NextIndex is Index + 1,
+    npl_collect_list_symbolic_indices(Rest, NextIndex, ParentPath, RestMap),
+    append(ItemMap, RestMap, Map).
+
+npl_trace_index_flow(Goal, IndexMap, flow_graph(Reduced, IndexMap, Pairs, trace(pair_count(Count)))) :-
+    npl_reduce_predicate_to_pattern_irreducibles(Goal, Reduced),
+    npl_extract_flow_pairs(Goal, Pairs),
+    length(Pairs, Count).
+
+npl_extract_flow_pairs(flow(Pairs), Pairs) :-
+    is_list(Pairs),
+    !.
+npl_extract_flow_pairs(flow_graph(_, _, Pairs, _), Pairs) :-
+    is_list(Pairs),
+    !.
+npl_extract_flow_pairs(goal_pairs(Pairs), Pairs) :-
+    is_list(Pairs),
+    !.
+npl_extract_flow_pairs(_, []).
+
+npl_identify_independent_indices(flow_graph(_, _, Pairs, _), [i]) :-
+    npl_pairs_have_numeric_indices(Pairs),
+    !.
+npl_identify_independent_indices(flow(Pairs), [i]) :-
+    npl_pairs_have_numeric_indices(Pairs),
+    !.
+npl_identify_independent_indices(_, []).
+
+npl_pairs_have_numeric_indices(Pairs) :-
+    is_list(Pairs),
+    member(_Name-Samples, Pairs),
+    is_list(Samples),
+    member(X-_, Samples),
+    number(X),
+    !.
+
+npl_emit_direct_indexed_rule(FlowGraph, IndependentVars, Relations, direct_rule(FlowGraph, IndependentVars, Rule)) :-
+    npl_reconstruct_direct_indexed_rule(Relations, IndependentVars, Rule).
+
+npl_reconstruct_direct_indexed_rule(Relations, _IndependentVars, direct_index_rule(Relations)) :-
+    is_list(Relations).
+
+npl_reconstruct_index_relations(flow_graph(_, _, Pairs, _), IndependentVars, Relations) :-
+    !,
+    npl_reconstruct_index_relations(flow(Pairs), IndependentVars, Relations).
+npl_reconstruct_index_relations(flow(Pairs), [], Relations) :-
+    !,
+    npl_reconstruct_index_relations(flow(Pairs), [i], Relations).
+npl_reconstruct_index_relations(flow(Pairs), [IdxVar|_], Relations) :-
     is_list(Pairs),
     !,
     findall(Name-Expr,
-        (member(Name-Samples, Pairs),
-         relation_from_samples(Samples, IdxVar, Expr)),
+        ( member(Name-Samples, Pairs),
+          relation_from_samples(Samples, IdxVar, Expr)
+        ),
         Relations).
 npl_reconstruct_index_relations(_, _, []).
 
-relation_from_samples([FirstX-FirstY|Samples], IdxVar, Expr) :-
-    % Fast path for simple unit-step affine index sequences such as
-    % x_i = 4+i-1, before falling back to general polynomial fitting.
-    unit_step_sequence([FirstX-FirstY|Samples]),
-    !,
-    Expr = (FirstY + IdxVar - FirstX).
 relation_from_samples(Samples, IdxVar, Expr) :-
     npl_detect_polynomial_degree(Samples, Degree),
     npl_build_polynomial_system(Samples, Degree, Matrix, Vector),
     npl_gaussian_elimination(Matrix, Vector, Coeffs),
-    npl_reconstruct_polynomial(IdxVar, Coeffs, Expr).
+    npl_reconstruct_polynomial(IdxVar, Coeffs, RawExpr),
+    npl_normalize_relation_expression(Samples, IdxVar, Coeffs, RawExpr, Expr).
 
-unit_step_sequence([_]).
-unit_step_sequence([X1-Y1, X2-Y2|Rest]) :-
+npl_normalize_relation_expression([FirstX-FirstY|Rest], IdxVar, [_Offset, 1], _RawExpr, Expr) :-
+    unit_step_index_sequence([FirstX-FirstY|Rest]),
+    !,
+    Expr = (FirstY + IdxVar - FirstX).
+npl_normalize_relation_expression(_Samples, IdxVar, Coeffs, _RawExpr, Expr) :-
+    npl_reconstruct_polynomial_desc(IdxVar, Coeffs, Expr).
+
+unit_step_index_sequence([_]).
+unit_step_index_sequence([X1-Y1, X2-Y2|Rest]) :-
     DX is X2 - X1,
     DY is Y2 - Y1,
     DX =:= 1,
     DY =:= 1,
-    unit_step_sequence([X2-Y2|Rest]).
+    unit_step_index_sequence([X2-Y2|Rest]).
+
+npl_reconstruct_polynomial_desc(Var, Coeffs, Expr) :-
+    length(Coeffs, Len),
+    MaxPower is Len - 1,
+    findall(Term,
+        ( between(0, MaxPower, InvP),
+          Power is MaxPower - InvP,
+          nth0(Power, Coeffs, Coeff),
+          Coeff =\= 0,
+          polynomial_term(Var, Coeff, Power, Term)
+        ),
+        Terms),
+    ( Terms = [] ->
+        Expr = 0
+    ;
+        terms_sum(Terms, Expr)
+    ).
 
 % npl_reduce_predicate_to_pattern_irreducibles(+Goal, -Reduced)
-% Compatibility-layer reducer marker used by Stage 1B tests.
-npl_reduce_predicate_to_pattern_irreducibles(non_reducible_external_call(_), non_reducible) :- !.
-% Conservative placeholder: wrap reducible goals in a stable internal marker.
-npl_reduce_predicate_to_pattern_irreducibles(Goal, reduced(pattern_and_irreducibles(Goal))).
+npl_reduce_predicate_to_pattern_irreducibles(non_reducible_external_call(_), non_reducible) :-
+    !.
+npl_reduce_predicate_to_pattern_irreducibles((A, B), reduced(sequence(RA, RB))) :-
+    !,
+    npl_reduce_predicate_to_pattern_irreducibles(A, RA),
+    npl_reduce_predicate_to_pattern_irreducibles(B, RB).
+npl_reduce_predicate_to_pattern_irreducibles((A ; B), reduced(choice(RA, RB))) :-
+    !,
+    npl_reduce_predicate_to_pattern_irreducibles(A, RA),
+    npl_reduce_predicate_to_pattern_irreducibles(B, RB).
+npl_reduce_predicate_to_pattern_irreducibles(\+ A, reduced(negation(RA))) :-
+    !,
+    npl_reduce_predicate_to_pattern_irreducibles(A, RA).
+npl_reduce_predicate_to_pattern_irreducibles(Goal, reduced(Classified)) :-
+    callable(Goal),
+    Goal =.. [Name|Args],
+    length(Args, Arity),
+    Functor = Name/Arity,
+    ( npl_pattern_matching_predicate(Functor) ->
+        Kind = pattern_matching
+    ; npl_irreducible_predicate(Functor) ->
+        Kind = irreducible
+    ;
+        Kind = reducible_custom
+    ),
+    Classified = node(Kind, Functor, Goal).
 
+npl_pattern_matching_predicate(member/2).
+npl_pattern_matching_predicate(nth1/3).
+npl_pattern_matching_predicate(arg/3).
+npl_pattern_matching_predicate(append/3).
+npl_pattern_matching_predicate(sub_string/5).
+npl_pattern_matching_predicate((=..)/2).
+npl_pattern_matching_predicate((=)/2).
+
+npl_irreducible_predicate((is)/2).
+npl_irreducible_predicate((>)/2).
+npl_irreducible_predicate((<)/2).
+npl_irreducible_predicate((>=)/2).
+npl_irreducible_predicate((=<)/2).
+npl_irreducible_predicate((=:=)/2).
+npl_irreducible_predicate((=\=)/2).
+
+npl_collect_formula_samples(flow_graph(_, _, Pairs, _), _Var, Pairs) :-
+    is_list(Pairs),
+    !.
 npl_collect_formula_samples(flow(Pairs), _Var, Pairs) :-
     is_list(Pairs),
     !.
 npl_collect_formula_samples(_, _, []).
 
+npl_validate_direct_rule(OriginalGoal, DirectRule, Result) :-
+    npl_extract_flow_pairs(OriginalGoal, Pairs),
+    npl_direct_rule_relations(DirectRule, Relations),
+    ( npl_relations_match_samples(Relations, Pairs) ->
+        Result = accepted
+    ;
+        Result = rejected_non_equivalent
+    ).
+
+npl_direct_rule_relations(direct_rule(_, _, direct_index_rule(Relations)), Relations) :-
+    !.
+npl_direct_rule_relations(direct_rule(_, _, Relations), Relations) :-
+    is_list(Relations),
+    !.
+npl_direct_rule_relations(direct_index_rule(Relations), Relations) :-
+    is_list(Relations).
+
+npl_relations_match_samples(Relations, Pairs) :-
+    forall(
+        member(Name-Samples, Pairs),
+        ( member(Name-Expr, Relations),
+          npl_expression_matches_samples(Expr, Samples)
+        )
+    ).
+
+npl_expression_matches_samples(_Expr, []).
+npl_expression_matches_samples(Expr, [X-Y|Rest]) :-
+    npl_eval_relation_expr(Expr, X, Value),
+    normalize_number(Value, NV),
+    normalize_number(Y, NY),
+    NV =:= NY,
+    npl_expression_matches_samples(Expr, Rest).
+
+npl_eval_relation_expr(Expr, X, Value) :-
+    npl_substitute_index_atom(Expr, X, ExprGrounded),
+    copy_term(ExprGrounded, ExprCopy),
+    term_variables(ExprCopy, Vars),
+    maplist(=(X), Vars),
+    Value is ExprCopy.
+
+npl_substitute_index_atom(Var, _X, Var) :-
+    var(Var),
+    !.
+npl_substitute_index_atom(i, X, X) :-
+    !.
+npl_substitute_index_atom(Atom, _X, Atom) :-
+    atomic(Atom),
+    !.
+npl_substitute_index_atom(Term, X, Substituted) :-
+    Term =.. [Name|Args],
+    maplist(npl_substitute_index_atom_with(X), Args, SubArgs),
+    Substituted =.. [Name|SubArgs].
+
+npl_substitute_index_atom_with(X, Arg, SubArg) :-
+    npl_substitute_index_atom(Arg, X, SubArg).
+
+npl_should_preserve_full_structure(full_structure_required(_), true) :-
+    !.
+npl_should_preserve_full_structure(goal_requires_full_structure, true) :-
+    !.
 npl_should_preserve_full_structure(_Goal, false).
 
+npl_detect_ambiguous_index_mapping(FlowGraph, true) :-
+    npl_extract_flow_pairs(FlowGraph, Pairs),
+    member(Name-SamplesA, Pairs),
+    member(Name-SamplesB, Pairs),
+    SamplesA \== SamplesB,
+    !.
 npl_detect_ambiguous_index_mapping(_FlowGraph, false).
