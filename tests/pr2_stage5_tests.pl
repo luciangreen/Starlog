@@ -34,4 +34,13 @@ test(stage5_index_formula_still_derived_from_general_pipeline) :-
     assertion(member(x-(4+i-1), Relations)),
     assertion(member(y-(5+i-1), Relations)).
 
+test(stage5_named_labels_flow_through_general_pipeline) :-
+    Goal = flow([row-[1-10,2-11,3-12], column-[1-20,2-21,3-22], anti_diagonal-[1-30,2-31,3-32]]),
+    starlog:npl_trace_index_flow(Goal, map([]), FlowGraph),
+    starlog:npl_identify_independent_indices(FlowGraph, IndependentVars),
+    starlog:npl_reconstruct_index_relations(FlowGraph, IndependentVars, Relations),
+    assertion(member(row-(10+i-1), Relations)),
+    assertion(member(column-(20+i-1), Relations)),
+    assertion(member(anti_diagonal-(30+i-1), Relations)).
+
 :- end_tests(pr2_stage5_general_index_tracing).
