@@ -1429,3 +1429,375 @@ output_clause_as_prolog(Fact, OutputStream, _Options) :-
     rename_variables(Fact, RenamedFact),
     write_term(OutputStream, RenamedFact, [numbervars(true), quoted(true)]),
     write(OutputStream, '.'), nl(OutputStream), nl(OutputStream).
+
+% ============================================================
+% NeuroProlog PR2 helpers (Stage 2 core + Stage 1 compatibility surface)
+% ============================================================
+
+% npl_detect_polynomial_degree(+Samples, -Degree)
+% Detect a plausible polynomial degree for Samples (X-Y pairs).
+npl_detect_polynomial_degree(Samples, Degree) :-
+    samples_xy(Samples, Xs, Ys),
+    length(Samples, Len),
+    Len >= 2,
+    max_candidate_degree(Len, MaxDegree),
+    between(1, MaxDegree, Degree),
+    npl_build_polynomial_system(Samples, Degree, Matrix, Vector),
+    npl_gaussian_elimination(Matrix, Vector, Coeffs),
+    coefficients_match_samples(Xs, Ys, Coeffs),
+    !.
+
+max_candidate_degree(Len, MaxDegree) :-
+    (Len =< 4 ->
+        MaxDegree is Len - 1
+    ;
+        MaxDegree is Len - 2
+    ).
+
+% npl_build_polynomial_system(+Samples, +Degree, -Matrix, -Vector)
+% Build Vandermonde-like system:
+% a0*X^0 + a1*X^1 + ... + aK*X^K = Y.
+npl_build_polynomial_system(Samples, Degree, Matrix, Vector) :-
+    integer(Degree),
+    Degree >= 0,
+    findall(Row-Value,
+        (member(X-Y, Samples),
+         polynomial_basis_row(X, Degree, Row),
+         Value = Y),
+        RowValuePairs),
+    pairs_to_matrix_vector(RowValuePairs, Matrix, Vector).
+
+pairs_to_matrix_vector([], [], []).
+pairs_to_matrix_vector([Row-Value|Rest], [Row|Rows], [Value|Values]) :-
+    pairs_to_matrix_vector(Rest, Rows, Values).
+
+polynomial_basis_row(X, Degree, Row) :-
+    findall(PowerValue,
+        (between(0, Degree, P),
+         pow_number(X, P, PowerValue)),
+        Row).
+
+pow_number(_, 0, 1) :- !.
+pow_number(X, P, Value) :-
+    P > 0,
+    Value is X^P.
+
+% npl_gaussian_elimination(+Matrix, +Vector, -Coefficients)
+% Solve linear system Matrix * Coefficients = Vector using Gaussian elimination.
+npl_gaussian_elimination(Matrix, Vector, Coefficients) :-
+    augment_matrix(Matrix, Vector, Augmented),
+    (gaussian_rref(Augmented, Rref, PivotColumns) ->
+        Matrix = [FirstRow|_],
+        length(FirstRow, NumVars),
+        length(PivotColumns, Rank),
+        Rank =:= NumVars,
+        extract_solution_from_rref(Rref, PivotColumns, NumVars, RawCoefficients),
+        normalize_coefficients(RawCoefficients, Coefficients)
+    ;
+        fail
+    ).
+
+augment_matrix([], [], []).
+augment_matrix([Row|Rows], [Value|Values], [AugRow|AugRows]) :-
+    append(Row, [Value], AugRow),
+    augment_matrix(Rows, Values, AugRows).
+
+gaussian_rref(Matrix, Rref, PivotColumns) :-
+    Matrix = [First|_],
+    length(First, NumCols),
+    NumVars is NumCols - 1,
+    rref_loop(Matrix, 0, 0, NumVars, Rref, [], PivotColumns0),
+    \+ inconsistent_rref(Rref, NumVars),
+    reverse(PivotColumns0, PivotColumns).
+
+rref_loop(Matrix, PivotRow, PivotCol, NumVars, Matrix, PivotCols, PivotCols) :-
+    length(Matrix, NumRows),
+    (PivotRow >= NumRows ; PivotCol >= NumVars),
+    !.
+rref_loop(Matrix, PivotRow, PivotCol, NumVars, Result, PivotColsIn, PivotColsOut) :-
+    (find_pivot_row(Matrix, PivotRow, PivotCol, FoundPivotRow) ->
+        swap_rows_by_index(Matrix, PivotRow, FoundPivotRow, Swapped),
+        nth0(PivotRow, Swapped, PivotRowData),
+        nth0(PivotCol, PivotRowData, PivotValue),
+        scale_row(PivotRowData, PivotValue, NormalizedPivotRow),
+        replace_row(Swapped, PivotRow, NormalizedPivotRow, WithNormalizedPivot),
+        eliminate_column(WithNormalizedPivot, PivotRow, PivotCol, Eliminated),
+        NextRow is PivotRow + 1,
+        NextCol is PivotCol + 1,
+        rref_loop(Eliminated, NextRow, NextCol, NumVars, Result, [PivotCol|PivotColsIn], PivotColsOut)
+    ;
+        NextCol is PivotCol + 1,
+        rref_loop(Matrix, PivotRow, NextCol, NumVars, Result, PivotColsIn, PivotColsOut)
+    ).
+
+find_pivot_row(Matrix, StartRow, PivotCol, PivotRow) :-
+    nth0(PivotRow, Matrix, Row),
+    PivotRow >= StartRow,
+    nth0(PivotCol, Row, Value),
+    number_nonzero(Value),
+    !.
+
+number_nonzero(Value) :-
+    V is Value,
+    V =\= 0.
+
+swap_rows_by_index(Matrix, I, I, Matrix) :- !.
+swap_rows_by_index(Matrix, I, J, Swapped) :-
+    nth0(I, Matrix, RowI),
+    nth0(J, Matrix, RowJ),
+    replace_row(Matrix, I, RowJ, Temp),
+    replace_row(Temp, J, RowI, Swapped).
+
+replace_row([_|Rows], 0, Row, [Row|Rows]) :- !.
+replace_row([Head|Rows], Index, Row, [Head|Updated]) :-
+    Index > 0,
+    NextIndex is Index - 1,
+    replace_row(Rows, NextIndex, Row, Updated).
+
+scale_row(Row, Scale, Scaled) :-
+    maplist(divide_by(Scale), Row, Scaled).
+
+divide_by(Scale, Value, Quotient) :-
+    Quotient0 is Value / Scale,
+    normalize_number(Quotient0, Quotient).
+
+eliminate_column([], _, _, []).
+eliminate_column([Row|Rows], PivotRow, PivotCol, [NewRow|NewRows]) :-
+    length([Row|Rows], _),
+    row_index([Row|Rows], PivotRow, PivotCol, NewRow, Rows, NewRows).
+
+row_index([Current|Rest], PivotRow, PivotCol, NewCurrent, RowsTail, [NewRestHead|NewRestTail]) :-
+    % helper wrapper to keep eliminate_column deterministic
+    % Current row is resolved in eliminate_column_rows/7 below.
+    eliminate_column_rows([Current|Rest], 0, PivotRow, PivotCol, NewCurrent, [NewRestHead|NewRestTail], RowsTail).
+
+eliminate_column_rows([], _, _, _, _, [], []).
+eliminate_column_rows([Row|Rows], Index, PivotRow, PivotCol, NewRowAtHead, [NewRow|NewRows], RowsTail) :-
+    nth0(PivotRow, [Row|Rows], PivotRowData),
+    (Index =:= PivotRow ->
+        NewRow = Row
+    ;
+        nth0(PivotCol, Row, Factor),
+        (number_nonzero(Factor) ->
+            subtract_scaled_row(Row, PivotRowData, Factor, ReducedRow),
+            maplist(normalize_number, ReducedRow, NewRow)
+        ;
+            NewRow = Row
+        )
+    ),
+    (Index =:= 0 -> NewRowAtHead = NewRow ; true),
+    NextIndex is Index + 1,
+    eliminate_column_rows(Rows, NextIndex, PivotRow, PivotCol, _Ignored, NewRows, RowsTail).
+
+subtract_scaled_row([], [], _, []).
+subtract_scaled_row([A|As], [B|Bs], Factor, [C|Cs]) :-
+    C0 is A - Factor * B,
+    normalize_number(C0, C),
+    subtract_scaled_row(As, Bs, Factor, Cs).
+
+inconsistent_rref(Matrix, NumVars) :-
+    member(Row, Matrix),
+    split_coeff_const(Row, NumVars, Coeffs, Const),
+    all_zero_coeffs(Coeffs),
+    number_nonzero(Const).
+
+split_coeff_const(Row, NumVars, Coeffs, Const) :-
+    length(Coeffs, NumVars),
+    append(Coeffs, [Const], Row).
+
+all_zero_coeffs([]).
+all_zero_coeffs([H|T]) :-
+    \+ number_nonzero(H),
+    all_zero_coeffs(T).
+
+extract_solution_from_rref(Rref, PivotColumns, NumVars, Coefficients) :-
+    length(Coefficients, NumVars),
+    extract_solution_rows(PivotColumns, Rref, NumVars, Coefficients).
+
+extract_solution_rows([], _, _, _).
+extract_solution_rows([PivotCol|RestCols], Rref, NumVars, Coefficients) :-
+    member(Row, Rref),
+    nth0(PivotCol, Row, One),
+    One =:= 1,
+    pivot_row_matches(Row, PivotCol, NumVars),
+    nth0(NumVars, Row, Value),
+    replace_nth0_list(Coefficients, PivotCol, Value, Updated),
+    Coefficients = Updated,
+    extract_solution_rows(RestCols, Rref, NumVars, Coefficients).
+
+pivot_row_matches(Row, PivotCol, NumVars) :-
+    pivot_row_matches(Row, 0, PivotCol, NumVars).
+
+pivot_row_matches(_, Index, _, NumVars) :-
+    Index >= NumVars,
+    !.
+pivot_row_matches(Row, Index, PivotCol, NumVars) :-
+    nth0(Index, Row, Value),
+    (Index =:= PivotCol ->
+        Value =:= 1
+    ;
+        \+ number_nonzero(Value)
+    ),
+    Next is Index + 1,
+    pivot_row_matches(Row, Next, PivotCol, NumVars).
+
+replace_nth0_list([_|Tail], 0, Value, [Value|Tail]) :- !.
+replace_nth0_list([Head|Tail], Index, Value, [Head|Updated]) :-
+    Index > 0,
+    Next is Index - 1,
+    replace_nth0_list(Tail, Next, Value, Updated).
+
+normalize_coefficients([], []).
+normalize_coefficients([C|Cs], [N|Ns]) :-
+    normalize_number(C, N),
+    normalize_coefficients(Cs, Ns).
+
+normalize_number(Value, Normalized) :-
+    V is Value,
+    (abs(V) < 1.0e-12 ->
+        Normalized = 0
+    ;
+        Rounded is round(V),
+        (abs(V - Rounded) < 1.0e-12 ->
+            Normalized = Rounded
+        ;
+            Normalized = V
+        )
+    ).
+
+% npl_reconstruct_polynomial(+Var, +Coefficients, -Expr)
+% Build symbolic expression from coefficients [a0, a1, ...].
+npl_reconstruct_polynomial(Var, Coefficients, Expr) :-
+    coefficient_terms(Var, Coefficients, 0, Terms),
+    (Terms = [] ->
+        Expr = 0
+    ;
+        terms_sum(Terms, Expr)
+    ).
+
+coefficient_terms(_, [], _, []).
+coefficient_terms(Var, [Coeff|Coeffs], Power, Terms) :-
+    (Coeff =:= 0 ->
+        Terms = RestTerms
+    ;
+        polynomial_term(Var, Coeff, Power, Term),
+        Terms = [Term|RestTerms]
+    ),
+    NextPower is Power + 1,
+    coefficient_terms(Var, Coeffs, NextPower, RestTerms).
+
+polynomial_term(_, Coeff, 0, Coeff) :- !.
+polynomial_term(Var, Coeff, 1, Term) :-
+    !,
+    multiply_simplified(Coeff, Var, Term).
+polynomial_term(Var, Coeff, Power, Term) :-
+    Power > 1,
+    multiply_simplified(Coeff, Var^Power, Term).
+
+multiply_simplified(1, Expr, Expr) :- !.
+multiply_simplified(-1, Expr, -Expr) :- !.
+multiply_simplified(Coeff, Expr, Coeff*Expr).
+
+terms_sum([Term], Term) :- !.
+terms_sum([Head|Tail], Expr) :-
+    terms_sum(Tail, RestExpr),
+    Expr = Head + RestExpr.
+
+% npl_validate_polynomial_formula(+Samples, +Expr, +Var, -Result)
+% Validate formula against samples; derives Expr when unbound.
+npl_validate_polynomial_formula(Samples, Expr, Var, Result) :-
+    (npl_detect_polynomial_degree(Samples, Degree),
+     npl_build_polynomial_system(Samples, Degree, Matrix, Vector),
+     npl_gaussian_elimination(Matrix, Vector, Coeffs),
+     samples_xy(Samples, Xs, Ys),
+     coefficients_match_samples(Xs, Ys, Coeffs) ->
+        (var(Expr) -> npl_reconstruct_polynomial(Var, Coeffs, Expr) ; true),
+        Result = accepted
+    ;
+        Result = rejected_non_polynomial
+    ).
+
+samples_xy([], [], []).
+samples_xy([X-Y|Rest], [X|Xs], [Y|Ys]) :-
+    samples_xy(Rest, Xs, Ys).
+
+coefficients_match_samples([], [], _).
+coefficients_match_samples([X|Xs], [Y|Ys], Coeffs) :-
+    evaluate_polynomial_coeffs(Coeffs, X, Value),
+    normalize_number(Value, NValue),
+    normalize_number(Y, NY),
+    NValue =:= NY,
+    coefficients_match_samples(Xs, Ys, Coeffs).
+
+evaluate_polynomial_coeffs(Coeffs, X, Value) :-
+    evaluate_polynomial_coeffs(Coeffs, X, 0, 0, Value).
+
+evaluate_polynomial_coeffs([], _, _, Acc, Acc).
+evaluate_polynomial_coeffs([Coeff|Rest], X, Power, Acc, Value) :-
+    pow_number(X, Power, XPow),
+    Acc1 is Acc + Coeff * XPow,
+    NextPower is Power + 1,
+    evaluate_polynomial_coeffs(Rest, X, NextPower, Acc1, Value).
+
+% npl_rewrite_recurrence_to_closed_form(+Goal, +Var, -Expr, -Result)
+npl_rewrite_recurrence_to_closed_form(Goal, _Var, _Expr, rejected_impure) :-
+    \+ npl_pure_goal(Goal),
+    !.
+npl_rewrite_recurrence_to_closed_form(_Goal, _Var, _Expr, rejected_non_polynomial).
+
+npl_pure_goal((A, B)) :-
+    !,
+    npl_pure_goal(A),
+    npl_pure_goal(B).
+npl_pure_goal((A ; B)) :-
+    !,
+    npl_pure_goal(A),
+    npl_pure_goal(B).
+npl_pure_goal(\+ A) :-
+    !,
+    npl_pure_goal(A).
+npl_pure_goal(Goal) :-
+    callable(Goal),
+    Goal =.. [Name|_],
+    \+ memberchk(Name, [write, writeln, print, format, read, open, close, assert, asserta, assertz, retract, retractall, abolish, halt, shell, sleep]).
+
+% Stage 1B interface predicates (minimal functional surface)
+npl_assign_symbolic_indices(Structure, indexed(Structure), map([])).
+
+npl_trace_index_flow(Goal, IndexMap, flow(Goal, IndexMap)).
+
+npl_emit_direct_indexed_rule(FlowGraph, IndependentVars, Relations, direct_rule(FlowGraph, IndependentVars, Relations)).
+
+npl_reconstruct_index_relations(flow(Pairs), [IdxVar], Relations) :-
+    is_list(Pairs),
+    !,
+    findall(Name-Expr,
+        (member(Name-Samples, Pairs),
+         relation_from_samples(Samples, IdxVar, Expr)),
+        Relations).
+npl_reconstruct_index_relations(_, _, []).
+
+relation_from_samples([FirstX-FirstY, SecondX-SecondY|_], IdxVar, Expr) :-
+    DX is SecondX - FirstX,
+    DY is SecondY - FirstY,
+    DX =:= 1,
+    DY =:= 1,
+    !,
+    Expr = (FirstY + IdxVar - FirstX).
+relation_from_samples(Samples, IdxVar, Expr) :-
+    npl_detect_polynomial_degree(Samples, Degree),
+    npl_build_polynomial_system(Samples, Degree, Matrix, Vector),
+    npl_gaussian_elimination(Matrix, Vector, Coeffs),
+    npl_reconstruct_polynomial(IdxVar, Coeffs, Expr).
+
+npl_reduce_predicate_to_pattern_irreducibles(non_reducible_external_call(_), non_reducible) :- !.
+npl_reduce_predicate_to_pattern_irreducibles(Goal, reduced(pattern_and_irreducibles(Goal))).
+
+npl_collect_formula_samples(flow(Pairs), _Var, Pairs) :-
+    is_list(Pairs),
+    !.
+npl_collect_formula_samples(_, _, []).
+
+npl_should_preserve_full_structure(_Goal, false).
+
+npl_detect_ambiguous_index_mapping(_FlowGraph, false).
