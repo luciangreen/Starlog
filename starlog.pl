@@ -2065,6 +2065,7 @@ npl_stage8_build_ir(_FlowGraph, IndependentVars, Relations, Coefficients, Option
 
 npl_stage8_primary_index_var([IndexVar|_], IndexVar) :-
     !.
+% The first independent variable is used as the primary polynomial index.
 % Fallback to i for compatibility with existing Stage 4-7 relation helpers
 % when callers do not supply explicit independent variables.
 npl_stage8_primary_index_var([], i).
@@ -2102,10 +2103,11 @@ npl_stage8_wrap_with_provenance([Node|Nodes], Note, [ir_provenance(Note, Node)|W
 npl_stage8_ir_provenance(ir_pipeline(_, Nodes, meta(Metadata)), Provenance) :-
     npl_stage8_collect_node_provenance(Nodes, NodeNotes),
     (member(provenance(MetaNote), Metadata) ->
-        sort([MetaNote|NodeNotes], Provenance)
+        CombinedNotes = [MetaNote|NodeNotes]
     ;
-        sort(NodeNotes, Provenance)
-    ).
+        CombinedNotes = NodeNotes
+    ),
+    sort(CombinedNotes, Provenance).
 
 npl_stage8_collect_node_provenance([], []).
 npl_stage8_collect_node_provenance([ir_provenance(Note, _)|Nodes], [Note|Notes]) :-

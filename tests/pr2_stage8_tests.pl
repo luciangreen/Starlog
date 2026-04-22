@@ -47,9 +47,12 @@ test(stage8_ir_contains_required_nodes_and_metadata) :-
                                 [provenance(derived_from_tests), rational_coefficients(true)],
                                 IR),
     IR = ir_pipeline(_Passes, Nodes, meta(Metadata)),
-    assertion(member(ir_provenance(derived_from_tests, ir_index_relation([i], _)), Nodes)),
-    assertion(member(ir_provenance(derived_from_tests, ir_poly_eval(i, [rational(0),rational(1),rational(1)], poly_result)), Nodes)),
-    assertion(member(ir_provenance(derived_from_tests, ir_direct_index_rule(index_spec([i]), relations(_), result_collector(values))), Nodes)),
+    assertion(length(Nodes, 3)),
+    assertion(Nodes == [
+        ir_provenance(derived_from_tests, ir_index_relation([i], [u-(i^2+i),x-(4+i-1),y-(5+i-1)])),
+        ir_provenance(derived_from_tests, ir_poly_eval(i, [rational(0),rational(1),rational(1)], poly_result)),
+        ir_provenance(derived_from_tests, ir_direct_index_rule(index_spec([i]), relations([u-(i^2+i),x-(4+i-1),y-(5+i-1)]), result_collector(values)))
+    ]),
     assertion(member(coefficient_representation(rational), Metadata)).
 
 test(stage8_ir_build_is_deterministic_for_unordered_inputs) :-
