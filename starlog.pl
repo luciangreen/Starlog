@@ -1902,7 +1902,27 @@ npl_collect_formula_samples(flow_graph(_, _, Pairs, _), _Var, Pairs) :-
 npl_collect_formula_samples(flow(Pairs), _Var, Pairs) :-
     is_list(Pairs),
     !.
+npl_collect_formula_samples(Relations, IndependentVar, SamplesByRelation) :-
+    is_list(Relations),
+    npl_max_sample_count(MaxSamples),
+    findall(Name-Samples,
+        ( member(Name-RelationExpr, Relations),
+          nonvar(RelationExpr),
+          npl_relation_expr_samples(RelationExpr, IndependentVar, 1, MaxSamples, Samples)
+        ),
+        SamplesByRelation),
+    !.
 npl_collect_formula_samples(_, _, []).
+
+npl_relation_expr_samples(_Expr, _IndexAtom, Index, MaxSamples, []) :-
+    Index > MaxSamples,
+    !.
+npl_relation_expr_samples(Expr, IndexAtom, Index, MaxSamples, [Index-Value|Rest]) :-
+    npl_eval_relation_expr_with_index(Expr, IndexAtom, Index, Value),
+    NextIndex is Index + 1,
+    npl_relation_expr_samples(Expr, IndexAtom, NextIndex, MaxSamples, Rest),
+    !.
+npl_relation_expr_samples(_, _, _, _, []).
 
 npl_validate_direct_rule(OriginalGoal, DirectRule, Result) :-
     npl_extract_flow_pairs(OriginalGoal, Pairs),
@@ -1937,28 +1957,37 @@ npl_expression_matches_samples(Expr, [X-Y|Rest]) :-
     NV =:= NY,
     npl_expression_matches_samples(Expr, Rest).
 
-npl_eval_relation_expr(Expr, X, Value) :-
-    npl_substitute_index_atom(Expr, X, ExprGrounded),
+npl_eval_relation_expr(Expr, IndexValue, Value) :-
+    npl_eval_relation_expr_with_index(Expr, i, IndexValue, Value).
+
+npl_eval_relation_expr_with_index(Expr, IndexAtom, IndexValue, Value) :-
+    npl_substitute_index_atom(Expr, IndexAtom, IndexValue, ExprGrounded),
     copy_term(ExprGrounded, ExprCopy),
     term_variables(ExprCopy, Vars),
-    maplist(=(X), Vars),
+    maplist(=(IndexValue), Vars),
     Value is ExprCopy.
 
-npl_substitute_index_atom(Var, _X, Var) :-
+% Backward-compatible default for legacy callers; new code should prefer
+% npl_substitute_index_atom/4 with an explicit IndexAtom.
+npl_substitute_index_atom(Expr, X, Substituted) :-
+    npl_substitute_index_atom(Expr, i, X, Substituted).
+
+npl_substitute_index_atom(Var, _IndexAtom, _X, Var) :-
     var(Var),
     !.
-npl_substitute_index_atom(i, X, X) :-
+npl_substitute_index_atom(IndexAtom, IndexAtom, X, X) :-
+    atom(IndexAtom),
     !.
-npl_substitute_index_atom(Atom, _X, Atom) :-
+npl_substitute_index_atom(Atom, _IndexAtom, _X, Atom) :-
     atomic(Atom),
     !.
-npl_substitute_index_atom(Term, X, Substituted) :-
+npl_substitute_index_atom(Term, IndexAtom, X, Substituted) :-
     Term =.. [Name|Args],
-    maplist(npl_substitute_index_atom_with(X), Args, SubArgs),
+    maplist(npl_substitute_index_atom_with(IndexAtom, X), Args, SubArgs),
     Substituted =.. [Name|SubArgs].
 
-npl_substitute_index_atom_with(X, Arg, SubArg) :-
-    npl_substitute_index_atom(Arg, X, SubArg).
+npl_substitute_index_atom_with(IndexAtom, X, Arg, SubArg) :-
+    npl_substitute_index_atom(Arg, IndexAtom, X, SubArg).
 
 npl_should_preserve_full_structure(full_structure_required(_), true) :-
     !.
