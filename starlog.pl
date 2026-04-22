@@ -1636,6 +1636,8 @@ npl_impure_predicate(shell).
 npl_impure_predicate(sleep).
 
 % Stage 1B interface predicates (minimal functional surface)
+% These provide the currently required optimisation-surface predicates
+% referenced by tests/pr2_stage1_failing_tests.pl.
 npl_assign_symbolic_indices(Structure, indexed(Structure), map([])).
 
 npl_trace_index_flow(Goal, IndexMap, flow(Goal, IndexMap)).
@@ -1651,13 +1653,10 @@ npl_reconstruct_index_relations(flow(Pairs), [IdxVar], Relations) :-
         Relations).
 npl_reconstruct_index_relations(_, _, []).
 
-relation_from_samples([FirstX-FirstY, SecondX-SecondY|_], IdxVar, Expr) :-
+relation_from_samples([FirstX-FirstY|Samples], IdxVar, Expr) :-
     % Fast path for simple unit-step affine index sequences such as
     % x_i = 4+i-1, before falling back to general polynomial fitting.
-    DX is SecondX - FirstX,
-    DY is SecondY - FirstY,
-    DX =:= 1,
-    DY =:= 1,
+    unit_step_sequence([FirstX-FirstY|Samples]),
     !,
     Expr = (FirstY + IdxVar - FirstX).
 relation_from_samples(Samples, IdxVar, Expr) :-
@@ -1666,6 +1665,16 @@ relation_from_samples(Samples, IdxVar, Expr) :-
     npl_gaussian_elimination(Matrix, Vector, Coeffs),
     npl_reconstruct_polynomial(IdxVar, Coeffs, Expr).
 
+unit_step_sequence([_]).
+unit_step_sequence([X1-Y1, X2-Y2|Rest]) :-
+    DX is X2 - X1,
+    DY is Y2 - Y1,
+    DX =:= 1,
+    DY =:= 1,
+    unit_step_sequence([X2-Y2|Rest]).
+
+% npl_reduce_predicate_to_pattern_irreducibles(+Goal, -Reduced)
+% Compatibility-layer reducer marker used by Stage 1B tests.
 npl_reduce_predicate_to_pattern_irreducibles(non_reducible_external_call(_), non_reducible) :- !.
 % Conservative placeholder: wrap reducible goals in a stable internal marker.
 npl_reduce_predicate_to_pattern_irreducibles(Goal, reduced(pattern_and_irreducibles(Goal))).
