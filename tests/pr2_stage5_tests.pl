@@ -15,7 +15,7 @@ test(stage5_no_named_special_case_optimiser_predicates) :-
     assertion(\+ current_predicate(starlog:npl_optimize_anti_diagonal/4)).
 
 test(stage5_named_case_goal_is_handled_as_general_reducible_custom) :-
-    Goal = diagonal(I, I, V),
+    Goal = diagonal(I, I, _V),
     starlog:npl_reduce_predicate_to_pattern_irreducibles(Goal, Reduced),
     assertion(Reduced = reduced(node(reducible_custom, diagonal/3, Goal))).
 
