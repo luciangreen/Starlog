@@ -2192,6 +2192,7 @@ npl_stage9_normalize_coefficients([Coeff|Rest], [Native|NativeRest]) :-
     npl_stage9_normalize_coefficients(Rest, NativeRest).
 
 npl_stage9_simplify_closed_form(IndexVar, [C0,C1,C2], _RawExpr, Simplified) :-
+    % Specialized degree-2 recognition: [a0,a1,a2] where a0≈0 and a1≈a2≈0.5.
     npl_stage9_is_zero(C0),
     npl_stage9_is_half(C1),
     npl_stage9_is_half(C2),
@@ -2203,12 +2204,16 @@ npl_stage9_simplify_closed_form(_IndexVar, _Coefficients, RawExpr, RawExpr).
 npl_stage9_is_zero(Value) :-
     number(Value),
     Abs is abs(Value),
-    Abs < 1.0e-12.
+    npl_stage9_numeric_tolerance(Tolerance),
+    Abs < Tolerance.
 
 npl_stage9_is_half(Value) :-
     number(Value),
     Diff is abs(Value - 0.5),
-    Diff < 1.0e-12.
+    npl_stage9_numeric_tolerance(Tolerance),
+    Diff < Tolerance.
+
+npl_stage9_numeric_tolerance(1.0e-12).
 
 % npl_stage9_emit_neurocode(+GeneratedOrIR, -Neurocode)
 % Convert Stage 9 generated statements into a compact neurocode representation.

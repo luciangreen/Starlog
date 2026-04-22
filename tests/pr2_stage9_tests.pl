@@ -31,6 +31,18 @@ test(stage9_direct_index_formula_loop_emission) :-
                           collect(values)),
                      Statements)).
 
+test(stage9_loop_emission_handles_empty_relations) :-
+    Lowered = lowered_ir([direct_index_rule(index_spec([i]), [], result_collector(values))]),
+    starlog:npl_stage9_generate_code(Lowered, generated_program(Statements)),
+    assertion(member(loop([i], [], collect(values)), Statements)).
+
+test(stage9_loop_emission_supports_multiple_indices_and_collectors) :-
+    Lowered = lowered_ir([direct_index_rule(index_spec([i,j]),
+                                            [x-(i+j)],
+                                            result_collector(records))]),
+    starlog:npl_stage9_generate_code(Lowered, generated_program(Statements)),
+    assertion(member(loop([i,j], [assign(x, i+j)], collect(records)), Statements)).
+
 test(stage9_compiles_stage8_ir_to_neurocode) :-
     starlog:npl_stage8_build_ir(flow_graph(mock, map([]), [], trace([])),
                                 [i],
