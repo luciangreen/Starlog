@@ -2192,8 +2192,9 @@ npl_stage9_normalize_coefficients([Coeff|Rest], [Native|NativeRest]) :-
     npl_stage9_normalize_coefficients(Rest, NativeRest).
 
 npl_stage9_simplify_closed_form(IndexVar, [C0,C1,C2], _RawExpr, Simplified) :-
-    % Specialized degree-2 recognition: [a0,a1,a2] where a0 is approximately 0
-    % and a1/a2 are approximately 0.5.
+    % Specialized degree-2 recognition for coefficients [C0,C1,C2] in ascending
+    % power order (constant, linear, quadratic): C0 + C1*N + C2*N^2.
+    % We match C0 ~ 0 and C1/C2 ~ 0.5.
     npl_stage9_is_zero(C0),
     npl_stage9_is_half(C1),
     npl_stage9_is_half(C2),
@@ -2214,7 +2215,8 @@ npl_stage9_is_half(Value) :-
     npl_stage9_numeric_tolerance(Tolerance),
     Diff < Tolerance.
 
-% Numeric tolerance used for closed-form coefficient recognition from floating/rational solves.
+% Numeric tolerance used for coefficient matching after Gaussian solves where tiny
+% floating artifacts are expected; 1e-12 keeps strict matching while ignoring noise.
 npl_stage9_numeric_tolerance(1.0e-12).
 
 % npl_stage9_emit_neurocode(+GeneratedOrIR, -Neurocode)
