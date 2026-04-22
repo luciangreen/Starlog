@@ -44,7 +44,7 @@ test(stage9_loop_emission_supports_multiple_indices_and_collectors) :-
     assertion(member(loop([i,j], [assign(x, i+j)], collect(records)), Statements)).
 
 test(stage9_compiles_stage8_ir_to_neurocode) :-
-    starlog:npl_stage8_build_ir(flow_graph(mock, map([]), [], trace([])),
+    starlog:npl_stage8_build_ir(flow_graph(empty_flow_graph, map([]), [], trace([])),
                                 [i],
                                 [x-(4+i-1), y-(5+i-1)],
                                 [0,1,1],
