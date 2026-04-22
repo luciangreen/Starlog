@@ -455,6 +455,7 @@ For polynomial indexed relations, coefficient solving uses Gaussian elimination 
 - Stage 13 aligns self-hosting and rebuild flows through `npl_stage13_toggleable_passes/1`, `npl_stage13_effective_pass_toggles/2`, `npl_stage13_rebuild_log/3`, `npl_stage13_formula_provenance/2`, and `npl_stage13_self_check/2`.
 - PR3 Stage 6 adds annotated source regeneration through `npl_ir_to_annotated_source_text/3` and `npl_ir_to_annotated_source_file/3`, including context comments (source, optimisation metadata, recursion classification) and IR marker annotations (memo/address-loop/source-marker) in regenerated output.
 - PR3 Stage 7 adds structured validation/error handling for annotated regeneration inputs, including explicit malformed IR shape errors, unsupported IR-node errors, and output file type validation.
+- PR3 Stage 8 adds dedicated regeneration stability/regression tests for public annotated APIs and Stage 9 integration, including deterministic repeated output checks, polynomial simplification regression coverage, loop-node rendering checks, and file text roundtrip verification.
 
 Stage 11 documentation statements:
 
