@@ -8,7 +8,7 @@ run_pr2_stage5_tests :-
 
 :- begin_tests(pr2_stage5_general_index_tracing).
 
-test(stage5_no_named_special_case_optimiser_predicates) :-
+test(stage5_no_named_special_case_optimizer_predicates) :-
     assertion(\+ current_predicate(starlog:npl_optimize_diagonal/4)),
     assertion(\+ current_predicate(starlog:npl_optimize_row/4)),
     assertion(\+ current_predicate(starlog:npl_optimize_column/4)),
@@ -23,7 +23,7 @@ test(stage5_trace_reports_general_first_principles_strategy) :-
     Goal = flow([x-[1-4,2-5,3-6]]),
     starlog:npl_trace_index_flow(Goal, map([]), FlowGraph),
     assertion(FlowGraph = flow_graph(_, _, _, trace(Meta))),
-    assertion(member(optimisation_class(general_first_principles), Meta)),
+    assertion(member(optimization_class(general_first_principles), Meta)),
     assertion(member(named_special_cases(none), Meta)).
 
 test(stage5_index_formula_still_derived_from_general_pipeline) :-

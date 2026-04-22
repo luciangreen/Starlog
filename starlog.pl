@@ -1762,7 +1762,7 @@ npl_trace_index_flow(Goal, IndexMap, flow_graph(Reduced, IndexMap, Pairs, trace(
     length(Pairs, Count),
     npl_general_trace_metadata(Count, Meta).
 
-npl_general_trace_metadata(Count, [pair_count(Count), optimisation_class(general_first_principles), named_special_cases(none)]).
+npl_general_trace_metadata(Count, [pair_count(Count), optimization_class(general_first_principles), named_special_cases(none)]).
 
 npl_extract_flow_pairs(flow(Pairs), Pairs) :-
     is_list(Pairs),
