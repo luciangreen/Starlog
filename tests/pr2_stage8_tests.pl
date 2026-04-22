@@ -93,9 +93,9 @@ test(stage8_ir_keeps_zero_and_negative_coefficients_in_rational_mode) :-
                                 [k],
                                 [u-(k^2-k)],
                                 [0,-1,1],
-                                [rational_coefficients(true)],
+                                [rational_coefficients(true), provenance(stage8_negative_coeff_case)],
                                 ir_pipeline(_, Nodes, _)),
-    assertion(member(ir_provenance(stage8_first_principles_derivation,
+    assertion(member(ir_provenance(stage8_negative_coeff_case,
                                    ir_poly_eval(k, [rational(0),rational(-1),rational(1)], poly_result)),
                     Nodes)).
 
