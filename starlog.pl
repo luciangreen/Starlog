@@ -1756,10 +1756,13 @@ npl_collect_list_symbolic_indices([Item|Rest], Index, ParentPath, Map) :-
     npl_collect_list_symbolic_indices(Rest, NextIndex, ParentPath, RestMap),
     append(ItemMap, RestMap, Map).
 
-npl_trace_index_flow(Goal, IndexMap, flow_graph(Reduced, IndexMap, Pairs, trace([pair_count(Count), optimisation_class(general_first_principles), named_special_cases(none)]))) :-
+npl_trace_index_flow(Goal, IndexMap, flow_graph(Reduced, IndexMap, Pairs, trace(Meta))) :-
     npl_reduce_predicate_to_pattern_irreducibles(Goal, Reduced),
     npl_extract_flow_pairs(Goal, Pairs),
-    length(Pairs, Count).
+    length(Pairs, Count),
+    npl_general_trace_metadata(Count, Meta).
+
+npl_general_trace_metadata(Count, [pair_count(Count), optimisation_class(general_first_principles), named_special_cases(none)]).
 
 npl_extract_flow_pairs(flow(Pairs), Pairs) :-
     is_list(Pairs),
@@ -1879,18 +1882,9 @@ npl_reduce_predicate_to_pattern_irreducibles(Goal, reduced(Classified)) :-
     ),
     Classified = node(Kind, Functor, Goal).
 
-npl_named_structural_case_functor(diagonal/2).
-npl_named_structural_case_functor(diagonal/3).
-npl_named_structural_case_functor(diagonal/4).
-npl_named_structural_case_functor(anti_diagonal/2).
-npl_named_structural_case_functor(anti_diagonal/3).
-npl_named_structural_case_functor(anti_diagonal/4).
-npl_named_structural_case_functor(row/2).
-npl_named_structural_case_functor(row/3).
-npl_named_structural_case_functor(row/4).
-npl_named_structural_case_functor(column/2).
-npl_named_structural_case_functor(column/3).
-npl_named_structural_case_functor(column/4).
+npl_named_structural_case_functor(Name/Arity) :-
+    memberchk(Name, [diagonal, anti_diagonal, row, column]),
+    between(2, 4, Arity).
 
 npl_pattern_matching_predicate(member/2).
 npl_pattern_matching_predicate(nth1/3).
