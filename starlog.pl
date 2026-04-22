@@ -2134,3 +2134,101 @@ npl_stage8_lower_ir_node(ir_direct_index_rule(IndexSpec, relations(Relations), R
                          direct_index_rule(IndexSpec, Relations, ResultCollector)) :-
     !.
 npl_stage8_lower_ir_node(Node, lowered_passthrough(Node)).
+
+% ============================================================
+% NeuroProlog PR2 Stage 9 helpers (code generation + neurocode emission)
+% ============================================================
+
+% npl_stage9_generate_code(+IROrLoweredIR, -GeneratedCode)
+% Compile Stage 8 IR (or lowered IR) into runnable Stage 9 code statements.
+npl_stage9_generate_code(IROrLoweredIR, generated_program(Statements)) :-
+    npl_stage9_normalize_ir(IROrLoweredIR, LoweredNodes),
+    maplist(npl_stage9_node_statement, LoweredNodes, RawStatements),
+    exclude(=(skip_statement), RawStatements, Statements).
+
+npl_stage9_normalize_ir(ir_pipeline(PassOrder, Nodes, Meta), LoweredNodes) :-
+    !,
+    npl_stage8_lower_ir(ir_pipeline(PassOrder, Nodes, Meta), lowered_ir(LoweredNodes)).
+npl_stage9_normalize_ir(lowered_ir(LoweredNodes), LoweredNodes) :-
+    !.
+npl_stage9_normalize_ir(LoweredNodes, LoweredNodes) :-
+    is_list(LoweredNodes).
+
+npl_stage9_node_statement(lowered_poly_eval(IndexVar, Coefficients, ResultVar),
+                          assign(ResultVar, Expr)) :-
+    !,
+    npl_stage9_normalize_coefficients(Coefficients, NativeCoefficients),
+    npl_reconstruct_polynomial(IndexVar, NativeCoefficients, RawExpr),
+    npl_stage9_simplify_closed_form(IndexVar, NativeCoefficients, RawExpr, Expr).
+npl_stage9_node_statement(lowered_index_relation(_IndependentVars, _Relations), skip_statement) :-
+    !.
+npl_stage9_node_statement(direct_index_rule(IndexSpec, Relations, result_collector(Collector)),
+                          loop(IndependentVars, Assignments, collect(Collector))) :-
+    !,
+    npl_stage9_extract_indices(IndexSpec, IndependentVars),
+    npl_stage9_relations_assignments(Relations, Assignments).
+npl_stage9_node_statement(lowered_passthrough(Node), passthrough(Node)) :-
+    !.
+npl_stage9_node_statement(Node, passthrough(Node)).
+
+npl_stage9_extract_indices(index_spec(IndependentVars), IndependentVars) :-
+    !.
+npl_stage9_extract_indices(IndependentVars, IndependentVars) :-
+    is_list(IndependentVars),
+    !.
+npl_stage9_extract_indices(IndexVar, [IndexVar]).
+
+npl_stage9_relations_assignments([], []).
+npl_stage9_relations_assignments([Name-Expr|Relations], [assign(Name, Expr)|Assignments]) :-
+    npl_stage9_relations_assignments(Relations, Assignments).
+
+npl_stage9_normalize_coefficients([], []).
+npl_stage9_normalize_coefficients([Coeff|Rest], [Native|NativeRest]) :-
+    (Coeff = rational(Value) ->
+        Native = Value
+    ;
+        Native = Coeff
+    ),
+    npl_stage9_normalize_coefficients(Rest, NativeRest).
+
+npl_stage9_simplify_closed_form(IndexVar, [C0,C1,C2], _RawExpr, Simplified) :-
+    npl_stage9_is_zero(C0),
+    npl_stage9_is_half(C1),
+    npl_stage9_is_half(C2),
+    !,
+    Simplified = IndexVar*(IndexVar+1)/2.
+npl_stage9_simplify_closed_form(_IndexVar, _Coefficients, RawExpr, RawExpr).
+
+npl_stage9_is_zero(Value) :-
+    number(Value),
+    Abs is abs(Value),
+    Abs < 1.0e-12.
+
+npl_stage9_is_half(Value) :-
+    number(Value),
+    Diff is abs(Value - 0.5),
+    Diff < 1.0e-12.
+
+% npl_stage9_emit_neurocode(+GeneratedOrIR, -Neurocode)
+% Convert Stage 9 generated statements into a compact neurocode representation.
+npl_stage9_emit_neurocode(generated_program(Statements), neurocode(Ops)) :-
+    !,
+    maplist(npl_stage9_statement_neuro_op, Statements, Ops).
+npl_stage9_emit_neurocode(IROrLoweredIR, neurocode(Ops)) :-
+    npl_stage9_generate_code(IROrLoweredIR, generated_program(Statements)),
+    maplist(npl_stage9_statement_neuro_op, Statements, Ops).
+
+npl_stage9_statement_neuro_op(assign(Var, Expr), neuro_assign(Var, Expr)) :-
+    !.
+npl_stage9_statement_neuro_op(loop(IndependentVars, Assignments, collect(Collector)),
+                              neuro_loop(IndependentVars, NeuroAssignments, neuro_collect(Collector))) :-
+    !,
+    maplist(npl_stage9_assignment_neuro, Assignments, NeuroAssignments).
+npl_stage9_statement_neuro_op(passthrough(Node), neuro_passthrough(Node)).
+
+npl_stage9_assignment_neuro(assign(Name, Expr), neuro_assign(Name, Expr)).
+
+% npl_stage9_compile_ir(+IROrLoweredIR, -Neurocode)
+% One-step Stage 9 entrypoint from IR to emitted neurocode.
+npl_stage9_compile_ir(IROrLoweredIR, Neurocode) :-
+    npl_stage9_emit_neurocode(IROrLoweredIR, Neurocode).
