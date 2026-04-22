@@ -2277,7 +2277,7 @@ npl_stage11_documentation_scope([
     gaussian_recursion_md('GAUSSIAN_RECURSION.md'),
     optimisation_rules_md('OPTIMISATION_RULES.md'),
     readme_md('README.md'),
-    example_files([examples_pl, demo_problem_statement_complete_pl])
+    example_files(['examples.pl', 'demo_problem_statement_complete.pl'])
 ]).
 
 % npl_stage11_gaussian_recursion_requirements(-Requirements)

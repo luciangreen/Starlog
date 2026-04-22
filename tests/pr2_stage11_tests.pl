@@ -20,7 +20,7 @@ test(stage11_documentation_scope_lists_required_surfaces) :-
     assertion(member(gaussian_recursion_md('GAUSSIAN_RECURSION.md'), Scope)),
     assertion(member(optimisation_rules_md('OPTIMISATION_RULES.md'), Scope)),
     assertion(member(readme_md('README.md'), Scope)),
-    assertion(member(example_files([examples_pl, demo_problem_statement_complete_pl]), Scope)).
+    assertion(member(example_files(['examples.pl', 'demo_problem_statement_complete.pl']), Scope)).
 
 test(stage11_gaussian_recursion_requirements_are_explicit) :-
     starlog:npl_stage11_gaussian_recursion_requirements(Reqs),
