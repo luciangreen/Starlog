@@ -30,7 +30,9 @@
     solve_system/3,
     gaussian_elimination/2,
     gaussian_elimination/3,
-    find/3
+    find/3,
+    npl_ir_to_annotated_source_text/3,
+    npl_ir_to_annotated_source_file/3
 ]).
 
 :- use_module(starlog_expand).
@@ -2512,3 +2514,141 @@ npl_stage14_additional_delivery_rules([
 % npl_stage14_concise_agent_prompt(-Prompt)
 % Canonical shorthand prompt text for Stage 14 delivery.
 npl_stage14_concise_agent_prompt('derive affine and polynomial formulas for indexed variables, such as x_i=4+i-1 and y_i=5+i-1, from traced variable correspondences.').
+
+% ============================================================
+% NeuroProlog PR3 Stage 6 helpers (annotated source regeneration)
+% ============================================================
+
+% npl_ir_to_annotated_source_text(+IR, +Context, -Text)
+% Regenerate inspectable source-like output with contextual annotations.
+npl_ir_to_annotated_source_text(IR, Context, Text) :-
+    npl_stage9_generate_code(IR, generated_program(Statements)),
+    npl_stage6_collect_annotations(IR, Context, AnnotationLines),
+    with_output_to(string(Text),
+                   npl_stage6_write_annotated_source(AnnotationLines, Statements)).
+
+% npl_ir_to_annotated_source_file(+IR, +Context, +OutFile)
+% Write annotated regenerated source text to OutFile.
+npl_ir_to_annotated_source_file(IR, Context, OutFile) :-
+    npl_ir_to_annotated_source_text(IR, Context, Text),
+    setup_call_cleanup(
+        open(OutFile, write, Stream),
+        format(Stream, '~s', [Text]),
+        close(Stream)
+    ).
+
+npl_stage6_write_annotated_source([], Statements) :-
+    !,
+    npl_stage6_write_generated_statements(Statements).
+npl_stage6_write_annotated_source(AnnotationLines, Statements) :-
+    npl_stage6_write_annotations(AnnotationLines),
+    nl,
+    npl_stage6_write_generated_statements(Statements).
+
+npl_stage6_write_annotations([]).
+npl_stage6_write_annotations([Line|Lines]) :-
+    format('%% ~w~n', [Line]),
+    npl_stage6_write_annotations(Lines).
+
+npl_stage6_write_generated_statements([]).
+npl_stage6_write_generated_statements([Statement|Statements]) :-
+    npl_stage6_statement_as_term(Statement, Term),
+    write_term(Term, [quoted(true), numbervars(true)]),
+    write('.'),
+    nl,
+    npl_stage6_write_generated_statements(Statements).
+
+npl_stage6_statement_as_term(assign(Var, Expr), (Var is Expr)) :-
+    !.
+npl_stage6_statement_as_term(loop(IndependentVars, Assignments, collect(Collector)),
+                             npl_generated_loop(IndependentVars, Assignments, collect(Collector))) :-
+    !.
+npl_stage6_statement_as_term(passthrough(Node), npl_generated_passthrough(Node)) :-
+    !.
+npl_stage6_statement_as_term(Statement, npl_generated_statement(Statement)).
+
+npl_stage6_collect_annotations(IR, Context, AnnotationLines) :-
+    npl_stage6_context_annotation_lines(Context, ContextLines),
+    npl_stage6_ir_annotation_lines(IR, IRLines),
+    append(ContextLines, IRLines, Combined),
+    sort(Combined, AnnotationLines).
+
+npl_stage6_context_annotation_lines(Context, Lines) :-
+    (is_list(Context) ->
+        ContextItems = Context
+    ;
+        ContextItems = [context(Context)]
+    ),
+    npl_stage6_context_items_to_lines(ContextItems, Lines).
+
+npl_stage6_context_items_to_lines([], []).
+npl_stage6_context_items_to_lines([Item|Items], Lines) :-
+    npl_stage6_context_item_line(Item, Line),
+    !,
+    Lines = [Line|Rest],
+    npl_stage6_context_items_to_lines(Items, Rest).
+npl_stage6_context_items_to_lines([_|Items], Lines) :-
+    npl_stage6_context_items_to_lines(Items, Lines).
+
+npl_stage6_context_item_line(source_file(File), Line) :-
+    format(atom(Line), 'original source file: ~w', [File]).
+npl_stage6_context_item_line(original_source(File), Line) :-
+    format(atom(Line), 'original source file: ~w', [File]).
+npl_stage6_context_item_line(source_metadata(Metadata), Line) :-
+    format(atom(Line), 'source metadata: ~w', [Metadata]).
+npl_stage6_context_item_line(optimisation_report(Report), Line) :-
+    format(atom(Line), 'optimisation report: ~w', [Report]).
+npl_stage6_context_item_line(recursion_classification(Classification), Line) :-
+    format(atom(Line), 'recursion classification: ~w', [Classification]).
+npl_stage6_context_item_line(line_info(LineInfo), Line) :-
+    format(atom(Line), 'line info: ~w', [LineInfo]).
+npl_stage6_context_item_line(applied_passes(Passes), Line) :-
+    format(atom(Line), 'applied optimisation passes: ~w', [Passes]).
+
+npl_stage6_ir_annotation_lines(IR, Lines) :-
+    npl_stage6_ir_pass_order_line(IR, PassOrderLines),
+    npl_stage6_ir_metadata_lines(IR, MetadataLines),
+    npl_stage6_special_node_lines(IR, SpecialNodeLines),
+    append(PassOrderLines, MetadataLines, PassMetaLines),
+    append(PassMetaLines, SpecialNodeLines, Lines).
+
+npl_stage6_ir_pass_order_line(ir_pipeline(PassOrder, _Nodes, _Meta), [Line]) :-
+    !,
+    format(atom(Line), 'pipeline pass order: ~w', [PassOrder]).
+npl_stage6_ir_pass_order_line(_, []).
+
+npl_stage6_ir_metadata_lines(ir_pipeline(_PassOrder, _Nodes, meta(Metadata)), [Line]) :-
+    Metadata \== [],
+    !,
+    format(atom(Line), 'ir metadata: ~w', [Metadata]).
+npl_stage6_ir_metadata_lines(_, []).
+
+npl_stage6_special_node_lines(IR, Lines) :-
+    npl_stage6_special_node_comment(ir_memo_site, 'memoisation marker present in IR', IR, MemoLines),
+    npl_stage6_special_node_comment(ir_addr_loop, 'address-loop marker present in IR', IR, AddrLoopLines),
+    npl_stage6_special_node_comment(ir_loop_candidate, 'loop-candidate marker present in IR', IR, LoopCandidateLines),
+    npl_stage6_special_node_comment(ir_source_marker, 'source-marker node present in IR', IR, SourceMarkerLines),
+    append(MemoLines, AddrLoopLines, Merged1),
+    append(Merged1, LoopCandidateLines, Merged2),
+    append(Merged2, SourceMarkerLines, Lines).
+
+npl_stage6_special_node_comment(Functor, Message, IR, [Message]) :-
+    npl_stage6_contains_functor(IR, Functor),
+    !.
+npl_stage6_special_node_comment(_Functor, _Message, _IR, []).
+
+npl_stage6_contains_functor(Term, Functor) :-
+    compound(Term),
+    functor(Term, Functor, _),
+    !.
+npl_stage6_contains_functor(Term, Functor) :-
+    compound(Term),
+    Term =.. [_|Args],
+    member(Arg, Args),
+    npl_stage6_contains_functor(Arg, Functor),
+    !.
+npl_stage6_contains_functor(Term, Functor) :-
+    is_list(Term),
+    member(Item, Term),
+    npl_stage6_contains_functor(Item, Functor),
+    !.
