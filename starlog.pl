@@ -2017,3 +2017,120 @@ npl_detect_ambiguous_index_mapping(FlowGraph, true) :-
     SamplesA \== SamplesB,
     !.
 npl_detect_ambiguous_index_mapping(_FlowGraph, false).
+
+% ============================================================
+% NeuroProlog PR2 Stage 8 helpers (IR + pipeline representation)
+% ============================================================
+
+% npl_stage8_pipeline_order(-PassOrder)
+% Deterministic pass order for Stage 8 optimisation pipeline.
+npl_stage8_pipeline_order([
+    parse_and_analyse,
+    semantic_analysis,
+    recurrence_classification,
+    sample_extraction,
+    degree_estimation,
+    gaussian_elimination_polynomial_solve,
+    polynomial_validation_and_rewrite,
+    symbolic_index_assignment,
+    predicate_reduction_pattern_irreducibles,
+    indexed_variable_flow_tracing,
+    independent_variable_identification,
+    formula_reconstruction_from_first_principles,
+    gaussian_elimination_indexed_polynomial_formula_solve,
+    direct_index_rule_reconstruction,
+    simplification,
+    code_generation
+]).
+
+% npl_stage8_build_ir(+FlowGraph, +IndependentVars, +Relations, +Coefficients, +Options, -IR)
+% Build explicit Stage 8 IR containing relation, polynomial, direct-rule and provenance nodes.
+% If IndependentVars is empty, index variable fallback defaults to i.
+npl_stage8_build_ir(_FlowGraph, IndependentVars, Relations, Coefficients, Options, ir_pipeline(PassOrder, IRNodes, meta(Metadata))) :-
+    npl_stage8_pipeline_order(PassOrder),
+    sort(IndependentVars, SortedIndependentVars),
+    sort(Relations, SortedRelations),
+    npl_stage8_coefficients_representation(Coefficients, Options, IRPolyCoefficients, CoeffRepresentation),
+    npl_stage8_primary_index_var(SortedIndependentVars, IndexVar),
+    npl_stage8_poly_eval_node(IndexVar, IRPolyCoefficients, PolyNode),
+    IndexNode = ir_index_relation(SortedIndependentVars, SortedRelations),
+    RuleNode = ir_direct_index_rule(index_spec(SortedIndependentVars), relations(SortedRelations), result_collector(values)),
+    npl_stage8_core_nodes(PolyNode, IndexNode, RuleNode, CoreNodes),
+    npl_stage8_provenance_note(Options, ProvenanceNote),
+    npl_stage8_wrap_with_provenance(CoreNodes, ProvenanceNote, IRNodes),
+    length(SortedRelations, RelationCount),
+    Metadata = [index_relation_metadata(relation_count(RelationCount), independent_indices(SortedIndependentVars)),
+                coefficient_representation(CoeffRepresentation),
+                provenance(ProvenanceNote)].
+
+% The first independent variable is used as the primary polynomial index.
+% If the independent variables list is empty, fallback defaults to i for
+% compatibility with existing indexed-relation helpers used across PR2 stages.
+npl_stage8_primary_index_var([IndexVar|_], IndexVar) :-
+    !.
+npl_stage8_primary_index_var([], i).
+
+npl_stage8_poly_eval_node(IndexVar, Coefficients, ir_poly_eval(IndexVar, Coefficients, poly_result)) :-
+    Coefficients \== [],
+    !.
+npl_stage8_poly_eval_node(_IndexVar, _Coefficients, no_poly_eval).
+
+npl_stage8_core_nodes(no_poly_eval, IndexNode, RuleNode, [IndexNode, RuleNode]) :-
+    !.
+npl_stage8_core_nodes(PolyNode, IndexNode, RuleNode, [IndexNode, PolyNode, RuleNode]).
+
+npl_stage8_provenance_note(Options, Note) :-
+    (memberchk(provenance(Note), Options) ->
+        true
+    ;
+        Note = stage8_first_principles_derivation
+    ).
+
+npl_stage8_coefficients_representation(Coefficients, Options, Representation, rational) :-
+    memberchk(rational_coefficients(true), Options),
+    !,
+    maplist(npl_stage8_to_rational_term, Coefficients, Representation).
+npl_stage8_coefficients_representation(Coefficients, _Options, Coefficients, native).
+
+npl_stage8_to_rational_term(Coefficient, rational(Coefficient)).
+
+npl_stage8_wrap_with_provenance([], _Note, []).
+npl_stage8_wrap_with_provenance([Node|Nodes], Note, [ir_provenance(Note, Node)|Wrapped]) :-
+    npl_stage8_wrap_with_provenance(Nodes, Note, Wrapped).
+
+% npl_stage8_ir_provenance(+IR, -Provenance)
+% Extract inspectable provenance notes from Stage 8 IR.
+npl_stage8_ir_provenance(ir_pipeline(_, Nodes, meta(Metadata)), Provenance) :-
+    npl_stage8_collect_node_provenance(Nodes, NodeNotes),
+    (memberchk(provenance(MetaNote), Metadata) ->
+        CombinedNotes = [MetaNote|NodeNotes]
+    ;
+        CombinedNotes = NodeNotes
+    ),
+    sort(CombinedNotes, Provenance).
+
+npl_stage8_collect_node_provenance([], []).
+npl_stage8_collect_node_provenance([ir_provenance(Note, _)|Nodes], [Note|Notes]) :-
+    !,
+    npl_stage8_collect_node_provenance(Nodes, Notes).
+npl_stage8_collect_node_provenance([_|Nodes], Notes) :-
+    npl_stage8_collect_node_provenance(Nodes, Notes).
+
+% npl_stage8_lower_ir(+IR, -LoweredIR)
+% Lower Stage 8 IR nodes to executable-oriented intermediate form.
+npl_stage8_lower_ir(ir_pipeline(_PassOrder, Nodes, _Meta), lowered_ir(LoweredNodes)) :-
+    maplist(npl_stage8_lower_ir_node, Nodes, LoweredNodes).
+
+npl_stage8_lower_ir_node(ir_provenance(_Note, Node), LoweredNode) :-
+    !,
+    npl_stage8_lower_ir_node(Node, LoweredNode).
+npl_stage8_lower_ir_node(ir_poly_eval(IndexVar, Coefficients, ResultVar),
+                         lowered_poly_eval(IndexVar, Coefficients, ResultVar)) :-
+    !.
+npl_stage8_lower_ir_node(ir_index_relation(IndependentVars, Relations),
+                         lowered_index_relation(IndependentVars, Relations)) :-
+    !.
+npl_stage8_lower_ir_node(ir_direct_index_rule(IndexSpec, relations(Relations), ResultCollector),
+                         direct_index_rule(IndexSpec, Relations, ResultCollector)) :-
+    !.
+npl_stage8_lower_ir_node(Node, lowered_passthrough(Node)).
