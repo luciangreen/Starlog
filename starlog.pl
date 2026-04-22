@@ -2243,3 +2243,26 @@ npl_stage9_assignment_neuro(assign(Name, Expr), neuro_assign(Name, Expr)).
 % One-step Stage 9 entrypoint from IR to emitted neurocode.
 npl_stage9_compile_ir(IROrLoweredIR, Neurocode) :-
     npl_stage9_emit_neurocode(IROrLoweredIR, Neurocode).
+
+% ============================================================
+% NeuroProlog PR2 Stage 10 helpers (Starlog integration)
+% ============================================================
+
+% npl_stage10_integration_option(-Option)
+% Stage 10 decision: Option B (port and align). Starlog remains canonical for
+% Gaussian elimination, and NeuroProlog-facing predicates align to this core.
+npl_stage10_integration_option(option_b_port_and_align).
+
+% npl_stage10_gaussian_canonical_repository(-Repository)
+% Canonical repository for Gaussian elimination behaviour and maintenance.
+npl_stage10_gaussian_canonical_repository(starlog).
+
+% npl_stage10_gaussian_alignment(-Alignment)
+% Inspectable mapping of NeuroProlog-facing surfaces to Starlog Gaussian core.
+% If this logic is copied elsewhere, docs must state Starlog as canonical.
+npl_stage10_gaussian_alignment([
+    canonical_module(gaussian_elimination),
+    npl_gaussian_elimination_3_uses(gaussian_elimination_3),
+    npl_solve_polynomial_coeffs_3_uses(npl_gaussian_elimination_3),
+    stage9_codegen_uses(npl_gaussian_elimination_3)
+]).
