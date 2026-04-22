@@ -446,7 +446,7 @@ Starlog includes a Stage 4/5-compatible indexed tracing surface for first-princi
 
 For polynomial indexed relations, coefficient solving uses Gaussian elimination through the existing PR2 polynomial pipeline.
 
-Stage 5 rule: named structural labels (for example diagonal/row/column style labels) are not treated as dedicated optimization classes. They are handled through the same general first-principles symbolic tracing and relation reconstruction pipeline.
+- Stage 5 rule: named structural labels (for example diagonal/row/column style labels) are not treated as dedicated optimization classes. They are handled through the same general first-principles symbolic tracing and relation reconstruction pipeline.
 
 #### Template Evaluation
 
