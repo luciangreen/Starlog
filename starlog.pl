@@ -2324,3 +2324,53 @@ npl_stage11_readme_requirements([
     named_structural_cases_not_hardcoded_design_basis,
     unsupported_or_ambiguous_cases_remain_unchanged
 ]).
+
+% ============================================================
+% NeuroProlog PR2 Stage 12 helpers (safety and correctness rules)
+% ============================================================
+
+% npl_stage12_must_transform_when(-Conditions)
+% Conditions that must hold before applying an optimisation transform.
+npl_stage12_must_transform_when([
+    variable_correspondences_explicit,
+    independent_variables_identifiable,
+    predicates_reduce_to_pattern_matching_plus_irreducible_commands,
+    polynomial_formulas_solved_by_gaussian_elimination_where_applicable,
+    validation_succeeds,
+    observable_behaviour_preserved,
+    eliminated_intermediate_structures_not_needed_elsewhere
+]).
+
+% npl_stage12_must_not_transform_when(-Conditions)
+% Conditions that force a transform to be rejected.
+npl_stage12_must_not_transform_when([
+    variable_identity_ambiguous,
+    predicates_impure,
+    reduction_to_supported_primitives_failed,
+    index_relationships_not_cleanly_reconstructed,
+    polynomial_validation_failed,
+    output_multiplicity_or_ordering_changes_unjustified,
+    full_structure_materialisation_observably_required
+]).
+
+% npl_stage12_transform_decision(+ConditionFacts, -Decision)
+% Resolve whether a transform is allowed from explicit condition facts.
+% ConditionFacts is a list of Condition-Boolean pairs.
+npl_stage12_transform_decision(ConditionFacts, Decision) :-
+    npl_stage12_must_not_transform_when(MustNotConditions),
+    ( member(Condition, MustNotConditions),
+      npl_stage12_condition_true(ConditionFacts, Condition) ->
+        Decision = reject(Condition)
+    ;
+      npl_stage12_must_transform_when(MustConditions),
+      ( member(Condition, MustConditions),
+        \+ npl_stage12_condition_true(ConditionFacts, Condition) ->
+            Decision = reject(missing_required_condition(Condition))
+      ;
+            Decision = allow_transform
+      )
+    ).
+
+npl_stage12_condition_true(ConditionFacts, Condition) :-
+    memberchk(Condition-Value, ConditionFacts),
+    Value == true.
