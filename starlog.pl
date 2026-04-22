@@ -1905,13 +1905,13 @@ npl_collect_formula_samples(flow(Pairs), _Var, Pairs) :-
 npl_collect_formula_samples(Relations, IndependentVar, SamplesByRelation) :-
     is_list(Relations),
     npl_max_sample_count(MaxSamples),
-    !,
     findall(Name-Samples,
         ( member(Name-RelationExpr, Relations),
           nonvar(RelationExpr),
           npl_relation_expr_samples(RelationExpr, IndependentVar, 1, MaxSamples, Samples)
         ),
-        SamplesByRelation).
+        SamplesByRelation),
+    !.
 npl_collect_formula_samples(_, _, []).
 
 npl_relation_expr_samples(_Expr, _IndexAtom, Index, MaxSamples, []) :-
@@ -1919,9 +1919,9 @@ npl_relation_expr_samples(_Expr, _IndexAtom, Index, MaxSamples, []) :-
     !.
 npl_relation_expr_samples(Expr, IndexAtom, Index, MaxSamples, [Index-Value|Rest]) :-
     npl_eval_relation_expr_with_index(Expr, IndexAtom, Index, Value),
-    !,
     NextIndex is Index + 1,
-    npl_relation_expr_samples(Expr, IndexAtom, NextIndex, MaxSamples, Rest).
+    npl_relation_expr_samples(Expr, IndexAtom, NextIndex, MaxSamples, Rest),
+    !.
 npl_relation_expr_samples(_, _, _, _, []).
 
 npl_validate_direct_rule(OriginalGoal, DirectRule, Result) :-
@@ -1967,7 +1967,8 @@ npl_eval_relation_expr_with_index(Expr, IndexAtom, IndexValue, Value) :-
     maplist(=(IndexValue), Vars),
     Value is ExprCopy.
 
-% Backward-compatible default: treat i as the independent index symbol.
+% Backward-compatible default for legacy callers; new code should prefer
+% npl_substitute_index_atom/4 with an explicit IndexAtom.
 npl_substitute_index_atom(Expr, X, Substituted) :-
     npl_substitute_index_atom(Expr, i, X, Substituted).
 
