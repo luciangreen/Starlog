@@ -451,6 +451,8 @@ For polynomial indexed relations, coefficient solving uses Gaussian elimination 
 - Stage 9 adds code generation and neurocode emission through `npl_stage9_generate_code/2`, `npl_stage9_emit_neurocode/2`, and `npl_stage9_compile_ir/2`, including closed-form polynomial emission and direct indexed loop reconstruction.
 - Stage 10 documents Starlog integration through `npl_stage10_integration_option/1`, `npl_stage10_gaussian_canonical_repository/1`, and `npl_stage10_gaussian_alignment/1`, selecting Option B (port and align) with Starlog as the canonical Gaussian elimination source.
 - Stage 11 documents the rewrite requirements through `npl_stage11_documentation_scope/1`, `npl_stage11_gaussian_recursion_requirements/1`, `npl_stage11_optimisation_rule_categories/1`, `npl_stage11_example_requirements/1`, and `npl_stage11_readme_requirements/1`.
+- Stage 12 encodes safety and correctness gates through `npl_stage12_must_transform_when/1`, `npl_stage12_must_not_transform_when/1`, and `npl_stage12_transform_decision/2`.
+- Stage 13 aligns self-hosting and rebuild flows through `npl_stage13_toggleable_passes/1`, `npl_stage13_effective_pass_toggles/2`, `npl_stage13_rebuild_log/3`, `npl_stage13_formula_provenance/2`, and `npl_stage13_self_check/2`.
 
 Stage 11 documentation statements:
 
