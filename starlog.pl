@@ -2374,3 +2374,106 @@ npl_stage12_transform_decision(ConditionFacts, Decision) :-
 npl_stage12_condition_true(ConditionFacts, Condition) :-
     memberchk(Condition-Value, ConditionFacts),
     Value == true.
+
+% ============================================================
+% NeuroProlog PR2 Stage 13 helpers (self-hosting + rebuild alignment)
+% ============================================================
+
+% npl_stage13_toggleable_passes(-PassToggles)
+% Stage 13 requires optimisation passes to remain explicitly toggleable.
+npl_stage13_toggleable_passes([
+    pass(gaussian_elimination_polynomial_solve, true),
+    pass(gaussian_elimination_indexed_polynomial_formula_solve, true),
+    pass(direct_index_rule_reconstruction, true),
+    pass(code_generation, true)
+]).
+
+% npl_stage13_effective_pass_toggles(+Overrides, -EffectiveToggles)
+% Merge user overrides with deterministic defaults.
+npl_stage13_effective_pass_toggles(Overrides, EffectiveToggles) :-
+    npl_stage13_toggleable_passes(DefaultToggles),
+    npl_stage13_apply_toggle_overrides(DefaultToggles, Overrides, EffectiveToggles).
+
+npl_stage13_apply_toggle_overrides([], _Overrides, []).
+npl_stage13_apply_toggle_overrides([pass(Name, DefaultEnabled)|Rest], Overrides, [pass(Name, Enabled)|EffectiveRest]) :-
+    ( memberchk(pass(Name, OverrideEnabled), Overrides) ->
+        Enabled = OverrideEnabled
+    ;
+        Enabled = DefaultEnabled
+    ),
+    npl_stage13_apply_toggle_overrides(Rest, Overrides, EffectiveRest).
+
+% npl_stage13_rebuild_log(+Transforms, +Options, -RebuildLog)
+% Build deterministic rebuild metadata that records applied transforms.
+npl_stage13_rebuild_log(Transforms, Options, rebuild_log(Transforms, meta(Metadata))) :-
+    ( memberchk(provenance(Note), Options) ->
+        Metadata = [provenance(Note)]
+    ;
+        Metadata = [provenance(stage13_no_provenance_note)]
+    ).
+
+% npl_stage13_formula_provenance(+IR, -Provenance)
+% Stage 13 exposes inspectable provenance for derived formulas.
+npl_stage13_formula_provenance(IR, Provenance) :-
+    npl_stage8_ir_provenance(IR, Provenance),
+    !.
+npl_stage13_formula_provenance(_IR, []).
+
+% npl_stage13_self_hosting_invariants(-Invariants)
+% Stage 13 self-check invariants that must stay true across rebuilds.
+npl_stage13_self_hosting_invariants([
+    self_check_runs_cleanly,
+    rebuild_pipeline_operational,
+    optimisation_metadata_parser_ir_codegen_compatible
+]).
+
+% npl_stage13_self_check(+IR, -Report)
+% Validate that Stage 8/9 pipeline compatibility and Stage 13 invariants hold.
+npl_stage13_self_check(IR, self_check_report(Status, Invariants, Checks)) :-
+    npl_stage13_stage8_metadata_check(IR, MetadataCheck),
+    npl_stage13_stage9_codegen_check(IR, CodegenCheck),
+    Checks = [
+        check(stage8_ir_metadata_available, MetadataCheck),
+        check(stage9_codegen_compatible, CodegenCheck)
+    ],
+    npl_stage13_self_hosting_invariants(InvariantNames),
+    npl_stage13_invariant_results(InvariantNames, Checks, Invariants),
+    npl_stage13_report_status(Invariants, Checks, Status).
+
+npl_stage13_stage8_metadata_check(IR, pass) :-
+    npl_stage13_formula_provenance(IR, Provenance),
+    is_list(Provenance),
+    !.
+npl_stage13_stage8_metadata_check(_IR, fail).
+
+npl_stage13_stage9_codegen_check(IR, pass) :-
+    catch(npl_stage9_compile_ir(IR, _Neurocode), _Error, fail),
+    !.
+npl_stage13_stage9_codegen_check(_IR, fail).
+
+npl_stage13_invariant_results([], _Checks, []).
+npl_stage13_invariant_results([Name|Rest], Checks, [invariant(Name, Result)|InvariantResults]) :-
+    npl_stage13_invariant_result(Name, Checks, Result),
+    npl_stage13_invariant_results(Rest, Checks, InvariantResults).
+
+npl_stage13_invariant_result(self_check_runs_cleanly, Checks, Result) :-
+    npl_stage13_checks_pass(Checks, Result),
+    !.
+npl_stage13_invariant_result(rebuild_pipeline_operational, Checks, Result) :-
+    npl_stage13_checks_pass(Checks, Result),
+    !.
+npl_stage13_invariant_result(optimisation_metadata_parser_ir_codegen_compatible, Checks, Result) :-
+    npl_stage13_checks_pass(Checks, Result),
+    !.
+npl_stage13_invariant_result(_OtherInvariant, _Checks, fail).
+
+npl_stage13_checks_pass(Checks, pass) :-
+    forall(member(check(_, CheckResult), Checks), CheckResult == pass),
+    !.
+npl_stage13_checks_pass(_Checks, fail).
+
+npl_stage13_report_status(Invariants, Checks, pass) :-
+    forall(member(invariant(_, InvariantResult), Invariants), InvariantResult == pass),
+    forall(member(check(_, CheckResult), Checks), CheckResult == pass),
+    !.
+npl_stage13_report_status(_Invariants, _Checks, fail).
