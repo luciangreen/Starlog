@@ -1584,11 +1584,18 @@ npl_validate_polynomial_formula(Samples, Expr, Var, Result) :-
     ).
 
 npl_fit_polynomial(Samples, Var, Coeffs, Expr) :-
+    npl_discover_polynomial_fit(Samples, Var, Coeffs, Expr, accepted).
+
+npl_discover_polynomial_fit(Samples, Var, Coeffs, Expr, Result) :-
     npl_detect_polynomial_degree(Samples, Var, Degree),
     npl_solve_polynomial_coeffs(Samples, Degree, Coeffs),
-    samples_xy(Samples, Xs, Ys),
-    coefficients_match_samples(Xs, Ys, Coeffs),
-    npl_reconstruct_polynomial(Var, Coeffs, Expr).
+    npl_validate_polynomial_fit(Samples, Coeffs, Var, FitResult),
+    (FitResult == accepted ->
+        npl_reconstruct_polynomial(Var, Coeffs, Expr),
+        Result = accepted
+    ;
+        Result = rejected_non_polynomial
+    ).
 
 samples_xy([], [], []).
 samples_xy([X-Y|Rest], [X|Xs], [Y|Ys]) :-
@@ -1666,10 +1673,9 @@ npl_collect_goal_samples(_, _, _, _, _, []).
 % npl_validate_polynomial_fit(+Samples, +Coefficients, +Var, -Result)
 % Validate that solved coefficients fit all samples.
 npl_validate_polynomial_fit(Samples, Coefficients, Var, Result) :-
-    npl_reconstruct_polynomial(Var, Coefficients, Expr),
+    npl_reconstruct_polynomial(Var, Coefficients, _Expr),
     samples_xy(Samples, Xs, Ys),
-    (coefficients_match_samples(Xs, Ys, Coefficients),
-     npl_validate_polynomial_formula(Samples, Expr, Var, accepted) ->
+    (coefficients_match_samples(Xs, Ys, Coefficients) ->
         Result = accepted
     ;
         Result = rejected_non_polynomial
@@ -1682,10 +1688,8 @@ npl_rewrite_recurrence_to_closed_form(Goal, _Var, _Expr, rejected_impure) :-
 npl_rewrite_recurrence_to_closed_form(Goal, Var, Expr, accepted) :-
     npl_max_sample_count(MaxSamples),
     npl_extract_numeric_samples(Goal, Var, MaxSamples, Samples),
-    npl_detect_polynomial_degree(Samples, Var, Degree),
-    npl_solve_polynomial_coeffs(Samples, Degree, Coeffs),
-    npl_validate_polynomial_fit(Samples, Coeffs, Var, accepted),
-    npl_reconstruct_polynomial(Var, Coeffs, Expr),
+    npl_discover_polynomial_fit(Samples, Var, _Coeffs, Expr, DiscoverResult),
+    DiscoverResult == accepted,
     !.
 npl_rewrite_recurrence_to_closed_form(_Goal, _Var, _Expr, rejected_non_polynomial).
 
