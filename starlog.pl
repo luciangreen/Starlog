@@ -1796,12 +1796,16 @@ npl_emit_direct_indexed_rule(FlowGraph, IndependentVars, Relations, direct_rule(
 
 npl_reconstruct_direct_indexed_rule(Relations, Coefficients, direct_index_rule(Relations, coefficient_metadata(Coefficients))) :-
     is_list(Relations),
+    npl_numeric_coefficients_list(Coefficients),
+    !.
+npl_reconstruct_direct_indexed_rule(Relations, SecondArg, direct_index_rule(Relations)) :-
+    is_list(Relations),
+    \+ npl_numeric_coefficients_list(SecondArg).
+
+npl_numeric_coefficients_list(Coefficients) :-
     is_list(Coefficients),
     Coefficients \== [],
-    forall(member(Coeff, Coefficients), number(Coeff)),
-    !.
-npl_reconstruct_direct_indexed_rule(Relations, _IndependentVars, direct_index_rule(Relations)) :-
-    is_list(Relations).
+    forall(member(Coeff, Coefficients), number(Coeff)).
 
 npl_reconstruct_index_relations(flow_graph(_, _, Pairs, _), IndependentVars, Relations) :-
     !,
