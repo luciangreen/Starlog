@@ -2522,6 +2522,7 @@ npl_stage14_concise_agent_prompt('derive affine and polynomial formulas for inde
 % npl_ir_to_annotated_source_text(+IR, +Context, -Text)
 % Regenerate inspectable source-like output with contextual annotations.
 npl_ir_to_annotated_source_text(IR, Context, Text) :-
+    npl_stage7_validate_annotated_ir(IR),
     npl_stage9_generate_code(IR, generated_program(Statements)),
     npl_stage6_collect_annotations(IR, Context, AnnotationLines),
     with_output_to(string(Text),
@@ -2530,11 +2531,95 @@ npl_ir_to_annotated_source_text(IR, Context, Text) :-
 % npl_ir_to_annotated_source_file(+IR, +Context, +OutFile)
 % Write annotated regenerated source text to OutFile.
 npl_ir_to_annotated_source_file(IR, Context, OutFile) :-
+    npl_stage7_validate_output_file(OutFile),
     npl_ir_to_annotated_source_text(IR, Context, Text),
     setup_call_cleanup(
         open(OutFile, write, Stream),
         format(Stream, '~s', [Text]),
         close(Stream)
+    ).
+
+% ============================================================
+% NeuroProlog PR3 Stage 7 helpers (error handling)
+% ============================================================
+
+npl_stage7_validate_annotated_ir(IR) :-
+    npl_stage7_ir_nodes(IR, Nodes),
+    maplist(npl_stage7_validate_ir_node, Nodes).
+
+npl_stage7_ir_nodes(ir_pipeline(_PassOrder, Nodes, meta(_Metadata)), Nodes) :-
+    !,
+    ( is_list(Nodes) ->
+        true
+    ;
+        throw(error(type_error(list, Nodes), context(npl_ir_to_annotated_source_text/3, 'ir_pipeline nodes must be a list')))
+    ).
+npl_stage7_ir_nodes(lowered_ir(Nodes), Nodes) :-
+    !,
+    ( is_list(Nodes) ->
+        true
+    ;
+        throw(error(type_error(list, Nodes), context(npl_ir_to_annotated_source_text/3, 'lowered_ir payload must be a list')))
+    ).
+npl_stage7_ir_nodes(Nodes, Nodes) :-
+    is_list(Nodes),
+    !.
+npl_stage7_ir_nodes(IR, _Nodes) :-
+    throw(error(domain_error(npl_supported_ir_shape, IR), context(npl_ir_to_annotated_source_text/3, 'expected ir_pipeline/3, lowered_ir/1, or a list of lowered nodes'))).
+
+npl_stage7_validate_ir_node(lowered_poly_eval(_IndexVar, Coefficients, _ResultVar)) :-
+    !,
+    ( is_list(Coefficients) ->
+        true
+    ;
+        throw(error(type_error(list, Coefficients), context(npl_ir_to_annotated_source_text/3, 'lowered_poly_eval coefficients must be a list')))
+    ).
+npl_stage7_validate_ir_node(lowered_index_relation(IndependentVars, Relations)) :-
+    !,
+    ( is_list(IndependentVars) ->
+        true
+    ;
+        throw(error(type_error(list, IndependentVars), context(npl_ir_to_annotated_source_text/3, 'lowered_index_relation independent vars must be a list')))
+    ),
+    ( is_list(Relations) ->
+        true
+    ;
+        throw(error(type_error(list, Relations), context(npl_ir_to_annotated_source_text/3, 'lowered_index_relation relations must be a list')))
+    ).
+npl_stage7_validate_ir_node(direct_index_rule(_IndexSpec, Relations, result_collector(_Collector))) :-
+    !,
+    ( is_list(Relations) ->
+        true
+    ;
+        throw(error(type_error(list, Relations), context(npl_ir_to_annotated_source_text/3, 'direct_index_rule relations must be a list')))
+    ).
+npl_stage7_validate_ir_node(lowered_passthrough(Node)) :-
+    !,
+    nonvar(Node).
+npl_stage7_validate_ir_node(ir_provenance(_Source, Node)) :-
+    !,
+    npl_stage7_validate_ir_node(Node).
+npl_stage7_validate_ir_node(ir_index_relation(IndependentVars, Relations)) :-
+    !,
+    npl_stage7_validate_ir_node(lowered_index_relation(IndependentVars, Relations)).
+npl_stage7_validate_ir_node(ir_poly_eval(IndexVar, Coefficients, ResultVar)) :-
+    !,
+    npl_stage7_validate_ir_node(lowered_poly_eval(IndexVar, Coefficients, ResultVar)).
+npl_stage7_validate_ir_node(ir_direct_index_rule(IndexSpec, relations(Relations), ResultCollector)) :-
+    !,
+    npl_stage7_validate_ir_node(direct_index_rule(IndexSpec, Relations, ResultCollector)).
+npl_stage7_validate_ir_node(Node) :-
+    throw(error(domain_error(npl_supported_ir_node, Node), context(npl_ir_to_annotated_source_text/3, 'unsupported IR node for annotated source generation'))).
+
+npl_stage7_validate_output_file(OutFile) :-
+    ( var(OutFile) ->
+        throw(error(instantiation_error, context(npl_ir_to_annotated_source_file/3, 'output file must be instantiated')))
+    ; string(OutFile) ->
+        true
+    ; atom(OutFile) ->
+        true
+    ;
+        throw(error(type_error(text, OutFile), context(npl_ir_to_annotated_source_file/3, 'output file must be an atom or string')))
     ).
 
 npl_stage6_write_annotated_source([], Statements) :-
