@@ -1904,12 +1904,11 @@ npl_collect_formula_samples(flow(Pairs), _Var, Pairs) :-
     !.
 npl_collect_formula_samples(Relations, IndependentVar, SamplesByRelation) :-
     is_list(Relations),
-    member(_Name-Expr, Relations),
-    nonvar(Expr),
     npl_max_sample_count(MaxSamples),
     !,
     findall(Name-Samples,
         ( member(Name-RelationExpr, Relations),
+          nonvar(RelationExpr),
           npl_relation_expr_samples(RelationExpr, IndependentVar, 1, MaxSamples, Samples)
         ),
         SamplesByRelation).
@@ -1968,6 +1967,7 @@ npl_eval_relation_expr_with_index(Expr, IndexAtom, X, Value) :-
     maplist(=(X), Vars),
     Value is ExprCopy.
 
+% Backward-compatible default: treat i as the independent index symbol.
 npl_substitute_index_atom(Expr, X, Substituted) :-
     npl_substitute_index_atom(Expr, i, X, Substituted).
 

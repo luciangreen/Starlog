@@ -31,7 +31,7 @@ test(stage6_collect_samples_from_relations) :-
     assertion(member(z-[1-5,2-7,3-9|_], SamplesByRelation)),
     assertion(member(u-[1-2,2-6,3-12|_], SamplesByRelation)).
 
-test(stage6_polynomial_coefficients_for_indexed_variable_use_gaussian) :-
+test(stage6_polynomial_coefficients_via_gaussian_elimination) :-
     Goal = flow([u-[1-2,2-6,3-12]]),
     starlog:npl_collect_formula_samples(Goal, i, SamplesByRelation),
     member(u-Samples, SamplesByRelation),
