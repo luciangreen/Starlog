@@ -449,6 +449,7 @@ For polynomial indexed relations, coefficient solving uses Gaussian elimination 
 - Stage 5 rule: named structural labels (for example diagonal/row/column style labels) are not treated as dedicated optimization classes. They are handled through the same general first-principles symbolic tracing and relation reconstruction pipeline.
 - Stage 8 adds explicit IR and deterministic pipeline support through `npl_stage8_pipeline_order/1`, `npl_stage8_build_ir/6`, `npl_stage8_ir_provenance/2`, and `npl_stage8_lower_ir/2`, including inspectable provenance and optional rational coefficient metadata.
 - Stage 9 adds code generation and neurocode emission through `npl_stage9_generate_code/2`, `npl_stage9_emit_neurocode/2`, and `npl_stage9_compile_ir/2`, including closed-form polynomial emission and direct indexed loop reconstruction.
+- Stage 10 documents Starlog integration through `npl_stage10_integration_option/1`, `npl_stage10_gaussian_canonical_repository/1`, and `npl_stage10_gaussian_alignment/1`, selecting Option B (port and align) with Starlog as the canonical Gaussian elimination source.
 
 #### Template Evaluation
 
