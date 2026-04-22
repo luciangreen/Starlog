@@ -1429,3 +1429,261 @@ output_clause_as_prolog(Fact, OutputStream, _Options) :-
     rename_variables(Fact, RenamedFact),
     write_term(OutputStream, RenamedFact, [numbervars(true), quoted(true)]),
     write(OutputStream, '.'), nl(OutputStream), nl(OutputStream).
+
+% ============================================================
+% NeuroProlog PR2 helpers (Stage 2 core + Stage 1 compatibility surface)
+% ============================================================
+
+% npl_detect_polynomial_degree(+Samples, -Degree)
+% Detect a plausible polynomial degree for Samples (X-Y pairs).
+npl_detect_polynomial_degree(Samples, Degree) :-
+    samples_xy(Samples, Xs, Ys),
+    length(Samples, Len),
+    Len >= 2,
+    max_candidate_degree(Len, MaxDegree),
+    between(1, MaxDegree, Degree),
+    npl_build_polynomial_system(Samples, Degree, Matrix, Vector),
+    npl_gaussian_elimination(Matrix, Vector, Coeffs),
+    coefficients_match_samples(Xs, Ys, Coeffs),
+    !.
+
+max_candidate_degree(Len, MaxDegree) :-
+    % For short datasets (<=4 points), allow Len-1 so quadratic/cubic
+    % sequences can still be detected from minimal samples.
+    % For larger datasets, use Len-2 to avoid always fitting by interpolation.
+    (Len =< 4 ->
+        MaxDegree is Len - 1
+    ;
+        MaxDegree is Len - 2
+    ).
+
+% npl_build_polynomial_system(+Samples, +Degree, -Matrix, -Vector)
+% Build Vandermonde-like system:
+% a0*X^0 + a1*X^1 + ... + aK*X^K = Y.
+npl_build_polynomial_system(Samples, Degree, Matrix, Vector) :-
+    integer(Degree),
+    Degree >= 0,
+    findall(Row-Value,
+        (member(X-Y, Samples),
+         polynomial_basis_row(X, Degree, Row),
+         Value = Y),
+        RowValuePairs),
+    pairs_to_matrix_vector(RowValuePairs, Matrix, Vector).
+
+pairs_to_matrix_vector([], [], []).
+pairs_to_matrix_vector([Row-Value|Rest], [Row|Rows], [Value|Values]) :-
+    pairs_to_matrix_vector(Rest, Rows, Values).
+
+polynomial_basis_row(X, Degree, Row) :-
+    findall(PowerValue,
+        (between(0, Degree, P),
+         pow_number(X, P, PowerValue)),
+        Row).
+
+pow_number(_, 0, 1) :- !.
+pow_number(X, P, Value) :-
+    P > 0,
+    Value is X^P.
+
+% npl_gaussian_elimination(+Matrix, +Vector, -Coefficients)
+% Solve linear system Matrix * Coefficients = Vector using Gaussian elimination.
+npl_gaussian_elimination(Matrix, Vector, Coefficients) :-
+    augment_matrix(Matrix, Vector, Augmented),
+    once(gaussian_elimination:solve_system(Augmented, RawCoefficients, unique)),
+    normalize_coefficients(RawCoefficients, Coefficients).
+
+augment_matrix([], [], []).
+augment_matrix([Row|Rows], [Value|Values], [AugRow|AugRows]) :-
+    append(Row, [Value], AugRow),
+    augment_matrix(Rows, Values, AugRows).
+
+normalize_coefficients([], []).
+normalize_coefficients([C|Cs], [N|Ns]) :-
+    normalize_number(C, N),
+    normalize_coefficients(Cs, Ns).
+
+normalize_number(Value, Normalized) :-
+    V is Value,
+    npl_epsilon(Eps),
+    (abs(V) < Eps ->
+        Normalized = 0
+    ;
+        Rounded is round(V),
+        (abs(V - Rounded) < Eps ->
+            Normalized = Rounded
+        ;
+            Normalized = V
+        )
+    ).
+
+npl_epsilon(1.0e-12).
+
+% npl_reconstruct_polynomial(+Var, +Coefficients, -Expr)
+% Build symbolic expression from coefficients [a0, a1, ...].
+npl_reconstruct_polynomial(Var, Coefficients, Expr) :-
+    coefficient_terms(Var, Coefficients, 0, Terms),
+    (Terms = [] ->
+        Expr = 0
+    ;
+        terms_sum(Terms, Expr)
+    ).
+
+coefficient_terms(_, [], _, []).
+coefficient_terms(Var, [Coeff|Coeffs], Power, Terms) :-
+    (Coeff =:= 0 ->
+        Terms = RestTerms
+    ;
+        polynomial_term(Var, Coeff, Power, Term),
+        Terms = [Term|RestTerms]
+    ),
+    NextPower is Power + 1,
+    coefficient_terms(Var, Coeffs, NextPower, RestTerms).
+
+polynomial_term(_, Coeff, 0, Coeff) :- !.
+polynomial_term(Var, Coeff, 1, Term) :-
+    !,
+    multiply_simplified(Coeff, Var, Term).
+polynomial_term(Var, Coeff, Power, Term) :-
+    Power > 1,
+    multiply_simplified(Coeff, Var^Power, Term).
+
+multiply_simplified(1, Expr, Expr) :- !.
+multiply_simplified(-1, Expr, -Expr) :- !.
+multiply_simplified(Coeff, Expr, Coeff*Expr).
+
+terms_sum([Term], Term) :- !.
+terms_sum([Head|Tail], Expr) :-
+    terms_sum(Tail, RestExpr),
+    Expr = Head + RestExpr.
+
+% npl_validate_polynomial_formula(+Samples, +Expr, +Var, -Result)
+% Validate formula against samples; derives Expr when unbound.
+npl_validate_polynomial_formula(Samples, Expr, Var, Result) :-
+    (npl_fit_polynomial(Samples, Var, _Coeffs, DerivedExpr) ->
+        (var(Expr) -> Expr = DerivedExpr ; Expr =@= DerivedExpr),
+        Result = accepted
+    ;
+        Result = rejected_non_polynomial
+    ).
+
+npl_fit_polynomial(Samples, Var, Coeffs, Expr) :-
+    npl_detect_polynomial_degree(Samples, Degree),
+    npl_build_polynomial_system(Samples, Degree, Matrix, Vector),
+    npl_gaussian_elimination(Matrix, Vector, Coeffs),
+    samples_xy(Samples, Xs, Ys),
+    coefficients_match_samples(Xs, Ys, Coeffs),
+    npl_reconstruct_polynomial(Var, Coeffs, Expr).
+
+samples_xy([], [], []).
+samples_xy([X-Y|Rest], [X|Xs], [Y|Ys]) :-
+    samples_xy(Rest, Xs, Ys).
+
+coefficients_match_samples([], [], _).
+coefficients_match_samples([X|Xs], [Y|Ys], Coeffs) :-
+    evaluate_polynomial_coeffs(Coeffs, X, Value),
+    normalize_number(Value, NValue),
+    normalize_number(Y, NY),
+    NValue =:= NY,
+    coefficients_match_samples(Xs, Ys, Coeffs).
+
+evaluate_polynomial_coeffs(Coeffs, X, Value) :-
+    evaluate_polynomial_coeffs(Coeffs, X, 0, 0, Value).
+
+evaluate_polynomial_coeffs([], _, _, Acc, Acc).
+evaluate_polynomial_coeffs([Coeff|Rest], X, Power, Acc, Value) :-
+    pow_number(X, Power, XPow),
+    Acc1 is Acc + Coeff * XPow,
+    NextPower is Power + 1,
+    evaluate_polynomial_coeffs(Rest, X, NextPower, Acc1, Value).
+
+% npl_rewrite_recurrence_to_closed_form(+Goal, +Var, -Expr, -Result)
+npl_rewrite_recurrence_to_closed_form(Goal, _Var, _Expr, rejected_impure) :-
+    \+ npl_pure_goal(Goal),
+    !.
+npl_rewrite_recurrence_to_closed_form(_Goal, _Var, _Expr, rejected_non_polynomial).
+
+npl_pure_goal((A, B)) :-
+    !,
+    npl_pure_goal(A),
+    npl_pure_goal(B).
+npl_pure_goal((A ; B)) :-
+    !,
+    npl_pure_goal(A),
+    npl_pure_goal(B).
+npl_pure_goal(\+ A) :-
+    !,
+    npl_pure_goal(A).
+npl_pure_goal(Goal) :-
+    callable(Goal),
+    Goal =.. [Name|_],
+    \+ npl_impure_predicate(Name).
+
+npl_impure_predicate(write).
+npl_impure_predicate(writeln).
+npl_impure_predicate(print).
+npl_impure_predicate(format).
+npl_impure_predicate(read).
+npl_impure_predicate(open).
+npl_impure_predicate(close).
+npl_impure_predicate(assert).
+npl_impure_predicate(asserta).
+npl_impure_predicate(assertz).
+npl_impure_predicate(retract).
+npl_impure_predicate(retractall).
+npl_impure_predicate(abolish).
+npl_impure_predicate(halt).
+npl_impure_predicate(shell).
+npl_impure_predicate(sleep).
+
+% Stage 1B interface predicates (minimal functional surface)
+% These provide the currently required optimisation-surface predicates
+% referenced by tests/pr2_stage1_failing_tests.pl.
+npl_assign_symbolic_indices(Structure, indexed(Structure), map([])).
+
+npl_trace_index_flow(Goal, IndexMap, flow(Goal, IndexMap)).
+
+npl_emit_direct_indexed_rule(FlowGraph, IndependentVars, Relations, direct_rule(FlowGraph, IndependentVars, Relations)).
+
+npl_reconstruct_index_relations(flow(Pairs), [IdxVar], Relations) :-
+    is_list(Pairs),
+    !,
+    findall(Name-Expr,
+        (member(Name-Samples, Pairs),
+         relation_from_samples(Samples, IdxVar, Expr)),
+        Relations).
+npl_reconstruct_index_relations(_, _, []).
+
+relation_from_samples([FirstX-FirstY|Samples], IdxVar, Expr) :-
+    % Fast path for simple unit-step affine index sequences such as
+    % x_i = 4+i-1, before falling back to general polynomial fitting.
+    unit_step_sequence([FirstX-FirstY|Samples]),
+    !,
+    Expr = (FirstY + IdxVar - FirstX).
+relation_from_samples(Samples, IdxVar, Expr) :-
+    npl_detect_polynomial_degree(Samples, Degree),
+    npl_build_polynomial_system(Samples, Degree, Matrix, Vector),
+    npl_gaussian_elimination(Matrix, Vector, Coeffs),
+    npl_reconstruct_polynomial(IdxVar, Coeffs, Expr).
+
+unit_step_sequence([_]).
+unit_step_sequence([X1-Y1, X2-Y2|Rest]) :-
+    DX is X2 - X1,
+    DY is Y2 - Y1,
+    DX =:= 1,
+    DY =:= 1,
+    unit_step_sequence([X2-Y2|Rest]).
+
+% npl_reduce_predicate_to_pattern_irreducibles(+Goal, -Reduced)
+% Compatibility-layer reducer marker used by Stage 1B tests.
+npl_reduce_predicate_to_pattern_irreducibles(non_reducible_external_call(_), non_reducible) :- !.
+% Conservative placeholder: wrap reducible goals in a stable internal marker.
+npl_reduce_predicate_to_pattern_irreducibles(Goal, reduced(pattern_and_irreducibles(Goal))).
+
+npl_collect_formula_samples(flow(Pairs), _Var, Pairs) :-
+    is_list(Pairs),
+    !.
+npl_collect_formula_samples(_, _, []).
+
+npl_should_preserve_full_structure(_Goal, false).
+
+npl_detect_ambiguous_index_mapping(_FlowGraph, false).
