@@ -435,7 +435,7 @@ Result = [y, z].
 
 ### PR2 Stage 4-8 Indexed Tracing, IR, and Pipeline Helpers
 
-Starlog includes a Stage 4/5-compatible indexed tracing surface for first-principles optimisation experiments:
+Starlog includes a Stage 4-8-compatible indexed tracing surface for first-principles optimisation experiments:
 
 - `npl_assign_symbolic_indices/3` assigns inspectable symbolic paths to subterms.
 - `npl_reduce_predicate_to_pattern_irreducibles/2` reduces goals to pattern-matching and irreducible forms.

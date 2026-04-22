@@ -2050,7 +2050,8 @@ npl_stage8_build_ir(_FlowGraph, IndependentVars, Relations, Coefficients, Option
     sort(IndependentVars, SortedIndependentVars),
     sort(Relations, SortedRelations),
     npl_stage8_coefficients_representation(Coefficients, Options, IRPolyCoefficients, CoeffRepresentation),
-    npl_stage8_poly_eval_node(IRPolyCoefficients, PolyNode),
+    npl_stage8_primary_index_var(SortedIndependentVars, IndexVar),
+    npl_stage8_poly_eval_node(IndexVar, IRPolyCoefficients, PolyNode),
     IndexNode = ir_index_relation(SortedIndependentVars, SortedRelations),
     RuleNode = ir_direct_index_rule(index_spec(SortedIndependentVars), relations(SortedRelations), result_collector(values)),
     npl_stage8_core_nodes(PolyNode, IndexNode, RuleNode, CoreNodes),
@@ -2061,10 +2062,14 @@ npl_stage8_build_ir(_FlowGraph, IndependentVars, Relations, Coefficients, Option
                 coefficient_representation(CoeffRepresentation),
                 provenance(ProvenanceNote)].
 
-npl_stage8_poly_eval_node(Coefficients, ir_poly_eval(i, Coefficients, poly_result)) :-
+npl_stage8_primary_index_var([IndexVar|_], IndexVar) :-
+    !.
+npl_stage8_primary_index_var([], i).
+
+npl_stage8_poly_eval_node(IndexVar, Coefficients, ir_poly_eval(IndexVar, Coefficients, poly_result)) :-
     Coefficients \== [],
     !.
-npl_stage8_poly_eval_node(_Coefficients, no_poly_eval).
+npl_stage8_poly_eval_node(_IndexVar, _Coefficients, no_poly_eval).
 
 npl_stage8_core_nodes(no_poly_eval, IndexNode, RuleNode, [IndexNode, RuleNode]) :-
     !.
@@ -2092,13 +2097,20 @@ npl_stage8_wrap_with_provenance([Node|Nodes], Note, [ir_provenance(Note, Node)|W
 % npl_stage8_ir_provenance(+IR, -Provenance)
 % Extract inspectable provenance notes from Stage 8 IR.
 npl_stage8_ir_provenance(ir_pipeline(_, Nodes, meta(Metadata)), Provenance) :-
-    findall(Note, member(ir_provenance(Note, _), Nodes), NodeNotes),
+    npl_stage8_collect_node_provenance(Nodes, NodeNotes),
     (member(provenance(MetaNote), Metadata) ->
         append(NodeNotes, [MetaNote], Notes)
     ;
         Notes = NodeNotes
     ),
     sort(Notes, Provenance).
+
+npl_stage8_collect_node_provenance([], []).
+npl_stage8_collect_node_provenance([ir_provenance(Note, _)|Nodes], [Note|Notes]) :-
+    !,
+    npl_stage8_collect_node_provenance(Nodes, Notes).
+npl_stage8_collect_node_provenance([_|Nodes], Notes) :-
+    npl_stage8_collect_node_provenance(Nodes, Notes).
 
 % npl_stage8_lower_ir(+IR, -LoweredIR)
 % Lower Stage 8 IR nodes to executable-oriented intermediate form.
