@@ -2570,8 +2570,7 @@ npl_stage6_statement_as_term(Statement, npl_generated_statement(Statement)).
 npl_stage6_collect_annotations(IR, Context, AnnotationLines) :-
     npl_stage6_context_annotation_lines(Context, ContextLines),
     npl_stage6_ir_annotation_lines(IR, IRLines),
-    append(ContextLines, IRLines, Combined),
-    sort(Combined, AnnotationLines).
+    append(ContextLines, IRLines, AnnotationLines).
 
 npl_stage6_context_annotation_lines(Context, Lines) :-
     (is_list(Context) ->
@@ -2583,12 +2582,12 @@ npl_stage6_context_annotation_lines(Context, Lines) :-
 
 npl_stage6_context_items_to_lines([], []).
 npl_stage6_context_items_to_lines([Item|Items], Lines) :-
-    npl_stage6_context_item_line(Item, Line),
-    !,
-    Lines = [Line|Rest],
+    ( npl_stage6_context_item_line(Item, Line) ->
+        Lines = [Line|Rest]
+    ;
+        Lines = Rest
+    ),
     npl_stage6_context_items_to_lines(Items, Rest).
-npl_stage6_context_items_to_lines([_|Items], Lines) :-
-    npl_stage6_context_items_to_lines(Items, Lines).
 
 npl_stage6_context_item_line(source_file(File), Line) :-
     format(atom(Line), 'original source file: ~w', [File]).
