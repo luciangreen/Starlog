@@ -1448,6 +1448,9 @@ npl_detect_polynomial_degree(Samples, Degree) :-
     !.
 
 max_candidate_degree(Len, MaxDegree) :-
+    % For short datasets (<=4 points), allow Len-1 so quadratic/cubic
+    % sequences can still be detected from minimal samples.
+    % For larger datasets, use Len-2 to avoid always fitting by interpolation.
     (Len =< 4 ->
         MaxDegree is Len - 1
     ;
@@ -1486,7 +1489,7 @@ pow_number(X, P, Value) :-
 % Solve linear system Matrix * Coefficients = Vector using Gaussian elimination.
 npl_gaussian_elimination(Matrix, Vector, Coefficients) :-
     augment_matrix(Matrix, Vector, Augmented),
-    gaussian_elimination:solve_system(Augmented, RawCoefficients, unique),
+    once(gaussian_elimination:solve_system(Augmented, RawCoefficients, unique)),
     normalize_coefficients(RawCoefficients, Coefficients).
 
 augment_matrix([], [], []).
@@ -1501,16 +1504,19 @@ normalize_coefficients([C|Cs], [N|Ns]) :-
 
 normalize_number(Value, Normalized) :-
     V is Value,
-    (abs(V) < 1.0e-12 ->
+    npl_epsilon(Eps),
+    (abs(V) < Eps ->
         Normalized = 0
     ;
         Rounded is round(V),
-        (abs(V - Rounded) < 1.0e-12 ->
+        (abs(V - Rounded) < Eps ->
             Normalized = Rounded
         ;
             Normalized = V
         )
     ).
+
+npl_epsilon(1.0e-12).
 
 % npl_reconstruct_polynomial(+Var, +Coefficients, -Expr)
 % Build symbolic expression from coefficients [a0, a1, ...].
@@ -1553,16 +1559,20 @@ terms_sum([Head|Tail], Expr) :-
 % npl_validate_polynomial_formula(+Samples, +Expr, +Var, -Result)
 % Validate formula against samples; derives Expr when unbound.
 npl_validate_polynomial_formula(Samples, Expr, Var, Result) :-
-    (npl_detect_polynomial_degree(Samples, Degree),
-     npl_build_polynomial_system(Samples, Degree, Matrix, Vector),
-     npl_gaussian_elimination(Matrix, Vector, Coeffs),
-     samples_xy(Samples, Xs, Ys),
-     coefficients_match_samples(Xs, Ys, Coeffs) ->
-        (var(Expr) -> npl_reconstruct_polynomial(Var, Coeffs, Expr) ; true),
+    (npl_fit_polynomial(Samples, Var, _Coeffs, DerivedExpr) ->
+        (var(Expr) -> Expr = DerivedExpr ; Expr =@= DerivedExpr),
         Result = accepted
     ;
         Result = rejected_non_polynomial
     ).
+
+npl_fit_polynomial(Samples, Var, Coeffs, Expr) :-
+    npl_detect_polynomial_degree(Samples, Degree),
+    npl_build_polynomial_system(Samples, Degree, Matrix, Vector),
+    npl_gaussian_elimination(Matrix, Vector, Coeffs),
+    samples_xy(Samples, Xs, Ys),
+    coefficients_match_samples(Xs, Ys, Coeffs),
+    npl_reconstruct_polynomial(Var, Coeffs, Expr).
 
 samples_xy([], [], []).
 samples_xy([X-Y|Rest], [X|Xs], [Y|Ys]) :-
@@ -1606,7 +1616,24 @@ npl_pure_goal(\+ A) :-
 npl_pure_goal(Goal) :-
     callable(Goal),
     Goal =.. [Name|_],
-    \+ memberchk(Name, [write, writeln, print, format, read, open, close, assert, asserta, assertz, retract, retractall, abolish, halt, shell, sleep]).
+    \+ npl_impure_predicate(Name).
+
+npl_impure_predicate(write).
+npl_impure_predicate(writeln).
+npl_impure_predicate(print).
+npl_impure_predicate(format).
+npl_impure_predicate(read).
+npl_impure_predicate(open).
+npl_impure_predicate(close).
+npl_impure_predicate(assert).
+npl_impure_predicate(asserta).
+npl_impure_predicate(assertz).
+npl_impure_predicate(retract).
+npl_impure_predicate(retractall).
+npl_impure_predicate(abolish).
+npl_impure_predicate(halt).
+npl_impure_predicate(shell).
+npl_impure_predicate(sleep).
 
 % Stage 1B interface predicates (minimal functional surface)
 npl_assign_symbolic_indices(Structure, indexed(Structure), map([])).
@@ -1625,6 +1652,8 @@ npl_reconstruct_index_relations(flow(Pairs), [IdxVar], Relations) :-
 npl_reconstruct_index_relations(_, _, []).
 
 relation_from_samples([FirstX-FirstY, SecondX-SecondY|_], IdxVar, Expr) :-
+    % Fast path for simple unit-step affine index sequences such as
+    % x_i = 4+i-1, before falling back to general polynomial fitting.
     DX is SecondX - FirstX,
     DY is SecondY - FirstY,
     DX =:= 1,
@@ -1638,6 +1667,7 @@ relation_from_samples(Samples, IdxVar, Expr) :-
     npl_reconstruct_polynomial(IdxVar, Coeffs, Expr).
 
 npl_reduce_predicate_to_pattern_irreducibles(non_reducible_external_call(_), non_reducible) :- !.
+% Conservative placeholder: wrap reducible goals in a stable internal marker.
 npl_reduce_predicate_to_pattern_irreducibles(Goal, reduced(pattern_and_irreducibles(Goal))).
 
 npl_collect_formula_samples(flow(Pairs), _Var, Pairs) :-
