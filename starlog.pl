@@ -2196,6 +2196,7 @@ npl_stage9_simplify_closed_form(IndexVar, [C0,C1,C2], _RawExpr, Simplified) :-
     npl_stage9_is_half(C1),
     npl_stage9_is_half(C2),
     !,
+    % Recognize 0.5*N^2 + 0.5*N and emit the equivalent triangular closed form.
     Simplified = IndexVar*(IndexVar+1)/2.
 npl_stage9_simplify_closed_form(_IndexVar, _Coefficients, RawExpr, RawExpr).
 
