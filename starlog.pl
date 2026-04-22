@@ -1794,6 +1794,12 @@ npl_pairs_have_numeric_indices(Pairs) :-
 npl_emit_direct_indexed_rule(FlowGraph, IndependentVars, Relations, direct_rule(FlowGraph, IndependentVars, Rule)) :-
     npl_reconstruct_direct_indexed_rule(Relations, IndependentVars, Rule).
 
+npl_reconstruct_direct_indexed_rule(Relations, Coefficients, direct_index_rule(Relations, coefficient_metadata(Coefficients))) :-
+    is_list(Relations),
+    is_list(Coefficients),
+    Coefficients \== [],
+    forall(member(Coeff, Coefficients), number(Coeff)),
+    !.
 npl_reconstruct_direct_indexed_rule(Relations, _IndependentVars, direct_index_rule(Relations)) :-
     is_list(Relations).
 
@@ -1935,7 +1941,12 @@ npl_validate_direct_rule(OriginalGoal, DirectRule, Result) :-
 
 npl_direct_rule_relations(direct_rule(_, _, direct_index_rule(Relations)), Relations) :-
     !.
+npl_direct_rule_relations(direct_rule(_, _, direct_index_rule(Relations, _)), Relations) :-
+    !.
 npl_direct_rule_relations(direct_rule(_, _, Relations), Relations) :-
+    is_list(Relations),
+    !.
+npl_direct_rule_relations(direct_index_rule(Relations, _), Relations) :-
     is_list(Relations),
     !.
 npl_direct_rule_relations(direct_index_rule(Relations), Relations) :-
