@@ -10,6 +10,7 @@
 :- use_module(pr2_stage11_tests).
 :- use_module(pr2_stage12_tests).
 :- use_module(pr2_stage13_tests).
+:- use_module(pr2_stage14_tests).
 
 :- initialization(main, main).
 
@@ -25,4 +26,5 @@ main :-
     run_pr2_stage10_tests,
     run_pr2_stage11_tests,
     run_pr2_stage12_tests,
-    run_pr2_stage13_tests.
+    run_pr2_stage13_tests,
+    run_pr2_stage14_tests.
