@@ -1531,6 +1531,8 @@ normalize_number(Value, Normalized) :-
     ).
 
 npl_epsilon(1.0e-12).
+% Use a small fixed sampling window for rewrite discovery to keep calls bounded
+% while still rejecting common non-polynomial recurrences (e.g. Fibonacci).
 npl_max_sample_count(6).
 
 % npl_reconstruct_polynomial(+Var, +Coefficients, -Expr)
