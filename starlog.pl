@@ -2065,7 +2065,7 @@ npl_stage8_build_ir(_FlowGraph, IndependentVars, Relations, Coefficients, Option
 
 % The first independent variable is used as the primary polynomial index.
 % If the independent variables list is empty, fallback defaults to i for
-% compatibility with existing Stage 4-7 relation helpers.
+% compatibility with existing Stage 4-8 relation helpers.
 npl_stage8_primary_index_var([IndexVar|_], IndexVar) :-
     !.
 npl_stage8_primary_index_var([], i).
