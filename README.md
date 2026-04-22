@@ -433,6 +433,19 @@ Result = ["x", "y", "z"].
 Result = [y, z].
 ```
 
+### PR2 Stage 4 Indexed Tracing Helpers
+
+Starlog includes a Stage 4-compatible indexed tracing surface for first-principles optimisation experiments:
+
+- `npl_assign_symbolic_indices/3` assigns inspectable symbolic paths to subterms.
+- `npl_reduce_predicate_to_pattern_irreducibles/2` reduces goals to pattern-matching and irreducible forms.
+- `npl_trace_index_flow/3` produces a flow graph from reduced goals and index maps.
+- `npl_identify_independent_indices/2` identifies independent index variables.
+- `npl_reconstruct_index_relations/3` reconstructs affine/polynomial indexed-variable formulas from samples.
+- `npl_emit_direct_indexed_rule/4`, `npl_reconstruct_direct_indexed_rule/3`, and `npl_validate_direct_rule/3` build and validate direct indexed rules.
+
+For polynomial indexed relations, coefficient solving uses Gaussian elimination through the existing PR2 polynomial pipeline.
+
 #### Template Evaluation
 
 **Feature**: When the template contains Starlog operators like `:`, `•`, or `&`, `find/2` automatically evaluates the template after the goal succeeds:
