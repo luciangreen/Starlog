@@ -1875,16 +1875,10 @@ npl_reduce_predicate_to_pattern_irreducibles(Goal, reduced(Classified)) :-
         Kind = pattern_matching
     ; npl_irreducible_predicate(Functor) ->
         Kind = irreducible
-    ; npl_named_structural_case_functor(Functor) ->
-        Kind = reducible_custom
     ;
         Kind = reducible_custom
     ),
     Classified = node(Kind, Functor, Goal).
-
-npl_named_structural_case_functor(Name/Arity) :-
-    memberchk(Name, [diagonal, anti_diagonal, row, column]),
-    between(2, 4, Arity).
 
 npl_pattern_matching_predicate(member/2).
 npl_pattern_matching_predicate(nth1/3).
