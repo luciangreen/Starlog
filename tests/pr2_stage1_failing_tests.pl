@@ -30,7 +30,7 @@ test(a2_linear_sequence_3n_plus_1) :-
     Degree = 1,
     starlog:npl_build_polynomial_system(Samples, Degree, Matrix, Vector),
     starlog:npl_gaussian_elimination(Matrix, Vector, Coefficients),
-    assertion(Coefficients == [1,3] ; Coefficients == [3,1]).
+    assertion(Coefficients == [1,3]).
 
 % Stage 1A / A3: cubic sequence reconstruction.
 test(a3_cubic_sequence_degree3) :-
@@ -66,7 +66,7 @@ test(b1_indexed_structure_generation_and_selected_output_formula) :-
 % Stage 1B / B2: reconstruct indexed-variable sequences x_i=4+i-1, y_i=5+i-1.
 test(b2_indexed_variable_sequence_reconstruction) :-
     assertion(current_predicate(starlog:npl_reconstruct_index_relations/3)),
-    FlowGraph = flow([x- [1-4,2-5,3-6], y-[1-5,2-6,3-7]]),
+    FlowGraph = flow([x-[1-4,2-5,3-6], y-[1-5,2-6,3-7]]),
     starlog:npl_reconstruct_index_relations(FlowGraph, [i], Relations),
     assertion(member(x-(4+i-1), Relations)),
     assertion(member(y-(5+i-1), Relations)).
