@@ -1439,9 +1439,9 @@ output_clause_as_prolog(Fact, OutputStream, _Options) :-
 npl_detect_polynomial_degree(Samples, Degree) :-
     npl_detect_polynomial_degree(Samples, _Var, Degree).
 
-% npl_detect_polynomial_degree(+Samples, +Var, -Degree)
-% Stage 3 compatibility arity. Var is currently informational.
-npl_detect_polynomial_degree(Samples, _Var, Degree) :-
+% npl_detect_polynomial_degree(+Samples, +InfoVar, -Degree)
+% Stage 3 compatibility arity. InfoVar is currently informational.
+npl_detect_polynomial_degree(Samples, _InfoVar, Degree) :-
     samples_xy(Samples, Xs, Ys),
     length(Samples, Len),
     Len >= 2,
@@ -1531,8 +1531,9 @@ normalize_number(Value, Normalized) :-
     ).
 
 npl_epsilon(1.0e-12).
-% Use a small fixed sampling window for rewrite discovery to keep calls bounded
-% while still rejecting common non-polynomial recurrences (e.g. Fibonacci).
+% Use a small fixed sampling window for rewrite discovery to keep calls bounded.
+% Six points are enough to reject common non-polynomial recurrences (e.g. Fibonacci)
+% while still cheaply identifying practical low-degree polynomial fits.
 npl_max_sample_count(6).
 
 % npl_reconstruct_polynomial(+Var, +Coefficients, -Expr)
@@ -1672,8 +1673,7 @@ npl_collect_goal_samples(_, _, _, _, _, []).
 
 % npl_validate_polynomial_fit(+Samples, +Coefficients, +Var, -Result)
 % Validate that solved coefficients fit all samples.
-npl_validate_polynomial_fit(Samples, Coefficients, Var, Result) :-
-    npl_reconstruct_polynomial(Var, Coefficients, _Expr),
+npl_validate_polynomial_fit(Samples, Coefficients, _Var, Result) :-
     samples_xy(Samples, Xs, Ys),
     (coefficients_match_samples(Xs, Ys, Coefficients) ->
         Result = accepted
