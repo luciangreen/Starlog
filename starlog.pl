@@ -2194,7 +2194,8 @@ npl_stage9_normalize_coefficients([Coeff|Rest], [Native|NativeRest]) :-
 npl_stage9_simplify_closed_form(IndexVar, [C0,C1,C2], _RawExpr, Simplified) :-
     % Specialized degree-2 recognition for coefficients [C0,C1,C2] in ascending
     % power order (constant, linear, quadratic): C0 + C1*N + C2*N^2.
-    % We match C0 ~ 0 and C1/C2 ~ 0.5.
+    % Triangular form is recognized when C0 ~ 0 and C1/C2 ~ 0.5
+    % (i.e., 0.5*N + 0.5*N^2 = N*(N+1)/2).
     npl_stage9_is_zero(C0),
     npl_stage9_is_half(C1),
     npl_stage9_is_half(C2),
