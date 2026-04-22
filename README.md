@@ -453,6 +453,7 @@ For polynomial indexed relations, coefficient solving uses Gaussian elimination 
 - Stage 11 documents the rewrite requirements through `npl_stage11_documentation_scope/1`, `npl_stage11_gaussian_recursion_requirements/1`, `npl_stage11_optimisation_rule_categories/1`, `npl_stage11_example_requirements/1`, and `npl_stage11_readme_requirements/1`.
 - Stage 12 encodes safety and correctness gates through `npl_stage12_must_transform_when/1`, `npl_stage12_must_not_transform_when/1`, and `npl_stage12_transform_decision/2`.
 - Stage 13 aligns self-hosting and rebuild flows through `npl_stage13_toggleable_passes/1`, `npl_stage13_effective_pass_toggles/2`, `npl_stage13_rebuild_log/3`, `npl_stage13_formula_provenance/2`, and `npl_stage13_self_check/2`.
+- PR3 Stage 6 adds annotated source regeneration through `npl_ir_to_annotated_source_text/3` and `npl_ir_to_annotated_source_file/3`, including context comments (source, optimisation metadata, recursion classification) and IR marker annotations (memo/address-loop/source-marker) in regenerated output.
 
 Stage 11 documentation statements:
 
