@@ -1437,13 +1437,17 @@ output_clause_as_prolog(Fact, OutputStream, _Options) :-
 % npl_detect_polynomial_degree(+Samples, -Degree)
 % Detect a plausible polynomial degree for Samples (X-Y pairs).
 npl_detect_polynomial_degree(Samples, Degree) :-
+    npl_detect_polynomial_degree(Samples, _Var, Degree).
+
+% npl_detect_polynomial_degree(+Samples, +InfoVar, -Degree)
+% Stage 3 compatibility arity. InfoVar is currently informational.
+npl_detect_polynomial_degree(Samples, _InfoVar, Degree) :-
     samples_xy(Samples, Xs, Ys),
     length(Samples, Len),
     Len >= 2,
     max_candidate_degree(Len, MaxDegree),
     between(1, MaxDegree, Degree),
-    npl_build_polynomial_system(Samples, Degree, Matrix, Vector),
-    npl_gaussian_elimination(Matrix, Vector, Coeffs),
+    npl_solve_polynomial_coeffs(Samples, Degree, Coeffs),
     coefficients_match_samples(Xs, Ys, Coeffs),
     !.
 
@@ -1469,6 +1473,16 @@ npl_build_polynomial_system(Samples, Degree, Matrix, Vector) :-
          Value = Y),
         RowValuePairs),
     pairs_to_matrix_vector(RowValuePairs, Matrix, Vector).
+
+npl_solve_polynomial_coeffs(Samples, Degree, Coeffs) :-
+    SolveCount is Degree + 1,
+    take_n_samples(SolveCount, Samples, SolveSamples),
+    npl_build_polynomial_system(SolveSamples, Degree, Matrix, Vector),
+    npl_gaussian_elimination(Matrix, Vector, Coeffs).
+
+take_n_samples(N, Samples, Prefix) :-
+    length(Prefix, N),
+    append(Prefix, _, Samples).
 
 pairs_to_matrix_vector([], [], []).
 pairs_to_matrix_vector([Row-Value|Rest], [Row|Rows], [Value|Values]) :-
@@ -1517,6 +1531,10 @@ normalize_number(Value, Normalized) :-
     ).
 
 npl_epsilon(1.0e-12).
+% Use a small fixed sampling window for rewrite discovery to keep calls bounded.
+% Six points are enough to reject common non-polynomial recurrences (e.g. Fibonacci)
+% while still cheaply identifying practical low-degree polynomial fits.
+npl_max_sample_count(6).
 
 % npl_reconstruct_polynomial(+Var, +Coefficients, -Expr)
 % Build symbolic expression from coefficients [a0, a1, ...].
@@ -1567,12 +1585,18 @@ npl_validate_polynomial_formula(Samples, Expr, Var, Result) :-
     ).
 
 npl_fit_polynomial(Samples, Var, Coeffs, Expr) :-
-    npl_detect_polynomial_degree(Samples, Degree),
-    npl_build_polynomial_system(Samples, Degree, Matrix, Vector),
-    npl_gaussian_elimination(Matrix, Vector, Coeffs),
-    samples_xy(Samples, Xs, Ys),
-    coefficients_match_samples(Xs, Ys, Coeffs),
-    npl_reconstruct_polynomial(Var, Coeffs, Expr).
+    npl_discover_polynomial_fit(Samples, Var, Coeffs, Expr, accepted).
+
+npl_discover_polynomial_fit(Samples, Var, Coeffs, Expr, Result) :-
+    npl_detect_polynomial_degree(Samples, Var, Degree),
+    npl_solve_polynomial_coeffs(Samples, Degree, Coeffs),
+    npl_validate_polynomial_fit(Samples, Coeffs, Var, FitResult),
+    (FitResult == accepted ->
+        npl_reconstruct_polynomial(Var, Coeffs, Expr),
+        Result = accepted
+    ;
+        Result = rejected_non_polynomial
+    ).
 
 samples_xy([], [], []).
 samples_xy([X-Y|Rest], [X|Xs], [Y|Ys]) :-
@@ -1596,9 +1620,76 @@ evaluate_polynomial_coeffs([Coeff|Rest], X, Power, Acc, Value) :-
     NextPower is Power + 1,
     evaluate_polynomial_coeffs(Rest, X, NextPower, Acc1, Value).
 
+% npl_extract_numeric_samples(+Goal, +Var, +MaxSamples, -Samples)
+% Extract X-Y sample points for polynomial fitting from safe numeric goals.
+npl_extract_numeric_samples(samples(Samples), _Var, _MaxSamples, Samples) :-
+    !,
+    npl_samples_are_numeric_pairs(Samples).
+npl_extract_numeric_samples(numeric_samples(Samples), _Var, _MaxSamples, Samples) :-
+    !,
+    npl_samples_are_numeric_pairs(Samples).
+npl_extract_numeric_samples(sequence(Values), _Var, _MaxSamples, Samples) :-
+    !,
+    is_list(Values),
+    npl_sequence_to_samples(Values, 1, Samples),
+    npl_samples_are_numeric_pairs(Samples).
+npl_extract_numeric_samples(Goal, Var, MaxSamples, Samples) :-
+    integer(MaxSamples),
+    MaxSamples >= 2,
+    callable(Goal),
+    term_variables(Goal, Vars),
+    memberchk(Var, Vars),
+    select(Var, Vars, RemainingVars),
+    RemainingVars = [OutputVar],
+    npl_collect_goal_samples(1, MaxSamples, Goal, Var, OutputVar, Samples),
+    length(Samples, Count),
+    Count >= 2.
+
+npl_samples_are_numeric_pairs([]).
+npl_samples_are_numeric_pairs([X-Y|Rest]) :-
+    number(X),
+    number(Y),
+    npl_samples_are_numeric_pairs(Rest).
+
+npl_sequence_to_samples([], _Index, []).
+npl_sequence_to_samples([Y|Ys], Index, [Index-Y|Rest]) :-
+    number(Y),
+    NextIndex is Index + 1,
+    npl_sequence_to_samples(Ys, NextIndex, Rest).
+
+npl_collect_goal_samples(Index, Max, _Goal, _Var, _OutputVar, []) :-
+    Index > Max,
+    !.
+npl_collect_goal_samples(Index, Max, Goal, Var, OutputVar, [Index-Y|Rest]) :-
+    copy_term(Goal-Var-OutputVar, GoalI-VarI-OutputI),
+    VarI = Index,
+    once(call(GoalI)),
+    number(OutputI),
+    !,
+    Y = OutputI,
+    Next is Index + 1,
+    npl_collect_goal_samples(Next, Max, Goal, Var, OutputVar, Rest).
+npl_collect_goal_samples(_, _, _, _, _, []).
+
+% npl_validate_polynomial_fit(+Samples, +Coefficients, +Var, -Result)
+% Validate that solved coefficients fit all samples.
+npl_validate_polynomial_fit(Samples, Coefficients, _Var, Result) :-
+    samples_xy(Samples, Xs, Ys),
+    (coefficients_match_samples(Xs, Ys, Coefficients) ->
+        Result = accepted
+    ;
+        Result = rejected_non_polynomial
+    ).
+
 % npl_rewrite_recurrence_to_closed_form(+Goal, +Var, -Expr, -Result)
 npl_rewrite_recurrence_to_closed_form(Goal, _Var, _Expr, rejected_impure) :-
     \+ npl_pure_goal(Goal),
+    !.
+npl_rewrite_recurrence_to_closed_form(Goal, Var, Expr, accepted) :-
+    npl_max_sample_count(MaxSamples),
+    npl_extract_numeric_samples(Goal, Var, MaxSamples, Samples),
+    npl_discover_polynomial_fit(Samples, Var, _Coeffs, Expr, DiscoverResult),
+    DiscoverResult == accepted,
     !.
 npl_rewrite_recurrence_to_closed_form(_Goal, _Var, _Expr, rejected_non_polynomial).
 
