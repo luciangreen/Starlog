@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Starlog Child Prolog Stage 1</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f7f8fc;
+      color: #1f2937;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      padding: 20px;
+    }
+    .panel {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 3px 12px rgba(15, 23, 42, 0.08);
+      padding: 16px;
+    }
+    textarea, input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 15px;
+      font-family: "SFMono-Regular", Consolas, monospace;
+    }
+    textarea {
+      min-height: 320px;
+      resize: vertical;
+    }
+    button {
+      margin-top: 12px;
+      padding: 10px 16px;
+      border: 0;
+      border-radius: 8px;
+      background: #2563eb;
+      color: white;
+      font-size: 15px;
+      cursor: pointer;
+    }
+    h1, h2, h3 {
+      margin-top: 0;
+    }
+    pre {
+      overflow: auto;
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+    ol {
+      padding-left: 22px;
+    }
+    .answer {
+      font-size: 24px;
+      font-weight: bold;
+      color: #0f766e;
+    }
+    .label {
+      margin: 12px 0 8px;
+      font-weight: 600;
+    }
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <section class="panel">
+      <h1>Child Prolog Stage 1</h1>
+      <p>A tiny browser Prolog engine with facts, rules, variables, recursion, tracing, and JSON output.</p>
+
+      <div class="label">Program</div>
+      <textarea id="program"></textarea>
+
+      <div class="label">Query</div>
+      <input id="query" value="ancestor(alice,charlie).">
+
+      <button onclick="runExample()">Run query</button>
+    </section>
+
+    <section class="panel">
+      <h2>Answer</h2>
+      <div id="answer" class="answer"></div>
+
+      <h3>Bindings</h3>
+      <div id="bindings"></div>
+
+      <h3>Child-friendly explanation</h3>
+      <ol id="steps"></ol>
+
+      <h3>Visualization</h3>
+      <div id="visual-output"></div>
+
+      <h3>JSON output</h3>
+      <pre id="json-output"></pre>
+    </section>
+  </div>
+
+  <script src="child_prolog_engine.js"></script>
+  <script src="visualizer.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
