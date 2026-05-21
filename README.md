@@ -1191,6 +1191,31 @@ swipl -s test_eval.pl
 swipl -s test_algebra_solver.pl
 ```
 
+### Child Prolog Stage 1 browser demo
+
+This repository now also includes a minimal browser-based Stage 1 Child Prolog demo:
+
+- `/home/runner/work/Starlog/Starlog/index.html`
+- `/home/runner/work/Starlog/Starlog/app.js`
+- `/home/runner/work/Starlog/Starlog/child_prolog_engine.js`
+- `/home/runner/work/Starlog/Starlog/visualizer.js`
+- `/home/runner/work/Starlog/Starlog/examples/stage1_ancestor.pl`
+
+Open `index.html` in a browser and run the default ancestor example. The Stage 1 engine supports:
+
+- facts
+- rules
+- variables
+- recursive calls
+- trace collection
+- JSON output for visualization
+
+Run the focused JavaScript test with:
+
+```bash
+node /home/runner/work/Starlog/Starlog/tests/test_child_prolog_engine.js
+```
+
 ## Requirements
 
 * SWI-Prolog 8.x or higher
