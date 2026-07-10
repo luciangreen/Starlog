@@ -42,7 +42,7 @@ gaussian_elimination(Matrix, ReducedMatrix) :-
 % gaussian_elimination(+Matrix, -ReducedMatrix, -SolutionType)
 % Perform Gaussian elimination with solution type detection
 gaussian_elimination(Matrix, ReducedMatrix, SolutionType) :-
-    length(Matrix, NumRows),
+    length(Matrix, _NumRows),
     (Matrix = [FirstRow|_] -> length(FirstRow, NumCols) ; NumCols = 0),
     NumVars is NumCols - 1,
     forward_elimination(Matrix, 0, NumVars, IntermediateMatrix),
@@ -306,7 +306,7 @@ find_leading_coeff_helper(_, Idx, NumVars, -1, 0) :-
 % Generate parametric solution for systems with infinite solutions
 % Returns solution with parameters (free variables)
 back_substitution_parametric(Matrix, Solution) :-
-    length(Matrix, NumRows),
+    length(Matrix, _NumRows),
     (Matrix = [FirstRow|_] -> length(FirstRow, NumCols) ; NumCols = 0),
     NumVars is NumCols - 1,
     % Identify free variables
@@ -336,7 +336,7 @@ has_pivot_in_column([_|Rest], Col, NumVars) :-
 
 % generate_parametric_solution(+Matrix, +NumVars, +FreeVars, -Solution)
 % Generate solution with parameters for free variables
-generate_parametric_solution(Matrix, NumVars, FreeVars, Solution) :-
+generate_parametric_solution(Matrix, _NumVars, _FreeVars, Solution) :-
     % For infinite solutions, we use the same back substitution approach
     % This is a simplified version - a full implementation would need to
     % express the solution in terms of parameters
