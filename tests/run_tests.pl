@@ -14,6 +14,7 @@
 :- use_module(pr3_stage6_tests).
 :- use_module(pr3_stage7_tests).
 :- use_module(pr3_stage8_tests).
+:- use_module(pr3_stage9_tests).
 
 :- initialization(main, main).
 
@@ -33,4 +34,5 @@ main :-
     run_pr2_stage14_tests,
     run_pr3_stage6_tests,
     run_pr3_stage7_tests,
-    run_pr3_stage8_tests.
+    run_pr3_stage8_tests,
+    run_pr3_stage9_tests.
