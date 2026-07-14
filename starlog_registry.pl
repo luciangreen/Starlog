@@ -78,6 +78,7 @@ default_value_builtin(sum_list, 1).
 default_value_builtin(subtract, 2).
 default_value_builtin(select, 2).
 default_value_builtin(permutation, 1).
+default_value_builtin(random_permutation, 1).
 default_value_builtin(member, 1).
 default_value_builtin(foldr, 3).
 
