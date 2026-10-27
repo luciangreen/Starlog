@@ -50,7 +50,7 @@ test(stage8_file_output_roundtrip_for_text_generation) :-
         close(In)
     ),
     assertion(sub_string(FileText, _, _, _, '%% optimisation report: [gaussian_elimination,simplification]')),
-    assertion(sub_string(FileText, _, _, _, 'sum_n is n^2+n.')),
+    assertion(sub_string(FileText, _, _, _, 'sum_n is n+n^2.')),
     assertion(sub_string(FileText, _, _, _, 'npl_generated_passthrough(ir_memo_site(cache_key,hit)).')),
     delete_file(File).
 

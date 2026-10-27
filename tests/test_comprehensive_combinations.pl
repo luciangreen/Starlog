@@ -9,24 +9,24 @@
 % =====================================================================
 
 test_string_basic :-
-    write('Test 1: Basic string concat (a : A) is (B : b)...'),
-    (a : A) is (B : b),
-    assertion(A = b),
-    assertion(B = a),
+    write('Test 1: Basic string concat ("a" : A) is (B : "b")...'),
+    ("a" : A) is (B : "b"),
+    assertion(A = "b"),
+    assertion(B = "a"),
     write(' ✓'), nl.
 
 test_string_nested :-
-    write('Test 2: Nested string concat ((a : "x") : A) is (B : (b : "y"))...'),
-    ((a : "x") : A) is (B : (b : "y")),
-    assertion(A = (b:"y")),
-    assertion(B = (a:"x")),
+    write('Test 2: Nested string concat (("a" : "x") : A) is (B : ("b" : "y"))...'),
+    (("a" : "x") : A) is (B : ("b" : "y")),
+    assertion(A = ("b":"y")),
+    assertion(B = ("a":"x")),
     write(' ✓'), nl.
 
 test_string_triple :-
-    write('Test 3: Triple string concat ((a : x) : A) is (B : (y : z))...'),
-    ((a : x) : A) is (B : (y : z)),
-    assertion(A = (y:z)),
-    assertion(B = (a:x)),
+    write('Test 3: Triple string concat (("a" : "x") : A) is (B : ("y" : "z"))...'),
+    (("a" : "x") : A) is (B : ("y" : "z")),
+    assertion(A = ("y":"z")),
+    assertion(B = ("a":"x")),
     write(' ✓'), nl.
 
 % =====================================================================
@@ -91,8 +91,8 @@ test_list_complex :-
 % =====================================================================
 
 test_string_equality :-
-    write('Test 11: String equality (a : x) is (a : x)...'),
-    ((a : x) is (a : x)),
+    write('Test 11: String equality ("a" : "x") is ("a" : "x")...'),
+    (("a" : "x") is ("a" : "x")),
     write(' ✓'), nl.
 
 test_atom_equality :-
@@ -145,10 +145,10 @@ test_empty_string :-
 % =====================================================================
 
 test_deeply_nested_strings :-
-    write('Test 18: Deeply nested strings (((a : b) : c) : A) is (B : ((d : e) : f))...'),
-    (((a : b) : c) : A) is (B : ((d : e) : f)),
-    assertion(A = (d:e:f)),
-    assertion(B = (a:b:c)),
+    write('Test 18: Deeply nested strings ((("a" : "b") : "c") : A) is (B : (("d" : "e") : "f"))...'),
+    ((("a" : "b") : "c") : A) is (B : (("d" : "e") : "f")),
+    assertion(A = ("d":"e":"f")),
+    assertion(B = ("a":"b":"c")),
     write(' ✓'), nl.
 
 test_deeply_nested_lists :-
@@ -169,10 +169,10 @@ test_variable_middle :-
     write(' ✓'), nl.
 
 test_multiple_variables :-
-    write('Test 21: Multiple variables (a : A) is (B : b)...'),
-    (a : A) is (B : b),
-    assertion(A = b),
-    assertion(B = a),
+    write('Test 21: Multiple variables ("a" : A) is (B : "b")...'),
+    ("a" : A) is (B : "b"),
+    assertion(A = "b"),
+    assertion(B = "a"),
     write(' ✓'), nl.
 
 % =====================================================================

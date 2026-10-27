@@ -19,6 +19,10 @@ test_list_append :-
     starlog_to_prolog_code(A is [1,2]&[3,4]),
     nl.
 
+test_append_with_variable_elements :-
+    starlog_to_prolog_code(_Result is [_Left] & [_Right], Code),
+    Code =.. [append, [_], [_], _].
+
 % Test 3: Atom concatenation
 test_atom_concat :-
     write('Test 3: Atom concatenation'), nl,
@@ -64,6 +68,7 @@ run_all_tests :-
     write('=== Running Starlog to Prolog Conversion Tests ==='), nl, nl,
     test_simple_concat,
     test_list_append,
+    test_append_with_variable_elements,
     test_atom_concat,
     test_nested_decompress,
     test_multiple_nested,

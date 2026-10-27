@@ -8,8 +8,8 @@ test_generated :-
     
     % First generate the starlog file
     working_directory(CWD, CWD),
-    atom_concat(CWD, 'sample_prolog.pl', InPath),
-    atom_concat(CWD, 'sample_starlog.pl', OutPath),
+    atom_concat(CWD, 'tests/sample_prolog.pl', InPath),
+    atom_concat(CWD, 'tests/sample_starlog.pl', OutPath),
     
     setup_call_cleanup(
         open(OutPath, write, Stream),
@@ -37,6 +37,7 @@ test_generated :-
         write('  ✗ FAILED')
     ), nl, nl,
     
-    write('All tests complete!'), nl.
+    write('All tests complete!'), nl,
+    delete_file(OutPath).
 
 :- initialization(test_generated, main).

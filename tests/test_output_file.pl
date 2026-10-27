@@ -5,7 +5,7 @@
 
 test_file_output :-
     working_directory(CWD, CWD),
-    atom_concat(CWD, 'sample_prolog.pl', FilePath),
+    atom_concat(CWD, 'tests/sample_prolog.pl', FilePath),
     write('=== Testing starlog_output_file ==='), nl, nl,
     starlog_output_file(FilePath),
     nl,
