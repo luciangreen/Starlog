@@ -1178,28 +1178,27 @@ Or add it to your SWI-Prolog library path.
 
 ## Testing
 
-Run the test suite:
+Requirements: SWI-Prolog 8.x or newer and Node.js. From the repository root,
+run the complete suite:
 
-```bash
-cd tests
-swipl -s test_basic.pl
-swipl -s test_nested.pl  
-swipl -s test_arithmetic_is.pl
-swipl -s test_mixed_prolog_starlog.pl
-swipl -s test_no_eval.pl
-swipl -s test_eval.pl
-swipl -s test_algebra_solver.pl
+```sh
+sh tests/run_all_tests.sh
 ```
+
+This runs all standalone Prolog tests, the staged PR2/PR3 optimiser and
+regeneration suite, and the Child Prolog JavaScript test. For individual test
+commands, feature coverage, or the staged-suite-only command, see
+[TESTING.md](TESTING.md).
 
 ### Child Prolog Stage 1 browser demo
 
 This repository now also includes a minimal browser-based Stage 1 Child Prolog demo:
 
-- `/home/runner/work/Starlog/Starlog/index.html`
-- `/home/runner/work/Starlog/Starlog/app.js`
-- `/home/runner/work/Starlog/Starlog/child_prolog_engine.js`
-- `/home/runner/work/Starlog/Starlog/visualizer.js`
-- `/home/runner/work/Starlog/Starlog/examples/stage1_ancestor.pl`
+- `index.html`
+- `app.js`
+- `child_prolog_engine.js`
+- `visualizer.js`
+- `examples/stage1_ancestor.pl`
 
 Open `index.html` in a browser and run the default ancestor example. The Stage 1 engine supports:
 
@@ -1210,15 +1209,37 @@ Open `index.html` in a browser and run the default ancestor example. The Stage 1
 - trace collection
 - JSON output for visualization
 
-Run the focused JavaScript test with:
+Run the focused JavaScript test from the repository root with:
 
-```bash
-node /home/runner/work/Starlog/Starlog/tests/test_child_prolog_engine.js
+```sh
+node tests/test_child_prolog_engine.js
 ```
 
 ## Requirements
 
 * SWI-Prolog 8.x or higher
+* Node.js for the browser engine test
+
+## Project status and remaining work
+
+The Starlog library, its Prolog/Starlog conversion APIs, algebra and Gaussian
+solvers, PR2/PR3 optimiser and annotated regeneration APIs, and the Stage 1
+Child Prolog browser demo are implemented and covered by the tests described
+in [TESTING.md](TESTING.md).
+
+Known follow-up work:
+
+- Add an API to opt into or out of globally installed Starlog operators. The
+  current library installs its operators when loaded; callers should consider
+  operator-name conflicts when combining it with other code.
+- Expand the Child Prolog browser engine beyond its documented Stage 1 subset
+  (facts, rules, variables, recursion, and trace visualization).
+- Add automated compatibility coverage across the supported SWI-Prolog 8.x+
+  range; the current local test run only verifies the installed SWI-Prolog
+  version.
+- A standalone batch-conversion CLI is not part of the current runtime-first
+  scope. File conversion is available through the Prolog library predicates
+  documented above.
 
 ## Repository Structure
 
@@ -1232,10 +1253,14 @@ starlog/
   starlog_expand.pl                  # Expander: compile Starlog -> Prolog goals
   starlog_registry.pl                # Builtin mapping registry + extension hooks
   algebra_solver.pl                  # Algebraic equation solver
+  gaussian_elimination.pl            # Gaussian elimination and polynomial support
+  TESTING.md                          # Test commands and feature coverage
   demo_output_feature.pl             # Demo: Prolog to Starlog conversion
   demo_starlog_to_prolog.pl          # Demo: Starlog to Prolog conversion
   demo_algebra_solver.pl             # Demo: Algebra solver
   tests/
+    run_all_tests.sh                 # Complete Prolog, staged, and JS test runner
+    run_tests.pl                     # PR2/PR3 staged test runner
     test_basic.pl                    # Basic functionality tests
     test_nested.pl                   # Nested expression tests
     test_arithmetic_is.pl            # Arithmetic preservation tests

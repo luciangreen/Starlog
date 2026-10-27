@@ -263,6 +263,10 @@ is_starlog_expr(Expr) :-
 
 % contains_starlog_operator(+Term)
 % Check if a term contains Starlog operators (: & • ..= =.. >>) anywhere in its structure.
+contains_starlog_operator(Term) :-
+    var(Term),
+    !,
+    fail.
 contains_starlog_operator(_ >> _) :- !.  % Method chain
 contains_starlog_operator(_ : _) :- !.
 contains_starlog_operator(_ & _) :- !.
@@ -736,6 +740,14 @@ concat_dual(A, B, C, D, ConcatPred) :-
             % Simple case: B = D
             B = D
         )
+    ;
+    % Preserve nested expressions as terms when the unmatched sides are variables.
+    (is_concat_expr(A, ConcatPred),
+     is_concat_expr(D, ConcatPred),
+     var(B),
+     var(C)) ->
+        B = D,
+        C = A
     ;
     % New case: Both B and D are concat expressions (not necessarily identical)
     % Pattern: (A:a:C) is (b:a:c) which becomes (A:(a:C)) is (b:(a:c))

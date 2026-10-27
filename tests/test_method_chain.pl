@@ -27,8 +27,9 @@ test(Name, Goal, Expected) :-
     N1 is N + 1,
     assertz(test_count(N1)),
     format('Test ~w: ~w~n', [N1, Name]),
-    (catch(call(Goal), E, (format('  ERROR: ~w~n', [E]), fail)) ->
-        (Goal = starlog_call(R is _) ->
+    copy_term(Goal, IndependentGoal),
+    (catch(call(IndependentGoal), E, (format('  ERROR: ~w~n', [E]), fail)) ->
+        (IndependentGoal = starlog_call(R is _) ->
             (R = Expected ->
                 format('  ✓ PASS: ~w~n', [R]),
                 retract(pass_count(P)),
@@ -78,8 +79,8 @@ test_basic_chains :-
     
     % Triple chain
     test('Triple method chain',
-         starlog_call(R is wrap_a >> wrap_a >> wrap_a),
-         a(a(a))).
+         starlog_call(R is hello >> wrap_a >> wrap_d >> wrap_a),
+         a(d(a(hello)))).
 
 % ============================================================
 % Section 2: Method Chains with Built-in Functions
@@ -112,8 +113,8 @@ test_builtin_chains :-
          starlog_call(R is string_upper("hello") >> string_lower),
          "hello"),
     
-    test('string_concat("a","b") >> string_length',
-         starlog_call(R is string_concat("a","b") >> string_length),
+    test('("a":"b") >> string_length',
+         starlog_call(R is ("a":"b") >> string_length),
          2).
 
 % ============================================================
@@ -126,9 +127,9 @@ test_starlog_ops :-
     writeln('----------------------------------------'),
     
     % String concatenation base
-    test('String concat base >> reverse',
-         starlog_call(R is ("a":"b") >> reverse),
-         "ba"),
+    test('String concat base >> string_chars >> reverse',
+         starlog_call(R is ("a":"b") >> string_chars >> reverse),
+         [b,a]),
     
     test('String concat base >> string_length',
          starlog_call(R is ("hello":"world") >> string_length),

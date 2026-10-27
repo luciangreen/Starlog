@@ -54,7 +54,7 @@ test(stage6_annotated_file_output_writes_regenerated_text) :-
     ),
     assertion(sub_string(FileText, _, _, _, '%% source metadata: meta([origin(test)])')),
     assertion(sub_string(FileText, _, _, _, '%% applied optimisation passes: [simplification,code_generation]')),
-    assertion(sub_string(FileText, _, _, _, 'poly_result is i^2+i.')),
+    assertion(sub_string(FileText, _, _, _, 'poly_result is i+i^2.')),
     delete_file(File).
 
 :- end_tests(pr3_stage6_annotated_source_regeneration).

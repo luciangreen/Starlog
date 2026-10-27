@@ -20,7 +20,8 @@ test(Name, Goal) :-
     N1 is N + 1,
     assertz(test_count(N1)),
     format('Test ~w: ~w~n', [N1, Name]),
-    (catch(Goal, E, (format('  ERROR: ~w~n', [E]), fail)) ->
+    copy_term(Goal, IndependentGoal),
+    (catch(IndependentGoal, E, (format('  ERROR: ~w~n', [E]), fail)) ->
         format('  ✓ PASS~n'),
         retract(pass_count(P)),
         P1 is P + 1,

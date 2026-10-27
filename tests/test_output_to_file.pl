@@ -5,8 +5,8 @@
 
 test_output_to_file :-
     working_directory(CWD, CWD),
-    atom_concat(CWD, 'sample_prolog.pl', InPath),
-    atom_concat(CWD, 'sample_starlog.pl', OutPath),
+    atom_concat(CWD, 'tests/sample_prolog.pl', InPath),
+    atom_concat(CWD, 'tests/sample_starlog.pl', OutPath),
     
     write('Writing Starlog output to sample_starlog.pl...'), nl,
     setup_call_cleanup(
@@ -19,7 +19,8 @@ test_output_to_file :-
         open(OutPath, read, ReadStream),
         read_and_display(ReadStream),
         close(ReadStream)
-    ).
+    ),
+    delete_file(OutPath).
 
 read_and_display(Stream) :-
     read_string(Stream, _, Content),

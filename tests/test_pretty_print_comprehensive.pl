@@ -71,11 +71,11 @@ test_file_output :-
     write('══════════════════════════════════════════════════════════════'), nl, nl,
     
     write('3.1. Starlog file output:'), nl,
-    starlog_output_file('sample_prolog.pl'),
+    starlog_output_file('tests/sample_prolog.pl'),
     nl,
     
     write('3.2. Prolog file output:'), nl,
-    starlog_to_prolog_file('sample_prolog.pl'),
+    starlog_to_prolog_file('tests/sample_prolog.pl'),
     nl,
     
     write('✓ File output pretty printing working correctly'), nl.

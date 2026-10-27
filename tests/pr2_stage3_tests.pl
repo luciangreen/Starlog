@@ -31,28 +31,32 @@ test(stage3_predicates_exist) :-
     assertion(current_predicate(starlog:npl_rewrite_recurrence_to_closed_form/4)).
 
 test(stage3_extract_numeric_samples_from_callable_goal) :-
-    starlog:npl_extract_numeric_samples(triangular(N, R), N, 3, Samples),
+    starlog:npl_extract_numeric_samples(
+        plunit_pr2_stage3_pipeline:triangular(N, R), N, 3, Samples),
     assertion(Samples == [1-1, 2-3, 3-6]),
     forall(member(X-Y, Samples), (integer(X), integer(Y))),
     forall(member(X-Y, Samples), triangular(X, Y)),
     assertion(var(R)).
 
 test(stage3_rewrite_triangular_to_closed_form) :-
-    starlog:npl_rewrite_recurrence_to_closed_form(triangular(N, _R), N, Expr, Result),
+    starlog:npl_rewrite_recurrence_to_closed_form(
+        plunit_pr2_stage3_pipeline:triangular(N, _R), N, Expr, Result),
     assertion(Result == accepted),
     N = 6,
     Value is Expr,
     assertion(Value =:= 21).
 
 test(stage3_rewrite_linear_to_closed_form) :-
-    starlog:npl_rewrite_recurrence_to_closed_form(linear_3n_plus_1(N, _R), N, Expr, Result),
+    starlog:npl_rewrite_recurrence_to_closed_form(
+        plunit_pr2_stage3_pipeline:linear_3n_plus_1(N, _R), N, Expr, Result),
     assertion(Result == accepted),
     N = 8,
     Value is Expr,
     assertion(Value =:= 25).
 
 test(stage3_reject_non_polynomial_recurrence) :-
-    starlog:npl_rewrite_recurrence_to_closed_form(fibonacci(N, _R), N, _Expr, Result),
+    starlog:npl_rewrite_recurrence_to_closed_form(
+        plunit_pr2_stage3_pipeline:fibonacci(N, _R), N, _Expr, Result),
     assertion(Result == rejected_non_polynomial).
 
 test(stage3_reject_impure_recurrence) :-
