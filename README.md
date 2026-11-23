@@ -3,6 +3,33 @@
 **Date**: 2025-12-24  
 **Author**: luciangreen
 
+## Installation
+
+Install Starlog with SWI-Prolog's pack manager:
+
+```prolog
+?- pack_install(starlog, [url('https://github.com/luciangreen/starlog.git')]).
+```
+
+Then load it in your Prolog code or at the REPL:
+
+```prolog
+:- use_module(library(starlog)).
+```
+
+Alternatively, clone this repository and load the library by path:
+
+```sh
+git clone https://github.com/luciangreen/starlog.git
+```
+
+```prolog
+:- use_module('/path/to/starlog/starlog').
+```
+
+The examples below use `use_module(starlog)`, which works when running from
+the repository root; after `pack_install`, use `use_module(library(starlog))`.
+
 ## Overview
 
 Starlog is a library that allows developers to write Starlog syntax directly inside normal `.pl` files and run it immediately, without converting files. Starlog is a variant of Prolog that uses a more functional notation, particularly for built-in predicates where the output parameter is represented using an "is" operator rather than as the last argument of a predicate.
@@ -1164,17 +1191,6 @@ This is useful for:
 - Educational tools for teaching linear algebra
 - Scientific computing and numerical methods
 - Engineering and physics applications
-
-## Installation
-
-1. Clone this repository
-2. Load the library in your Prolog code:
-
-```prolog
-:- use_module('/path/to/starlog').
-```
-
-Or add it to your SWI-Prolog library path.
 
 ## Testing
 
